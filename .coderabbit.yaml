@@ -1,0 +1,38 @@
+# CodeRabbit configuration
+# https://docs.coderabbit.ai/reference/yaml-template/
+language: "ko-KR"
+early_access: false
+
+reviews:
+  profile: "chill"            # balanced feedback; switch to "assertive" if too lenient
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+  path_filters:
+    - "!**/node_modules/**"
+    - "!**/dist/**"
+    - "!**/*.lock"
+    - "!examples/*.json"      # sample fixtures don't need review
+  path_instructions:
+    - path: "src/**/*.js"
+      instructions: |
+        - Never read from ~/.claude/.credentials.json or the macOS Keychain.
+          This tool must only consume the stdin JSON that Claude Code provides.
+        - All rate_limits.* fields are optional (Pro/Max-only, and absent until
+          the first assistant reply). Guard every access with optional chaining.
+        - Keep cold start low: avoid new runtime dependencies unless essential —
+          the statusline script runs on every assistant message.
+    - path: ".githooks/**"
+      instructions: |
+        - Hooks must stay POSIX-sh compatible and never exit non-zero on
+          unexpected input; prefer silent pass over false positives.
+
+chat:
+  auto_reply: true

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Block direct commits to protected branches. Use a feature branch + worktree.
+set -euo pipefail
+
+branch="$(git symbolic-ref --short HEAD 2>/dev/null || echo '')"
+
+protected_re='^(main|master|release/.*)$'
+if [[ "$branch" =~ $protected_re ]]; then
+  if [[ "${ALLOW_DIRECT_COMMIT:-0}" != "1" ]]; then
+    echo "✖ commit blocked: direct commits to '$branch' are not allowed." >&2
+    echo "  Create a feature branch in a worktree:" >&2
+    echo "    git worktree add ../claude-cat.feat-<topic> -b feat/<topic> origin/main" >&2
+    echo "  Or bypass once with: ALLOW_DIRECT_COMMIT=1 git commit …" >&2
+    exit 1
+  fi
+fi
+
+# Lightweight secret scan — best-effort only.
+staged="$(git diff --cached --name-only --diff-filter=ACM || true)"
+if [[ -n "$staged" ]]; then
+  if printf '%s\n' "$staged" | grep -qE '(^|/)(\.env(\..*)?|.*\.pem|.*\.p8|.*\.p12|\.credentials\.json)$'; then
+    echo "✖ commit blocked: secret-looking file staged." >&2
+    printf '%s\n' "$staged" | grep -E '(^|/)(\.env(\..*)?|.*\.pem|.*\.p8|.*\.p12|\.credentials\.json)$' >&2
+    exit 1
+  fi
+  # Scan diff for common secret patterns.
+  if git diff --cached -U0 | grep -E '(sk-ant-[A-Za-z0-9_-]{20,}|ghp_[A-Za-z0-9]{20,}|gho_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})' >/dev/null; then
+    echo "✖ commit blocked: possible secret found in staged diff." >&2
+    exit 1
+  fi
+fi
