@@ -29,32 +29,97 @@ The `pre-commit` and `pre-push` hooks reject direct work on `main`
 and `dev` locally. GitHub branch protection enforces the same rule
 server-side.
 
-## Default working loop (what Claude does in this repo)
+## Worktree-only policy — hard rule
 
-When a user asks for a change in this repo, the default sequence is:
+The primary checkout (`~/Desktop/claude-cat`) stays on `dev` and is
+**read-only for humans and AI alike**:
 
-1. `git fetch origin`
-2. `git worktree add ../claude-cat.<kind>-<topic> -b <kind>/<topic> origin/dev`
-3. Work in that worktree. Commit by **logical unit**, not "end of
-   session". Each commit subject follows Conventional Commits
-   (`feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`, `ci:`).
-4. `git push -u origin <kind>/<topic>`
-5. `gh pr create --base dev --head <kind>/<topic>` with a filled-in
+- ✅ `git fetch origin`
+- ✅ `git pull --ff-only origin dev` (sync after PRs merge)
+- ✅ `git worktree add …` / `git worktree remove …`
+- ❌ editing files in the primary checkout
+- ❌ `git commit` in the primary checkout
+- ❌ `git push` of the primary checkout
+
+All editing, committing, and pushing happens in **side worktrees**:
+
+```
+~/Desktop/claude-cat                          ← primary, dev, read-only
+~/Desktop/claude-cat.feat-<topic-a>           ← side worktree for topic A
+~/Desktop/claude-cat.fix-<topic-b>            ← side worktree for topic B
+~/Desktop/claude-cat.chore-<topic-c>          ← another side worktree
+```
+
+**One topic = one worktree = one branch = one PR.** Never stack
+multiple unrelated changes on the same branch — reviewers (and
+CodeRabbit) should see one coherent change per PR.
+
+Worktree kind prefixes (must match what CI / hooks expect):
+`feat/` `fix/` `chore/` `docs/` `refactor/` `test/` `ci/`.
+
+## Default working loop
+
+When a user asks for a change in this repo:
+
+1. `git fetch origin` in the primary checkout.
+2. `git worktree add ../claude-cat.<kind>-<topic> -b <kind>/<topic> origin/dev`.
+3. `cd` into the side worktree. Run `./scripts/setup.sh` the first
+   time so local identity + hooks are wired.
+4. Work there. Commit by **logical unit**, not "end of session". Each
+   commit subject follows Conventional Commits (`feat:`, `fix:`,
+   `chore:`, `refactor:`, `docs:`, `test:`, `ci:`).
+5. `git push -u origin <kind>/<topic>`.
+6. `gh pr create --base dev --head <kind>/<topic>` with a filled-in
    template.
-6. Wait for CI. If CI fails, fix and push; don't merge red.
-7. `gh pr merge <num> --squash --delete-branch`.
-8. Clean up: `git worktree remove …`, `git branch -D …`, fetch + pull
-   the tip of `dev` into the local dev checkout.
+7. Wait for CI + CodeRabbit review. If red, fix and push; don't merge
+   red.
+8. `gh pr merge <num> --squash --delete-branch`.
+9. Back in the primary checkout: `git fetch origin && git pull --ff-only origin dev`.
+10. Clean up the side worktree: `git worktree remove ../claude-cat.<kind>-<topic>`
+    and `git branch -D <kind>/<topic>`.
 
-**Release** (only when the user explicitly says "let's cut a release"
-or similar):
-- branch `release/x.y.z` from `dev`, bump `package.json` + update
-  `CHANGELOG.md`, open PR `release/x.y.z → main`, squash-merge, tag
-  `vx.y.z`, publish the GitHub Release draft, then fast-forward `dev`
-  onto `main`.
+### Parallel work
 
-**Never** merge to `main` without explicit user confirmation that
-this merge is a release cut.
+When several topics are in flight, spin up several side worktrees at
+once. They share the same .git store (cheap) and CI runs per PR, so
+review cycles don't block each other:
+
+```
+~/Desktop/claude-cat                                 [dev]
+~/Desktop/claude-cat.feat-daemon                     [feat/daemon]
+~/Desktop/claude-cat.fix-alignment                   [fix/alignment]
+~/Desktop/claude-cat.chore-docs                      [chore/docs]
+```
+
+Each worktree ships a separate PR. Don't share branches between
+topics — if two changes are truly coupled, keep them together in one
+worktree and ship them as one PR.
+
+## Releases
+
+**Only when the user explicitly says "let's cut a release" (or
+equivalent)**:
+
+- branch `release/x.y.z` from `dev`
+- bump `package.json` + update `CHANGELOG.md`
+- open PR `release/x.y.z → main`, squash-merge
+- tag `vx.y.z`, publish the GitHub Release draft
+- fast-forward `dev` onto `main` with `ALLOW_DIRECT_PUSH=1`
+
+**Never** merge to `main` without that explicit signal — the branch
+model treats main as the released timeline, and unannounced merges
+pollute the release history.
+
+## Review: CodeRabbit
+
+Every PR (base `dev` or `main`) gets an automated CodeRabbit review
+once the app is installed on the repo. Config lives in
+`.coderabbit.yaml` (chill profile, Korean output, auto-review on
+PRs whose base is main). Don't merge over a CodeRabbit-request-
+changes unless you've answered the comment.
+
+One-time install (maintainer): https://github.com/apps/coderabbitai
+→ install on `thingineeer/claude-cat`.
 
 ## Commit messages
 
