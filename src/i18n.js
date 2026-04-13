@@ -2,44 +2,58 @@
 // The goal is to mirror the phrasing users already see in Claude's UI,
 // so the terminal feels like an extension of that UI instead of a remix.
 
-const DICT = {
+// Labels and English copy are intentionally fixed — we mirror the
+// official /usage screen verbatim so the terminal and the in-app popup
+// read the same on any machine. Only the *relative countdown suffix*
+// for the session window is localized (e.g. '3h 15m' vs '3시간 15분 후'),
+// because that phrase is genuinely awkward in Korean without word order
+// adjustment.
+const LABELS = {
+  current_session:     "Current session",
+  current_week_all:    "Current week (all models)",
+  current_week_scope:  (model) => `Current week (${model} only)`,
+  extra_usage:         "Extra usage",
+  // Reset phrase mirrors the /usage screen:
+  //   'Resets 7pm (Asia/Seoul)'          — same-day windows
+  //   'Resets Apr 17, 1pm (Asia/Seoul)'  — different-day windows
+  resets_at:           (clock, tz) => `Resets ${clock}${tz ? ` (${tz})` : ""}`,
+  resets_on:           (date, clock, tz) => `Resets ${date}, ${clock}${tz ? ` (${tz})` : ""}`,
+  ready_now:           "ready now",
+  warming_up:          "warming up…",
+  api_only_hint:       "(rate limits appear after the first reply; API users only see cost)",
+};
+
+const COUNTDOWN = {
   en: {
-    current_session:       "Current session",
-    current_week_all:      "Current week (all models)",
-    current_week_scope:    (model) => `Current week (${model} only)`,
-    context_window:        "Context",
-    // Reset phrasing — uses 12h clock like the /usage screen (e.g. "7pm").
-    resets_at:             (clock, tz) => `Resets ${clock}${tz ? ` (${tz})` : ""}`,
-    resets_on:             (date, clock, tz) => `Resets ${date}, ${clock}${tz ? ` (${tz})` : ""}`,
-    ready_now:             "ready now",
-    warming_up:            "warming up…",
-    api_only_hint:         "(rate limits appear after the first reply; API users only see cost)",
+    days_hours: (d, h) => (h > 0 ? `${d}d ${h}h` : `${d}d`),
+    hours_min:  (h, m) => (m > 0 ? `${h}h ${m}m` : `${h}h`),
+    minutes:    (m)    => `${m}m`,
   },
   ko: {
-    current_session:       "현재 세션",
-    current_week_all:      "이번 주 (모든 모델)",
-    current_week_scope:    (model) => `이번 주 (${model}만)`,
-    context_window:        "컨텍스트",
-    resets_at:             (clock, tz) => `${clock}에 재설정${tz ? ` (${tz})` : ""}`,
-    resets_on:             (date, clock, tz) => `${date} ${clock}에 재설정${tz ? ` (${tz})` : ""}`,
-    ready_now:             "지금 재설정됨",
-    warming_up:            "준비 중…",
-    api_only_hint:         "(사용량 한도는 첫 응답 이후 표시됩니다. API 사용자는 비용만 표시됩니다)",
+    days_hours: (d, h) => (h > 0 ? `${d}일 ${h}시간 후` : `${d}일 후`),
+    hours_min:  (h, m) => (m > 0 ? `${h}시간 ${m}분 후` : `${h}시간 후`),
+    minutes:    (m)    => `${m}분 후`,
   },
 };
 
+// Which locale applies to the *countdown suffix* ("후" / nothing).
 export function detectLocale() {
-  // Explicit override wins.
   const override = process.env.CLAUDE_CAT_LANG;
-  if (override && DICT[override]) return override;
-  // Otherwise: read LC_ALL / LANG / LANGUAGE, normalize to 2 letters.
+  if (override && COUNTDOWN[override]) return override;
   const raw = process.env.LC_ALL || process.env.LANG || process.env.LANGUAGE || "";
   const code = raw.slice(0, 2).toLowerCase();
-  return DICT[code] ? code : "en";
+  return COUNTDOWN[code] ? code : "en";
 }
 
-export function t(locale, key, ...args) {
-  const entry = (DICT[locale] || DICT.en)[key] ?? DICT.en[key];
+// Fixed English labels / reset phrases — same on every machine.
+export function t(key, ...args) {
+  const entry = LABELS[key];
   if (typeof entry === "function") return entry(...args);
   return entry ?? key;
+}
+
+// Locale-dependent countdown suffix for the session window.
+export function countdown(locale, kind, ...args) {
+  const table = COUNTDOWN[locale] || COUNTDOWN.en;
+  return table[kind](...args);
 }

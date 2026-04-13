@@ -16,24 +16,26 @@ import { bar, fmtCountdown, absoluteResetParts, fmtCost, colorByPct, colors as C
 import { parseIconMode, iconFor } from "./icons.js";
 import { maybeDumpStdin, debugEnabled } from "./debug.js";
 import { detectLocale, t } from "./i18n.js";
+import { padEndDisplay } from "./width.js";
 
-// Build the reset phrase for a given window, in the active locale.
-// Session windows stay relative ("3h 51m" / "3시간 51분 후"); weekly
-// windows use absolute time ("Resets 7pm (Asia/Seoul)" /
-// "오후 7시에 재설정 (Asia/Seoul)").
+// Build the reset phrase for a given window.
+// - session (five_hour): relative, the only locale-dependent string we emit
+//   ('3h 15m' / '3시간 15분 후')
+// - every other window: absolute, English-fixed to match /usage verbatim
+//   ('Resets 7pm (Asia/Seoul)' / 'Resets Apr 17, 1pm (Asia/Seoul)')
 function fmtResetPhrase(key, resetsAtSec, locale) {
   if (!resetsAtSec) return null;
   if (key === "five_hour") {
     const v = fmtCountdown(resetsAtSec, { locale });
-    if (v === "ready") return t(locale, "ready_now");
-    return v; // already includes locale-specific suffix ("후" / implicit english)
+    if (v === "ready") return t("ready_now");
+    return v;
   }
-  const parts = absoluteResetParts(resetsAtSec, { locale });
+  const parts = absoluteResetParts(resetsAtSec);
   if (!parts) return null;
-  if (parts === "ready") return t(locale, "ready_now");
+  if (parts === "ready") return t("ready_now");
   return parts.date
-    ? t(locale, "resets_on", parts.date, parts.clock, parts.tz)
-    : t(locale, "resets_at", parts.clock, parts.tz);
+    ? t("resets_on", parts.date, parts.clock, parts.tz)
+    : t("resets_at", parts.clock, parts.tz);
 }
 
 function readStdin() {
@@ -50,19 +52,20 @@ function safeParse(raw) {
   try { return raw ? JSON.parse(raw) : {}; } catch { return {}; }
 }
 
-// Window labels mirror the official Claude /usage screen, in the active
-// locale. 'seven_day_<model>' keys flow through the locale's template so
-// e.g. 'seven_day_sonnet' → "Current week (Sonnet only)" / "이번 주 (Sonnet만)".
-function labelFor(key, locale) {
-  if (key === "five_hour") return t(locale, "current_session");
-  if (key === "seven_day") return t(locale, "current_week_all");
+// Window labels mirror the official Claude /usage screen *verbatim*.
+// English only — we want the in-terminal wording identical to the popup
+// so users don't have to map two sets of phrases. Only the session
+// countdown is localized.
+function labelFor(key) {
+  if (key === "five_hour") return t("current_session");
+  if (key === "seven_day") return t("current_week_all");
   if (key.startsWith("seven_day_")) {
     const suffix = key.slice("seven_day_".length);
     const pretty = suffix
       .split("_")
       .map((p) => (p === "4x" ? "4x" : p.charAt(0).toUpperCase() + p.slice(1)))
       .join(" ");
-    return t(locale, "current_week_scope", pretty);
+    return t("current_week_scope", pretty);
   }
   return key;
 }
@@ -85,7 +88,7 @@ function orderKey(k) {
   return [3, k];
 }
 
-function collectWindows(d, locale) {
+function collectWindows(d) {
   const rl = d.rate_limits || {};
   return Object.entries(rl)
     .filter(([, v]) => isWindowEntry(v))
@@ -96,37 +99,33 @@ function collectWindows(d, locale) {
     })
     .map(([k, v]) => ({
       key: k,
-      label: labelFor(k, locale),
+      label: labelFor(k),
       pct: v.used_percentage ?? 0,
       resets_at: v.resets_at,
     }));
 }
 
-// Visible (printable) width — strip ANSI escapes first, then count code
-// points. Used to pad multi-byte labels (e.g. Korean) to the same column
-// in the 'full' layout without double-padding on ANSI bytes.
-function visibleWidth(s) {
-  const stripped = s.replace(/\x1b\[[0-9;]*m/g, "");
-  return [...stripped].length;
-}
-function padRight(s, width) {
-  const pad = width - visibleWidth(s);
-  return pad > 0 ? s + " ".repeat(pad) : s;
-}
+// Label width / padding — delegated to src/width.js which understands
+// East Asian Width (Korean labels take 2 columns per glyph).
 
-// Context window as a quietly-colored bar. We show it only in full mode
-// so compact stays tight, and only when the server actually reports it.
-function renderContextLine(d, locale) {
+// Compact context-window chip for the header. Matches the phrasing of
+// thingineeer's prior shell status line so the switch to claude-cat
+// feels invisible: 'ctx 23% used (77% left)'. Label is fixed English —
+// terminal real estate beats literal translation for a six-word chip.
+function renderContextChip(d) {
   const ctx = d?.context_window;
   if (!ctx || typeof ctx.used_percentage !== "number") return null;
-  const pct = Math.round(ctx.used_percentage);
-  const label = padRight(t(locale, "context_window"), locale === "ko" ? 16 : 18);
-  return `  ${C.dim}${label}${C.reset}${bar(pct, 14)} ${colorByPct(pct)}${String(pct).padStart(3)}%${C.reset}`;
+  const used = Math.round(ctx.used_percentage);
+  const left = typeof ctx.remaining_percentage === "number"
+    ? Math.round(ctx.remaining_percentage)
+    : Math.max(0, 100 - used);
+  return `ctx ${used}% used (${left}% left)`;
 }
 
 function renderCompact(d, { iconMode = "none", locale = "en" } = {}) {
-  const windows = collectWindows(d, locale);
+  const windows = collectWindows(d);
   const cost = d?.cost?.total_cost_usd;
+  const ctx = renderContextChip(d);
   const maxPct = windows.length ? Math.max(...windows.map((w) => w.pct)) : 0;
   const cat = pickCat(maxPct);
 
@@ -135,8 +134,9 @@ function renderCompact(d, { iconMode = "none", locale = "en" } = {}) {
 
   if (windows.length === 0) {
     const cs = fmtCost(cost);
-    if (cs) parts.push(`${C.dim}${cs}${C.reset}`);
-    else    parts.push(`${C.dim}${t(locale, "warming_up")}${C.reset}`);
+    if (cs)  parts.push(`${C.dim}${cs}${C.reset}`);
+    if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
+    if (!cs && !ctx) parts.push(`${C.dim}${t("warming_up")}${C.reset}`);
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
@@ -146,16 +146,18 @@ function renderCompact(d, { iconMode = "none", locale = "en" } = {}) {
       parts.push(`${C.dim}${icon}${w.label}${C.reset} ${bar(pct)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
     const cs = fmtCost(cost);
-    if (cs) parts.push(`${C.dim}${cs}${C.reset}`);
+    if (cs)  parts.push(`${C.dim}${cs}${C.reset}`);
+    if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
   }
 
   return parts.join(`  ${C.gray}·${C.reset}  `);
 }
 
 function renderFull(d, { iconMode = "none", locale = "en" } = {}) {
-  const windows = collectWindows(d, locale);
+  const windows = collectWindows(d);
   const cost = d?.cost?.total_cost_usd;
   const model = d?.model?.display_name;
+  const ctx = renderContextChip(d);
   const maxPct = windows.length ? Math.max(...windows.map((w) => w.pct)) : 0;
   const cat = pickCat(maxPct);
 
@@ -163,24 +165,24 @@ function renderFull(d, { iconMode = "none", locale = "en" } = {}) {
   const header = [`${C.cyan}${cat.face}${C.reset}`];
   if (model) header.push(`${C.dim}${model}${C.reset}`);
   const cs = fmtCost(cost);
-  if (cs) header.push(`${C.dim}${cs}${C.reset}`);
+  if (cs)  header.push(`${C.dim}${cs}${C.reset}`);
+  if (ctx) header.push(`${C.dim}${ctx}${C.reset}`);
   lines.push(header.join(`  ${C.gray}·${C.reset}  `));
 
-  const labelWidth = locale === "ko" ? 16 : 26; // "Current week (all models)" ≈ 25 chars
+  // Labels are English-fixed; widest is 'Current week (Sonnet only)' = 26 cols.
+  const labelCols = 26;
   if (windows.length === 0) {
-    lines.push(`  ${C.dim}${t(locale, "api_only_hint")}${C.reset}`);
+    lines.push(`  ${C.dim}${t("api_only_hint")}${C.reset}`);
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
       const phrase = fmtResetPhrase(w.key, w.resets_at, locale);
       const icon = iconFor(iconMode, w.key);
-      const label = padRight(icon + w.label, labelWidth);
+      const label = padEndDisplay(icon + w.label, labelCols);
       const right = phrase ? ` ${C.dim}· ${phrase}${C.reset}` : "";
       lines.push(`  ${C.dim}${label}${C.reset}${bar(pct, 14)} ${colorByPct(pct)}${String(pct).padStart(3)}%${C.reset}${right}`);
     }
   }
-  const ctxLine = renderContextLine(d, locale);
-  if (ctxLine) lines.push(ctxLine);
   return lines.join("\n");
 }
 
@@ -188,9 +190,10 @@ function renderFull(d, { iconMode = "none", locale = "en" } = {}) {
 // Useful for heavy users who don't want the status line growing taller
 // as more windows appear.
 function renderWide(d, { iconMode = "none", locale = "en" } = {}) {
-  const windows = collectWindows(d, locale);
+  const windows = collectWindows(d);
   const cost = d?.cost?.total_cost_usd;
   const model = d?.model?.display_name;
+  const ctx = renderContextChip(d);
   const maxPct = windows.length ? Math.max(...windows.map((w) => w.pct)) : 0;
   const cat = pickCat(maxPct);
 
@@ -198,7 +201,8 @@ function renderWide(d, { iconMode = "none", locale = "en" } = {}) {
   if (model) parts.push(`${C.dim}${model}${C.reset}`);
   if (windows.length === 0) {
     const cs = fmtCost(cost);
-    if (cs) parts.push(`${C.dim}${cs}${C.reset}`);
+    if (cs)  parts.push(`${C.dim}${cs}${C.reset}`);
+    if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
@@ -207,13 +211,9 @@ function renderWide(d, { iconMode = "none", locale = "en" } = {}) {
       const icon = iconFor(iconMode, w.key);
       parts.push(`${C.dim}${icon}${w.label}${C.reset} ${bar(pct, 8)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
-    const ctx = d?.context_window;
-    if (ctx && typeof ctx.used_percentage === "number") {
-      const pct = Math.round(ctx.used_percentage);
-      parts.push(`${C.dim}${t(locale, "context_window")}${C.reset} ${bar(pct, 6)} ${colorByPct(pct)}${pct}%${C.reset}`);
-    }
     const cs = fmtCost(cost);
-    if (cs) parts.push(`${C.dim}${cs}${C.reset}`);
+    if (cs)  parts.push(`${C.dim}${cs}${C.reset}`);
+    if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
   }
   return parts.join(`  ${C.gray}·${C.reset}  `);
 }
