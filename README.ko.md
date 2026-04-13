@@ -107,7 +107,39 @@ API 키 안 씁니다. OAuth 토큰 안 읽습니다. 외부 네트워크 호출
 
 </details>
 
-### 기본 설정 예시
+### 프롬프트 하나로 설치 *(가장 쉬움)*
+
+아래 블록을 Claude Code 세션에 복사해 붙여넣으세요. Claude 가
+`~/.claude/settings.json` 을 수정해주며, 쓰기 전에 diff 를 보여줍니다.
+다른 키는 건드리지 않습니다.
+
+**기본 (⭐ compact, 추천):**
+
+```text
+Install claude-cat (https://github.com/thingineeer/claude-cat) into my
+~/.claude/settings.json as the statusLine.
+
+- command: "npx -y claude-cat@latest"
+- padding: 1
+- refreshInterval: 5
+
+Don't touch any other key. Show me the diff first.
+```
+
+**3줄 kawaii 고양이 원하면:**
+
+```text
+Install claude-cat (https://github.com/thingineeer/claude-cat) into my
+~/.claude/settings.json as the statusLine.
+
+- command: "npx -y claude-cat@latest --full --kawaii"
+- padding: 1
+- refreshInterval: 5
+
+Don't touch any other key. Show me the diff first.
+```
+
+### 직접 편집하고 싶다면
 
 ```json
 {
@@ -120,9 +152,41 @@ API 키 안 씁니다. OAuth 토큰 안 읽습니다. 외부 네트워크 호출
 }
 ```
 
-다른 모드를 원하면 `command` 의 뒤쪽 플래그만 바꿔 넣으세요 (위 표 참고).
-전체 플래그 목록은 영문 README 의 [Configuration 섹션](./README.md#configuration)
-을 확인하세요.
+다른 모드를 원하면 `command` 의 뒤쪽 플래그만 바꿔 넣으세요 (위 모드
+고르기 표 참고). 전체 플래그 목록은 영문 README 의
+[Configuration 섹션](./README.md#configuration) 을 확인하세요.
+
+## 출력 숫자 읽는 법 — 무엇이 무엇인지
+
+실제 compact 출력 예시:
+
+```
+5h ▓▓▓▓░░░░░░ 47% (1h 19m)  |  week ▓▓▓░░░░░░░ 31% (Fri 1pm)  |  $37.37  |  ctx 20%
+```
+
+| 칩 | 의미 |
+| --- | --- |
+| `5h` / `week` / `sonnet` | rate-limit 창 라벨 (5시간 세션 / 주간 / 모델별 주간) |
+| `▓▓▓▓░░░░░░` | 그 창의 사용량 10칸 바 |
+| `47%` | 정확한 퍼센트 — 초록 → 노랑 → 빨강으로 변함 |
+| `(1h 19m)` / `(Fri 1pm)` | **리셋까지 남은 시간** — 세션은 상대, 주간은 절대 |
+| `$37.37` | **이 세션의 누적 비용 (USD)** — 자세한 설명 아래 |
+| `ctx 20%` | 현재 대화의 컨텍스트 윈도우 사용률 |
+
+### `$37.37` 이 무엇이고 — 무엇이 아닌지
+
+`$` 칩은 **이 Claude Code 세션의 누적 비용** 입니다. Claude Code 가
+stdin JSON (`cost.total_cost_usd`) 으로 직접 넘겨주는 숫자.
+
+- ❌ **아닙니다**: 플랜 초과 "Extra usage" 요금 (다른 개념 — `/usage`
+  팝업의 *Extra usage* 바는 stdin JSON 에 없어서 claude-cat 이 지금
+  표시하지 못함).
+- ❌ **아닙니다**: 월 구독 요금.
+- ❌ **아닙니다**: Pro/Max 플랜이면 지금 빠져나가는 돈. 그 플랜들은
+  정액제라 이 숫자는 **참고용**.
+- ✅ **맞습니다**: 이 세션의 토큰 × API 단가 계산값. 사용 강도 감 잡는
+  용. **API key** 모드면 실제 비용. **Bedrock / Vertex** 에선 `$0.00`
+  고정 (Claude Code 가 거기선 비용 계산 못 함).
 
 ## 플랜별 호환
 

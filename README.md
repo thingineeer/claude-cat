@@ -174,7 +174,41 @@ The session countdown uses a **universal `3h 38m` format** (Latin
 `h`/`m`/`d` abbreviations) so the line reads the same in every
 terminal worldwide — no locale switches, no wrong word order.
 
-### Cat moods
+## Reading the output — what each piece means
+
+A real compact line, annotated:
+
+```
+5h ▓▓▓▓░░░░░░ 47% (1h 19m)  |  week ▓▓▓░░░░░░░ 31% (Fri 1pm)  |  $37.37  |  ctx 20%
+```
+
+| chip                       | meaning                                                                 | source                                   |
+| -------------------------- | ----------------------------------------------------------------------- | ---------------------------------------- |
+| `5h` / `week` / `sonnet`   | rate-limit window label (5-hour session / weekly / per-model weekly)    | `rate_limits.*` from Claude Code's stdin |
+| `▓▓▓▓░░░░░░`               | 10-cell progress bar of that window's usage                             | same                                     |
+| `47%`                      | exact percentage — green → yellow → red as it climbs                    | same                                     |
+| `(1h 19m)` / `(Fri 1pm)`   | **time until that window resets** — relative for session, absolute for weekly | computed from `resets_at`                |
+| `$37.37`                   | **this Claude Code session's running cost in USD** (see below)          | `cost.total_cost_usd`                    |
+| `ctx 20%`                  | context-window used — how full the current conversation's token budget is | `context_window.used_percentage`         |
+
+### What `$37.37` is — and isn't
+
+The `$` chip is **this single Claude Code session's running cost**,
+computed by Claude Code itself and handed to claude-cat via stdin
+JSON (`cost.total_cost_usd`).
+
+- ❌ **NOT** "extra usage" fees above your plan (different concept —
+  the `/usage` popup's *Extra usage* bar is **not in stdin JSON** and
+  claude-cat doesn't show it. See [What's *not* in stdin JSON](#whats-not-in-stdin-json-yet)).
+- ❌ **NOT** your monthly subscription bill.
+- ❌ **NOT** money leaving your account right now if you're on Pro/Max
+  (those plans are flat-rate — the number is informational).
+- ✅ Just tokens × API rates for this session so you can gut-check
+  usage intensity. On an **API key** it's the real cost. On
+  **Bedrock / Vertex** it stays `$0.00` because Claude Code can't
+  compute cost there.
+
+## Cat moods
 
 Six moods — five driven by usage, one state-driven.
 
@@ -184,7 +218,7 @@ Six moods — five driven by usage, one state-driven.
 > (1-line face inline with the header) or `--full --kawaii` (3-row
 > card to the left of the data).
 
-#### Summary (`--full` layout only)
+### Summary (`--full` layout only)
 
 Both cat variants below are rendered by `--full`; the default is the
 1-line face, and `--kawaii` swaps it for the 3-row card with a prop.
@@ -198,7 +232,7 @@ Both cat variants below are rendered by `--full`; the default is the
 | usage 85–95 % (*nervous*)        | `/ᐠ ⊙ᴥ⊙ ᐟ\`           | 💤 break                |
 | usage 95 %+   (*critical*)       | `/ᐠ ✖ᴥ✖ ᐟ\`           | 🛌 sleeping             |
 
-#### Full 3-row `--kawaii` gallery
+### Full 3-row `--kawaii` gallery
 
 Every mood's complete 3-line kawaii art (what you see with
 `--full --kawaii`). The face line changes per mood; the paw line
@@ -246,7 +280,7 @@ carries the prop.
  /   \
 ```
 
-#### Why weekly drives the mood
+### Why weekly drives the mood
 
 "Usage" isn't a single number — the session (5h) and weekly (7d) bars
 reset on very different timelines. claude-cat picks the mood from both,
@@ -264,7 +298,7 @@ a 100 % session about to flip shouldn't read as a panic.
 
 `--no-cat` drops the cat entirely — pure data line.
 
-### What you'll see — scenario gallery
+## What you'll see — scenario gallery
 
 Each sample below is real `./scripts/capture-all.sh` output, no edits.
 
@@ -317,18 +351,40 @@ No API keys. No OAuth reads. No network requests. Your credentials never leave C
 
 ## Install
 
-### Option 1 — ask Claude Code to install it for you
+### Option 1 — paste this prompt into Claude Code *(easiest)*
 
-Paste this into any Claude Code session:
+Copy the prompt below into any active Claude Code session. Claude
+will edit `~/.claude/settings.json` for you, show a diff before
+writing, and leave every other setting untouched.
 
-> Install claude-cat (https://github.com/thingineeer/claude-cat) into my
-> `~/.claude/settings.json` as the statusLine. Use the default compact
-> layout, refreshInterval 5, padding 1. Don't touch any other key. Show
-> me the diff first.
+**Default (⭐ compact, recommended):**
 
-Claude Code will add the single `statusLine` block below to your
-settings file, leave the rest untouched, and show you the diff before
-writing. Restart Claude Code and the line shows up on the next turn.
+```text
+Install claude-cat (https://github.com/thingineeer/claude-cat) into my
+~/.claude/settings.json as the statusLine.
+
+- command: "npx -y claude-cat@latest"
+- padding: 1
+- refreshInterval: 5
+
+Don't touch any other key. Show me the diff first.
+```
+
+**Want the 3-row kawaii cat instead:**
+
+```text
+Install claude-cat (https://github.com/thingineeer/claude-cat) into my
+~/.claude/settings.json as the statusLine.
+
+- command: "npx -y claude-cat@latest --full --kawaii"
+- padding: 1
+- refreshInterval: 5
+
+Don't touch any other key. Show me the diff first.
+```
+
+After Claude applies the change, restart Claude Code — the status line
+shows up on the next assistant turn.
 
 ### Option 2 — edit `~/.claude/settings.json` by hand
 
@@ -342,6 +398,9 @@ writing. Restart Claude Code and the line shows up on the next turn.
   }
 }
 ```
+
+To pick a different layout, swap the `command` value — see
+[Pick your mode](#pick-your-mode) for the full list.
 
 ### Option 3 — local clone (for a maintainer / contributor)
 
