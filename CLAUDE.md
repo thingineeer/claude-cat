@@ -73,7 +73,10 @@ When a user asks for a change in this repo:
    template.
 7. Wait for CI + CodeRabbit review. If red, fix and push; don't merge
    red.
-8. `gh pr merge <num> --squash --delete-branch`.
+8. `gh pr merge <num> --merge --delete-branch` — **merge commit, not
+   squash**. The repo prefers preserving branch topology so every PR
+   shows up as a visible fork/join in the graph; squash flattens that
+   history out.
 9. Back in the primary checkout: `git fetch origin && git pull --ff-only origin dev`.
 10. Clean up the side worktree: `git worktree remove ../claude-cat.<kind>-<topic>`
     and `git branch -D <kind>/<topic>`.
@@ -102,7 +105,8 @@ equivalent)**:
 
 - branch `release/x.y.z` from `dev`
 - bump `package.json` + update `CHANGELOG.md`
-- open PR `release/x.y.z → main`, squash-merge
+- open PR `release/x.y.z → main`, merge with `gh pr merge --merge`
+  (merge commit — same as day-to-day PRs, for topology)
 - tag `vx.y.z`, publish the GitHub Release draft
 - fast-forward `dev` onto `main` with `ALLOW_DIRECT_PUSH=1`
 

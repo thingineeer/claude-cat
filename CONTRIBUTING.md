@@ -82,8 +82,8 @@ git fetch origin && git pull --ff-only origin dev
 - Split commits by **logical unit**, not "end of day". Reviewers (and
   CodeRabbit) should be able to read commits one by one.
 - Rebase on `origin/dev` before opening a PR.
-- Squash-merge is the default; fast-forward is fine when history is
-  already linear.
+- **Merge commits** are the default (`gh pr merge --merge`), so every
+  PR shows up as a visible fork/join in the graph. No squash.
 
 ## Commit messages
 
