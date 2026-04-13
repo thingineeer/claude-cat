@@ -209,7 +209,7 @@ function renderCompact(d, { iconMode = "none", locale = "en", catTheme = "compac
       //    week ▓▓░░░░░░░░ 18% (Fri 13:00)
       const tail = phrase ? ` ${C.dim}(${phrase})${C.reset}` : "";
       const icon = iconFor(iconMode, w.key);
-      parts.push(`${C.dim}${icon}${w.label}${C.reset} ${bar(pct)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
+      parts.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
     const cs = fmtCost(cost);
     if (cs)  parts.push(`${C.dim}${cs}${C.reset}`);
@@ -336,7 +336,7 @@ function renderWide(d, { iconMode = "none", locale = "en", catTheme = "compact",
       const phrase = fmtResetPhrase(w.key, w.resets_at, locale, { variant: "short" });
       const tail = phrase ? ` ${C.dim}(${phrase})${C.reset}` : "";
       const icon = iconFor(iconMode, w.key);
-      parts.push(`${C.dim}${icon}${w.label}${C.reset} ${bar(pct, 8)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
+      parts.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct, 8)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
     const cs = fmtCost(cost);
     if (cs)  parts.push(`${C.dim}${cs}${C.reset}`);

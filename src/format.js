@@ -11,6 +11,12 @@ const C = {
   cyan:  "\x1b[36m",
   gray:  "\x1b[90m",
   magenta:"\x1b[35m",
+  // Claude brand orange (#CC785C) for short window labels in compact/wide.
+  // Uses 24-bit truecolor; modern terminals (iTerm2, macOS Terminal,
+  // Alacritty, kitty, WezTerm, Windows Terminal) all support it. On
+  // terminals without truecolor the CSI is ignored and the text falls
+  // back to default foreground — no visual break.
+  brand: "\x1b[38;2;204;120;92m",
 };
 
 export function colorByPct(pct) {
