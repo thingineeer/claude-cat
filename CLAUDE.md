@@ -166,8 +166,9 @@ CI runs every `test:*` script on every PR into `dev` or `main`.
 
 ## Layout / mood invariants (don't break)
 
-- labels and reset phrases are **English-fixed**, to match the
-  `/usage` popup verbatim. Only the session countdown is localized.
+- labels, reset phrases, and the session countdown are all
+  **English-fixed** (`3h 38m`, `15m`, `2d 4h`). Mirrors the `/usage`
+  popup and reads the same in every terminal worldwide.
 - window keys are auto-collected from `rate_limits.*` — don't
   hard-code a list of bucket names.
 - mood policy is **weekly-first**: weekly ≥ 60 or session ≥ 75 → alert;

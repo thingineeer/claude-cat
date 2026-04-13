@@ -125,8 +125,9 @@ Sonnet 4.6  ·  $0.123  ·  ctx 23% used
 </details>
 
 Same labels and reset phrasing as the `/usage` popup inside Claude Code.
-The only locale-aware piece is the session countdown — a Korean
-terminal (`LANG=ko_KR.UTF-8`) shows `3시간 15분 후` instead of `3h 15m`.
+The session countdown uses a **universal `3h 38m` format** (Latin
+`h`/`m`/`d` abbreviations) so the line reads the same in every
+terminal worldwide — no locale switches, no wrong word order.
 
 ### Cat moods
 
@@ -259,14 +260,10 @@ git clone https://github.com/thingineeer/claude-cat.git ~/code/claude-cat
 
 ### Language
 
-Labels and reset phrases are fixed English on purpose — they mirror the
-`/usage` popup one-to-one, so the terminal and the in-app UI read the
-same. The only localized piece is the session countdown word order:
-
-| locale | session reset |
-| --- | --- |
-| default (`en`) | `3h 15m` |
-| `ko` (detected from `LANG=ko_KR.*` or `CLAUDE_CAT_LANG=ko`) | `3시간 15분 후` |
+Every string is fixed English — labels and reset phrases mirror the
+`/usage` popup one-to-one; the session countdown uses Latin unit
+abbreviations (`3h 38m`, `15m`, `2d 4h`) that read the same in every
+terminal worldwide. No locale dispatch, no `CLAUDE_CAT_LANG`.
 
 ## Plan compatibility
 

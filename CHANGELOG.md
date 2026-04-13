@@ -9,6 +9,14 @@
   `/cost`. The cat stays in `--full --kawaii` as before; this only
   reintroduces the dollar number, not the cat.
 
+### Recently landed (universal countdown)
+- session countdown is now **English-Latin everywhere** (`3h 38m`,
+  `15m`, `2d 4h`). Previously a Korean terminal showed `3시간 38분 후`;
+  that locale-dispatched path is gone — one format, one display, in
+  every terminal worldwide. Labels were already English-fixed; this
+  completes the "no locale branches" story. `CLAUDE_CAT_LANG` is no
+  longer read; `i18n.js` shrinks to a simple label table.
+
 ### Still planned (post-1.0.0)
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
   it; daemon proxying `/api/oauth/usage` is the leading candidate)
