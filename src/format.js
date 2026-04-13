@@ -11,6 +11,12 @@ const C = {
   cyan:  "\x1b[36m",
   gray:  "\x1b[90m",
   magenta:"\x1b[35m",
+  // Claude brand peach (#DE7356, RGB 222/115/86) for short window labels
+  // in compact/wide. Uses 24-bit truecolor; modern terminals (iTerm2,
+  // macOS Terminal, Alacritty, kitty, WezTerm, Windows Terminal) all
+  // support it. On terminals without truecolor the CSI is ignored and
+  // the text falls back to default foreground — no visual break.
+  brand: "\x1b[38;2;222;115;86m",
 };
 
 export function colorByPct(pct) {

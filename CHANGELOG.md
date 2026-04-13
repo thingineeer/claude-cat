@@ -7,6 +7,20 @@ tag/release cut on 2026-04-13 has been demoted to a draft so we can
 keep shaping the layout (Extra usage, wide layout, official CLI
 labels) before a proper public launch.
 
+### Recently landed (brand color + auto-stack)
+- short window labels (`5h` / `week` / `week·<Model>`) now render in
+  **Claude Peach** (`#DE7356`, RGB 222/115/86) via 24-bit truecolor.
+  Terminals without truecolor ignore the escape and fall back to
+  default fg — no visual break.
+- **compact layout auto-wraps to 2 rows** when the detected terminal
+  width can't hold a single row. Cat + window bars on line 1, cost /
+  ctx / debug on line 2 (indented).
+- Width source priority: `CLAUDE_CAT_COLUMNS` → `COLUMNS` →
+  `process.stdout.columns` → 120 fallback.
+- New flags:
+  - `--stack=auto|always|never` (+ `--stack` / `--no-stack` shorthand)
+  - `--max-cols=<n>` for when the detector reads the wrong number
+
 ### Recently landed (tight single-line layouts)
 - compact + wide layouts now use **short labels** (`5h`, `week`,
   `week·Sonnet`) so the status line fits even narrow panes
