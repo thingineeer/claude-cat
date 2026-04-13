@@ -20,7 +20,7 @@
     "url": "git+https://github.com/thingineeer/claude-cat.git"
   },
   "license": "MIT",
-  "author": "thingineeer <dlaudwls1203@gmail.com>",
+  "author": "thingineeer (https://github.com/thingineeer)",
   "type": "module",
   "bin": {
     "claude-cat": "./bin/cli.js"
