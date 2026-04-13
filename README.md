@@ -8,29 +8,90 @@
 
 ![status: alpha](https://img.shields.io/badge/status-alpha-orange) ![license](https://img.shields.io/badge/license-MIT-blue) ![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
 
-### Default (compact cat, 1 line + window block)
+<p align="center">
+  <img src="assets/screenshots/kawaii-full.png" alt="kawaii cat + usage bars in a terminal" width="780" />
+  <br />
+  <em>3-row kawaii card — <code>--full --kawaii</code>, Korean locale</em>
+</p>
+
+## Modes at a glance
+
+Every mode reads from the same stdin JSON Claude Code already pipes to
+statusLine scripts. Pick the one that fits your terminal.
+
+### 1. Default — `compact` cat, single line
+
+Terse, fits narrow terminal widths. No flags needed.
 ```
- /ᐠ - ˕ - ᐟ\  ·  Sonnet 4.6 (1M context)  ·  $0.123  ·  ctx 23% used (77% left)
-   Current session            ▓░░░░░░░░░░░░░  10% · 3h 15m
-   Current week (all models)  ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm
-   Current week (Sonnet only) ░░░░░░░░░░░░░░   0% · Resets Apr 15, 1pm
+ /ᐠ - ˕ - ᐟ\  ·  Sonnet 4.6  ·  $0.123  ·  Current session ▓░░░░░░░░░ 10% · 3h 15m  ·  Current week ▓▓▓░░░░░░░ 18% · Resets Apr 17, 1pm  ·  ctx 23% used
 ```
 
-### Kawaii cat (`--kawaii`) — side-by-side
+<details><summary>settings.json</summary>
+
+```json
+{ "statusLine": { "type": "command",
+  "command": "npx -y claude-cat@latest",
+  "padding": 1, "refreshInterval": 5 } }
+```
+</details>
+
+### 2. Kawaii — 3-row card with ASCII cat
+
+For anyone who wants the cat more present. Each window lines up next to
+the cat's fixed-width left column.
 ```
  /\_/\    Sonnet 4.6 (1M context)  ·  $0.123  ·  ctx 23% used (77% left)
 ( ^ω^ )   Current session            ▓░░░░░░░░░░░░░  10% · 3h 15m
  / >🍣    Current week (all models)  ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm
 ```
 
-The cat sits in a fixed-width left column so the whole line reads as a
-single 3-row card. If you have more windows (e.g. a Sonnet-only bar),
-extra data rows drop into the right column with the cat column blank —
-bars stay vertically aligned no matter how many rows you have.
+<details><summary>settings.json</summary>
+
+```json
+{ "statusLine": { "type": "command",
+  "command": "npx -y claude-cat@latest --full --kawaii",
+  "padding": 1, "refreshInterval": 5 } }
+```
+</details>
+
+### 3. Wide — one horizontal line, everything on it
+
+For users running several windows (Sonnet-only bar, context) who don't
+want the status line growing taller.
+```
+/ᐠ - ˕ - ᐟ\ · Sonnet 4.6 · Current session ▓▓░ 25% · Current week ▓▓░ 20% · Current week (Sonnet only) ░░ 0% · $0.420 · ctx 23% used
+```
+
+<details><summary>settings.json</summary>
+
+```json
+{ "statusLine": { "type": "command",
+  "command": "npx -y claude-cat@latest --wide",
+  "padding": 1, "refreshInterval": 5 } }
+```
+</details>
+
+### 4. No cat — pure data
+
+Drops the cat glyph entirely.
+```
+Sonnet 4.6  ·  $0.123  ·  ctx 23% used
+  Current session            ▓░░░░░░░░░░░░░  10% · 3h 15m
+  Current week (all models)  ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm
+```
+
+<details><summary>settings.json</summary>
+
+```json
+{ "statusLine": { "type": "command",
+  "command": "npx -y claude-cat@latest --full --no-cat",
+  "padding": 1, "refreshInterval": 5 } }
+```
+</details>
 
 Same labels and reset phrasing as the `/usage` popup inside Claude Code.
-The only locale-aware piece is the session countdown — in a Korean
-terminal the first row reads `3시간 15분 후` instead of `3h 15m`.
+The only locale-aware piece is the session countdown — a Korean
+terminal (`LANG=ko_KR.UTF-8`) shows `3시간 15분 후` instead of `3h 15m`.
 
 ### Cat moods
 

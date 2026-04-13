@@ -141,7 +141,10 @@ function stateHint(state) {
 
 // Debug chip for the header. Kept to a short tag ('[Debug]') since the
 // actual dump path is documented and the user knows where to look.
-function debugChip() {
+// Suppressed entirely when the caller passes showDebugChip=false — useful
+// for clean screenshots while CLAUDE_CAT_DEBUG is still dumping JSON.
+function debugChip({ showDebugChip = true } = {}) {
+  if (!showDebugChip) return null;
   return debugEnabled() ? t("debug_tag") : null;
 }
 
@@ -159,7 +162,7 @@ function renderContextChip(d) {
   return `ctx ${used}% used (${left}% left)`;
 }
 
-function renderCompact(d, { iconMode = "none", locale = "en", catTheme = "compact" } = {}) {
+function renderCompact(d, { iconMode = "none", locale = "en", catTheme = "compact", showDebugChip = true } = {}) {
   const windows = collectWindows(d);
   const state = inferState(d, windows);
   const cost = d?.cost?.total_cost_usd;
@@ -188,7 +191,7 @@ function renderCompact(d, { iconMode = "none", locale = "en", catTheme = "compac
     if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
   }
 
-  const dbg = debugChip();
+  const dbg = debugChip({ showDebugChip });
   if (dbg) parts.push(`${C.dim}${dbg}${C.reset}`);
 
   return parts.join(`  ${C.gray}·${C.reset}  `);
@@ -199,12 +202,12 @@ function renderCompact(d, { iconMode = "none", locale = "en", catTheme = "compac
 //   line 1+  — one per window, OR a single short status hint
 // No indentation here; callers add padding if they place the block
 // next to cat art.
-function buildDataBlock(d, { iconMode, locale, state }) {
+function buildDataBlock(d, { iconMode, locale, state, showDebugChip = true }) {
   const windows = collectWindows(d);
   const cost = d?.cost?.total_cost_usd;
   const model = d?.model?.display_name;
   const ctx = renderContextChip(d);
-  const dbg = debugChip();
+  const dbg = debugChip({ showDebugChip });
 
   const lines = [];
   const header = [];
@@ -233,14 +236,14 @@ function buildDataBlock(d, { iconMode, locale, state }) {
   return lines;
 }
 
-function renderFull(d, { iconMode = "none", locale = "en", catTheme = "compact" } = {}) {
+function renderFull(d, { iconMode = "none", locale = "en", catTheme = "compact", showDebugChip = true } = {}) {
   const windows = collectWindows(d);
   const state = inferState(d, windows);
   const art = catArt(
     state === "normal" ? { windows } : { state: "resting" },
     catTheme,
   );
-  const data = buildDataBlock(d, { iconMode, locale, state });
+  const data = buildDataBlock(d, { iconMode, locale, state, showDebugChip });
 
   // Compact-cat full: inline the 1-line face into the header and indent
   // every data line with 2 spaces, matching the previous look.
@@ -279,7 +282,7 @@ function renderFull(d, { iconMode = "none", locale = "en", catTheme = "compact" 
 // Wide layout: everything on a single line separated by middle-dots.
 // Useful for heavy users who don't want the status line growing taller
 // as more windows appear.
-function renderWide(d, { iconMode = "none", locale = "en", catTheme = "compact" } = {}) {
+function renderWide(d, { iconMode = "none", locale = "en", catTheme = "compact", showDebugChip = true } = {}) {
   const windows = collectWindows(d);
   const state = inferState(d, windows);
   const cost = d?.cost?.total_cost_usd;
@@ -313,7 +316,7 @@ function renderWide(d, { iconMode = "none", locale = "en", catTheme = "compact" 
     if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
   }
 
-  const dbg = debugChip();
+  const dbg = debugChip({ showDebugChip });
   if (dbg) parts.push(`${C.dim}${dbg}${C.reset}`);
 
   return parts.join(`  ${C.gray}·${C.reset}  `);
@@ -344,6 +347,7 @@ async function main() {
   const layout = parseLayout(args);
   const iconMode = parseIconMode(args);
   const catTheme = parseCatTheme(args);
+  const showDebugChip = !args.includes("--no-debug-chip");
   const locale = detectLocale();
   const raw = await readStdin();
   const d = safeParse(raw);
@@ -353,7 +357,7 @@ async function main() {
   // sends on this machine/plan. No-op unless CLAUDE_CAT_DEBUG=1.
   maybeDumpStdin(raw, d);
 
-  const opts = { iconMode, locale, catTheme };
+  const opts = { iconMode, locale, catTheme, showDebugChip };
   let out;
   if (layout === "wide") out = renderWide(d, opts);
   else if (layout === "full") out = renderFull(d, opts);
