@@ -21,9 +21,15 @@ statusLine scripts. Pick the one that fits your terminal.
 
 ### 1. Default — `compact` cat, single line
 
-Terse, fits narrow terminal widths. No flags needed.
+Terse, fits narrow terminal widths. No flags needed. Labels are shortened
+to `5h` / `week` and the reset time rides inside parentheses.
+
+<p align="left">
+  <img src="assets/screenshots/compact-short.png" alt="compact cat status line" width="780" />
+</p>
+
 ```
- /ᐠ - ˕ - ᐟ\  ·  Sonnet 4.6  ·  $0.123  ·  Current session ▓░░░░░░░░░ 10% · 3h 15m  ·  Current week ▓▓▓░░░░░░░ 18% · Resets Apr 17, 1pm  ·  ctx 23% used
+/ᐠ ◕ᴥ◕ ᐟ\  |  5h ▓░░░░░░░░░ 10% (3h 15m)  |  week ▓▓▓░░░░░░░ 18% (Fri 1pm)  |  $0.123
 ```
 
 <details><summary>settings.json</summary>
@@ -57,9 +63,10 @@ the cat's fixed-width left column.
 ### 3. Wide — one horizontal line, everything on it
 
 For users running several windows (Sonnet-only bar, context) who don't
-want the status line growing taller.
+want the status line growing taller. Uses the same short labels as
+compact.
 ```
-/ᐠ - ˕ - ᐟ\ · Sonnet 4.6 · Current session ▓▓░ 25% · Current week ▓▓░ 20% · Current week (Sonnet only) ░░ 0% · $0.420 · ctx 23% used
+/ᐠ ◕ᴥ◕ ᐟ\  |  Opus 4.6  |  5h ▓▓░░ 25% (3h 15m)  |  week ▓▓░░ 20% (Fri 1pm)  |  week·Sonnet ░░ 0% (Fri 1pm)  |  $0.420
 ```
 
 <details><summary>settings.json</summary>
@@ -99,12 +106,12 @@ Six moods — five driven by usage, one state-driven.
 
 | trigger                         | `--cat=compact` | `--kawaii` prop |
 | ------------------------------- | --------------- | --------------- |
-| no rate limits yet (*resting*)  | `/ᐠ ⌒ㅅ⌒ ᐟ\`    | `z z` breath    |
-| usage 0–30 %  (*chill*)          | `/ᐠ - ˕ - ᐟ\`   | 🍣 sushi        |
-| usage 30–60 % (*curious*)        | `/ᐠ ｡ㅅ｡ᐟ\`    | ⌨️ keyboard      |
-| usage 60–85 % (*alert*)          | `/ᐠ •ㅅ• ᐟ\`    | ☕ coffee        |
-| usage 85–95 % (*nervous*)        | `/ᐠ ≻ㅅ≺ ᐟ\`    | 💤 break         |
-| usage 95 %+   (*critical*)       | `/ᐠ ✖ㅅ✖ ᐟ\`    | 🛌 sleeping      |
+| no rate limits yet (*resting*)  | `/ᐠ -ᴥ- ᐟ\`    | `z z` breath    |
+| usage 0–30 %  (*chill*)          | `/ᐠ ◕ᴥ◕ ᐟ\`    | 🍣 sushi        |
+| usage 30–60 % (*curious*)        | `/ᐠ •ᴥ• ᐟ\`    | ⌨️ keyboard      |
+| usage 60–85 % (*alert*)          | `/ᐠ ◉ᴥ◉ ᐟ\`    | ☕ coffee        |
+| usage 85–95 % (*nervous*)        | `/ᐠ ⊙ᴥ⊙ ᐟ\`    | 💤 break         |
+| usage 95 %+   (*critical*)       | `/ᐠ ✖ᴥ✖ ᐟ\`    | 🛌 sleeping      |
 
 #### Why weekly drives the mood
 

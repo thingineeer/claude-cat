@@ -7,6 +7,20 @@ tag/release cut on 2026-04-13 has been demoted to a draft so we can
 keep shaping the layout (Extra usage, wide layout, official CLI
 labels) before a proper public launch.
 
+### Recently landed (tight single-line layouts)
+- compact + wide layouts now use **short labels** (`5h`, `week`,
+  `week·Sonnet`) so the status line fits even narrow panes
+- reset time slides into parentheses right next to the window:
+  `5h ▓░░░░ 10% (1h 47m)` / `week ▓▓░░ 18% (Fri 1pm)`
+- vertical pipe `|` replaces the middle dot as section separator for
+  compact + wide (full stays on `·` because each row already stands
+  alone on its own line)
+- unified compact-cat glyph family: only the eyes change per mood,
+  mouth stays `ᴥ`. Baseline chill is `◕ᴥ◕` (round, eye-catching).
+  Previous mixed-width glyphs (`｡`, `≻`, `⌒`) are gone.
+- README gains a `compact-short.png` capture; `assets/screenshots/`
+  now has its own README documenting the shot list + re-capture steps.
+
 ### Recently landed (branch strategy + repo policy)
 - new long-lived `dev` branch between feature work and `main`:
   `feat/*` / `fix/*` / `chore/*` / `docs/*` PRs target `dev`; the
