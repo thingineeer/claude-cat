@@ -133,14 +133,69 @@ terminal worldwide — no locale switches, no wrong word order.
 
 Six moods — five driven by usage, one state-driven.
 
+> **Heads up**: the cat only appears in `--full` layouts. Default
+> `compact` and `--wide` are **cat-less by design** — they carry just
+> the data bars + `$` cost + `ctx %` tail. If you want the cat, pick
+> `--full` (compact 1-line cat) or `--full --kawaii` (3-row cat).
+
+#### Summary
+
 | trigger                         | `--cat=compact` | `--kawaii` prop |
 | ------------------------------- | --------------- | --------------- |
-| no rate limits yet (*resting*)  | `/ᐠ -ᴥ- ᐟ\`    | `z z` breath    |
+| no rate limits yet (*resting*)  | `/ᐠ -ᴥ- ᐟ\`    | 🚬 smoke        |
 | usage 0–30 %  (*chill*)          | `/ᐠ ^ᴥ^ ᐟ\`    | 🍣 sushi        |
 | usage 30–60 % (*curious*)        | `/ᐠ •ᴥ• ᐟ\`    | ⌨️ keyboard      |
 | usage 60–85 % (*alert*)          | `/ᐠ ◉ᴥ◉ ᐟ\`    | ☕ coffee        |
 | usage 85–95 % (*nervous*)        | `/ᐠ ⊙ᴥ⊙ ᐟ\`    | 💤 break         |
 | usage 95 %+   (*critical*)       | `/ᐠ ✖ᴥ✖ ᐟ\`    | 🛌 sleeping      |
+
+#### Full 3-row `--kawaii` gallery
+
+Every mood's complete 3-line kawaii art (what you see with
+`--full --kawaii`). The face line changes per mood; the paw line
+carries the prop.
+
+**resting** — no rate_limits yet (fresh session / API-only mode)
+```
+ /\_/\
+( -.-)
+ / >🚬~
+```
+
+**chill** — 0–30 %
+```
+ /\_/\
+( ^ω^ )
+ / >🍣
+```
+
+**curious** — 30–60 %
+```
+ /\_/\
+( •ㅅ•)
+ / >⌨️
+```
+
+**alert** — 60–85 % (or weekly ≥ 60 % / session ≥ 75 %)
+```
+ /\_/\
+( -ㅅ-)
+ / づ☕
+```
+
+**nervous** — 85–95 %
+```
+ /\_/\
+( xㅅx)
+ / づ💤
+```
+
+**critical** — 95 %+
+```
+ /\_/|
+( -.-)zzZ
+ /   \
+```
 
 #### Why weekly drives the mood
 
