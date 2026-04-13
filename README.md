@@ -11,7 +11,7 @@
 <p align="center">
   <img src="assets/screenshots/kawaii-full.png" alt="kawaii cat + usage bars in a terminal" width="780" />
   <br />
-  <em>3-row kawaii card — <code>--full --kawaii</code>, Korean locale</em>
+  <em>3-row kawaii card — <code>--full --kawaii</code></em>
 </p>
 
 ## Pick your mode
