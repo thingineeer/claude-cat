@@ -22,8 +22,9 @@ import { padEndDisplay, displayWidth } from "./width.js";
 // - session (five_hour): relative, the only locale-dependent string we emit
 //   ('3h 15m' / '3시간 15분 후')
 // - every other window: absolute, English-fixed, no timezone
-//   ('Resets 7pm' / 'Resets Apr 17, 1pm')
-function fmtResetPhrase(key, resetsAtSec, locale) {
+//     variant='long'  → 'Resets 7pm'           / 'Resets Apr 17, 1pm'
+//     variant='short' → '7pm'                  / 'Fri 1pm'
+function fmtResetPhrase(key, resetsAtSec, locale, { variant = "long" } = {}) {
   if (!resetsAtSec) return null;
   if (key === "five_hour") {
     const v = fmtCountdown(resetsAtSec, { locale });
@@ -33,6 +34,14 @@ function fmtResetPhrase(key, resetsAtSec, locale) {
   const parts = absoluteResetParts(resetsAtSec);
   if (!parts) return null;
   if (parts === "ready") return t("ready_now");
+  if (variant === "short") {
+    // Same-day → just the clock ('7pm'). Other day → weekday + clock
+    // ('Fri 1pm'). Drops the 'Resets' prefix entirely — the parentheses
+    // that wrap the phrase in compact/wide already imply "resets at".
+    const wd = new Date(resetsAtSec * 1000)
+      .toLocaleDateString("en-US", { weekday: "short" });
+    return parts.date ? `${wd} ${parts.clock}` : parts.clock;
+  }
   return parts.date
     ? t("resets_on", parts.date, parts.clock)
     : t("resets_at", parts.clock);
@@ -56,16 +65,28 @@ function safeParse(raw) {
 // English only — we want the in-terminal wording identical to the popup
 // so users don't have to map two sets of phrases. Only the session
 // countdown is localized.
-function labelFor(key) {
-  if (key === "five_hour") return t("current_session");
-  if (key === "seven_day") return t("current_week_all");
-  if (key.startsWith("seven_day_")) {
-    const suffix = key.slice("seven_day_".length);
-    const pretty = suffix
+function labelFor(key, { variant = "long" } = {}) {
+  const modelPretty = (suffix) =>
+    suffix
       .split("_")
       .map((p) => (p === "4x" ? "4x" : p.charAt(0).toUpperCase() + p.slice(1)))
       .join(" ");
-    return t("current_week_scope", pretty);
+
+  if (variant === "short") {
+    // Single-line layouts (compact / wide) pack a lot of info onto one
+    // line; trim labels so the status line still fits an 80-col pane.
+    if (key === "five_hour") return "5h";
+    if (key === "seven_day") return "week";
+    if (key.startsWith("seven_day_")) {
+      return `week·${modelPretty(key.slice("seven_day_".length))}`;
+    }
+    return key;
+  }
+
+  if (key === "five_hour") return t("current_session");
+  if (key === "seven_day") return t("current_week_all");
+  if (key.startsWith("seven_day_")) {
+    return t("current_week_scope", modelPretty(key.slice("seven_day_".length)));
   }
   return key;
 }
@@ -88,7 +109,7 @@ function orderKey(k) {
   return [3, k];
 }
 
-function collectWindows(d) {
+function collectWindows(d, { variant = "long" } = {}) {
   const rl = d.rate_limits || {};
   return Object.entries(rl)
     .filter(([, v]) => isWindowEntry(v))
@@ -99,7 +120,7 @@ function collectWindows(d) {
     })
     .map(([k, v]) => ({
       key: k,
-      label: labelFor(k),
+      label: labelFor(k, { variant }),
       pct: v.used_percentage ?? 0,
       resets_at: v.resets_at,
     }));
@@ -163,7 +184,7 @@ function renderContextChip(d) {
 }
 
 function renderCompact(d, { iconMode = "none", locale = "en", catTheme = "compact", showDebugChip = true } = {}) {
-  const windows = collectWindows(d);
+  const windows = collectWindows(d, { variant: "short" });
   const state = inferState(d, windows);
   const cost = d?.cost?.total_cost_usd;
   const ctx = renderContextChip(d);
@@ -181,8 +202,12 @@ function renderCompact(d, { iconMode = "none", locale = "en", catTheme = "compac
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
-      const phrase = fmtResetPhrase(w.key, w.resets_at, locale);
-      const tail = phrase ? ` ${C.dim}· ${phrase}${C.reset}` : "";
+      const phrase = fmtResetPhrase(w.key, w.resets_at, locale, { variant: "short" });
+      // Compact packs reset time straight into parentheses, mirroring
+      // the maintainer's previous shell status line:
+      //    5h ▓▓░░░░░░░░ 10% (4h43m)
+      //    week ▓▓░░░░░░░░ 18% (Fri 13:00)
+      const tail = phrase ? ` ${C.dim}(${phrase})${C.reset}` : "";
       const icon = iconFor(iconMode, w.key);
       parts.push(`${C.dim}${icon}${w.label}${C.reset} ${bar(pct)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
@@ -194,7 +219,9 @@ function renderCompact(d, { iconMode = "none", locale = "en", catTheme = "compac
   const dbg = debugChip({ showDebugChip });
   if (dbg) parts.push(`${C.dim}${dbg}${C.reset}`);
 
-  return parts.join(`  ${C.gray}·${C.reset}  `);
+  // Pipe separator reads cleaner than a middle dot when the line gets
+  // packed — each section boundary pops out in a scanning glance.
+  return parts.join(`  ${C.gray}|${C.reset}  `);
 }
 
 // Build the 'data block' lines for the full layout:
@@ -283,7 +310,7 @@ function renderFull(d, { iconMode = "none", locale = "en", catTheme = "compact",
 // Useful for heavy users who don't want the status line growing taller
 // as more windows appear.
 function renderWide(d, { iconMode = "none", locale = "en", catTheme = "compact", showDebugChip = true } = {}) {
-  const windows = collectWindows(d);
+  const windows = collectWindows(d, { variant: "short" });
   const state = inferState(d, windows);
   const cost = d?.cost?.total_cost_usd;
   const model = d?.model?.display_name;
@@ -306,8 +333,8 @@ function renderWide(d, { iconMode = "none", locale = "en", catTheme = "compact",
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
-      const phrase = fmtResetPhrase(w.key, w.resets_at, locale);
-      const tail = phrase ? ` ${C.dim}${phrase}${C.reset}` : "";
+      const phrase = fmtResetPhrase(w.key, w.resets_at, locale, { variant: "short" });
+      const tail = phrase ? ` ${C.dim}(${phrase})${C.reset}` : "";
       const icon = iconFor(iconMode, w.key);
       parts.push(`${C.dim}${icon}${w.label}${C.reset} ${bar(pct, 8)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
@@ -319,7 +346,7 @@ function renderWide(d, { iconMode = "none", locale = "en", catTheme = "compact",
   const dbg = debugChip({ showDebugChip });
   if (dbg) parts.push(`${C.dim}${dbg}${C.reset}`);
 
-  return parts.join(`  ${C.gray}·${C.reset}  `);
+  return parts.join(`  ${C.gray}|${C.reset}  `);
 }
 
 function parseLayout(args) {
