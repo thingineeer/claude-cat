@@ -183,22 +183,61 @@ function renderContextChip(d) {
   return `ctx ${used}% used (${left}% left)`;
 }
 
-// How wide is the terminal (columns)? In priority:
+// How wide is the actual terminal (columns)?
+//
+// Claude Code spawns statusLine scripts with stdin/stdout/stderr as
+// pipes, so process.stdout.columns is undefined and $COLUMNS reflects
+// the *parent shell* at launch time, not the current terminal. To get
+// the live width we have to ask the controlling terminal directly via
+// /dev/tty — that file descriptor still points at the real terminal
+// even when stdout is a pipe.
+//
+// Priority:
 //   1. CLAUDE_CAT_COLUMNS env — explicit override
-//   2. COLUMNS env — many shells export this
-//   3. process.stdout.columns — only set when stdout is a TTY
-//   4. fallback of 120, a comfortable default that doesn't force stack
-//      unnecessarily when we really can't tell.
+//   2. stty size </dev/tty — live, updates on resize
+//   3. tput cols </dev/tty — same idea, different tool
+//   4. COLUMNS env — only correct if the shell exports live updates
+//   5. process.stdout.columns — rare (when stdout happens to be a TTY)
+//   6. fallback 200 — high default so an unknown width doesn't wrap
+//      prematurely; users on narrow panes can still force it with
+//      --stack=always or --max-cols.
+import { execSync } from "node:child_process";
+
+function parsePositiveInt(v) {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function ttyColumnsViaStty() {
+  try {
+    // stty size prints "<rows> <cols>"; read cols.
+    const out = execSync("stty size </dev/tty", {
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 200,
+    }).toString().trim();
+    const m = out.match(/\d+\s+(\d+)/);
+    return m ? parsePositiveInt(m[1]) : null;
+  } catch { return null; }
+}
+
+function ttyColumnsViaTput() {
+  try {
+    const out = execSync("tput cols </dev/tty", {
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 200,
+    }).toString().trim();
+    return parsePositiveInt(out);
+  } catch { return null; }
+}
+
 function detectTerminalColumns() {
-  const from = (v) => {
-    const n = parseInt(v, 10);
-    return Number.isFinite(n) && n > 0 ? n : null;
-  };
   return (
-    from(process.env.CLAUDE_CAT_COLUMNS) ||
-    from(process.env.COLUMNS) ||
+    parsePositiveInt(process.env.CLAUDE_CAT_COLUMNS) ||
+    ttyColumnsViaStty() ||
+    ttyColumnsViaTput() ||
+    parsePositiveInt(process.env.COLUMNS) ||
     (process.stdout && process.stdout.columns) ||
-    120
+    200
   );
 }
 
