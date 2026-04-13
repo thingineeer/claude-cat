@@ -19,3 +19,5 @@ jobs:
         run: npm run test:full
       - name: Run sample (critical)
         run: npm run test:critical
+      - name: Run sample (sonnet bucket)
+        run: npm run test:sonnet

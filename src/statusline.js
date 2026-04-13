@@ -12,7 +12,17 @@
 // rate_limits for Pro/Max subscribers after the first assistant response.
 
 import { pickCat } from "./cats.js";
-import { bar, fmtCountdown, fmtCost, colorByPct, colors as C } from "./format.js";
+import { bar, fmtResetFor, fmtCost, colorByPct, colors as C } from "./format.js";
+import { parseIconMode, iconFor } from "./icons.js";
+
+// "resets in 3h 51m" for relative windows; "resets Fri 1:00 PM" for absolute.
+function fmtResetPhrase(key, resetsAtSec) {
+  const t = fmtResetFor(key, resetsAtSec);
+  if (!t) return null;
+  if (t === "ready") return "ready now";
+  if (key === "five_hour") return `resets in ${t}`;
+  return `resets ${t}`;
+}
 
 function readStdin() {
   return new Promise((resolve) => {
@@ -28,42 +38,57 @@ function safeParse(raw) {
   try { return raw ? JSON.parse(raw) : {}; } catch { return {}; }
 }
 
-function collectWindows(d) {
-  const out = [];
-  const rl = d.rate_limits || {};
-  if (rl.five_hour) {
-    out.push({
-      key: "session",
-      label: "5h",
-      pct: rl.five_hour.used_percentage ?? 0,
-      resets_at: rl.five_hour.resets_at,
-    });
+// Window labels mirror the official Claude usage UI.
+function labelFor(key) {
+  if (key === "five_hour") return "Session";
+  if (key === "seven_day") return "Weekly";
+  if (key.startsWith("seven_day_")) {
+    const suffix = key.slice("seven_day_".length);
+    const pretty = suffix
+      .split("_")
+      .map((p) => (p === "4x" ? "4x" : p.charAt(0).toUpperCase() + p.slice(1)))
+      .join(" ");
+    return `Weekly · ${pretty}`;
   }
-  if (rl.seven_day) {
-    out.push({
-      key: "weekly",
-      label: "7d",
-      pct: rl.seven_day.used_percentage ?? 0,
-      resets_at: rl.seven_day.resets_at,
-    });
-  }
-  // Sonnet-only / opus-only windows have been observed under different keys
-  // across Claude Code versions; pick up any extra known shapes.
-  const extras = ["seven_day_opus", "seven_day_opus_4x", "seven_day_sonnet"];
-  for (const k of extras) {
-    if (rl[k]) {
-      out.push({
-        key: k,
-        label: k.replace("seven_day_", "7d·"),
-        pct: rl[k].used_percentage ?? 0,
-        resets_at: rl[k].resets_at,
-      });
-    }
-  }
-  return out;
+  return key;
 }
 
-function renderCompact(d) {
+// Accept any shape the server sends: collect every rate_limits.* entry
+// that looks like { used_percentage, resets_at, ... }. This lets
+// model-scoped weekly buckets (e.g. Sonnet-only) appear automatically,
+// regardless of the exact key Claude Code chooses.
+function isWindowEntry(v) {
+  return v && typeof v === "object" && !Array.isArray(v)
+    && (typeof v.used_percentage === "number" || typeof v.resets_at === "number");
+}
+
+// Ordering: five_hour first, then seven_day, then every other weekly-style
+// key (alphabetical), then anything else. Deterministic and predictable.
+function orderKey(k) {
+  if (k === "five_hour") return [0, k];
+  if (k === "seven_day") return [1, k];
+  if (k.startsWith("seven_day_")) return [2, k];
+  return [3, k];
+}
+
+function collectWindows(d) {
+  const rl = d.rate_limits || {};
+  return Object.entries(rl)
+    .filter(([, v]) => isWindowEntry(v))
+    .sort(([a], [b]) => {
+      const [oa, ka] = orderKey(a);
+      const [ob, kb] = orderKey(b);
+      return oa - ob || ka.localeCompare(kb);
+    })
+    .map(([k, v]) => ({
+      key: k,
+      label: labelFor(k),
+      pct: v.used_percentage ?? 0,
+      resets_at: v.resets_at,
+    }));
+}
+
+function renderCompact(d, { iconMode = "none" } = {}) {
   const windows = collectWindows(d);
   const cost = d?.cost?.total_cost_usd;
   const maxPct = windows.length ? Math.max(...windows.map((w) => w.pct)) : 0;
@@ -80,9 +105,10 @@ function renderCompact(d) {
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
-      const cd = fmtCountdown(w.resets_at);
-      const tail = cd ? ` ${C.dim}(${cd})${C.reset}` : "";
-      parts.push(`${C.dim}${w.label}${C.reset} ${bar(pct)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
+      const phrase = fmtResetPhrase(w.key, w.resets_at);
+      const tail = phrase ? ` ${C.dim}· ${phrase}${C.reset}` : "";
+      const icon = iconFor(iconMode, w.key);
+      parts.push(`${C.dim}${icon}${w.label}${C.reset} ${bar(pct)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
     const cs = fmtCost(cost);
     if (cs) parts.push(`${C.dim}${cs}${C.reset}`);
@@ -91,7 +117,7 @@ function renderCompact(d) {
   return parts.join(`  ${C.gray}·${C.reset}  `);
 }
 
-function renderFull(d) {
+function renderFull(d, { iconMode = "none" } = {}) {
   const windows = collectWindows(d);
   const cost = d?.cost?.total_cost_usd;
   const model = d?.model?.display_name;
@@ -110,9 +136,10 @@ function renderFull(d) {
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
-      const cd = fmtCountdown(w.resets_at);
-      const label = w.label.padEnd(6);
-      const right = cd ? ` ${C.dim}reset ${cd}${C.reset}` : "";
+      const phrase = fmtResetPhrase(w.key, w.resets_at);
+      const icon = iconFor(iconMode, w.key);
+      const label = (icon + w.label).padEnd(icon ? 20 : 18);
+      const right = phrase ? ` ${C.dim}· ${phrase}${C.reset}` : "";
       lines.push(`  ${C.dim}${label}${C.reset}${bar(pct, 14)} ${colorByPct(pct)}${String(pct).padStart(3)}%${C.reset}${right}`);
     }
   }
@@ -122,10 +149,11 @@ function renderFull(d) {
 async function main() {
   const args = process.argv.slice(2);
   const full = args.includes("--full") || args.includes("-f");
+  const iconMode = parseIconMode(args);
   const raw = await readStdin();
   const d = safeParse(raw);
 
-  const out = full ? renderFull(d) : renderCompact(d);
+  const out = full ? renderFull(d, { iconMode }) : renderCompact(d, { iconMode });
   process.stdout.write(out + "\n");
 }
 

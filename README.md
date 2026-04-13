@@ -1,5 +1,7 @@
 # 🐾 claude-cat
 
+<p align="left"><img src="assets/logo.svg" width="96" alt="claude-cat" /></p>
+
 > A cute cat lives on your Claude Code status line and tells you how much usage you have left — at a glance.
 
 [한국어 README →](./README.ko.md)
@@ -7,7 +9,7 @@
 ![status: alpha](https://img.shields.io/badge/status-alpha-orange) ![license](https://img.shields.io/badge/license-MIT-blue) ![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
 
 ```
- /ᐠ - ˕ - ᐟ\   ·   5h ▓▓░░░░░░░░ 10% (4h43m)   ·   7d ▓▓░░░░░░░░ 18% (Fri 13:00)   ·   $0.123
+ /ᐠ - ˕ - ᐟ\  ·  Session ▓░░░░░░░░░ 10%  · resets in 3h 51m  ·  Weekly ▓▓░░░░░░░░ 18%  · resets Fri 1:00 PM  ·  $0.123
 ```
 
 When your usage climbs, the cat's face changes — so you notice the ceiling before you hit it.
