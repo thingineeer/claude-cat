@@ -1,0 +1,17 @@
+{
+  "hook_event_name": "Status",
+  "session_id": "example-session",
+  "model": { "id": "claude-opus-4-6", "display_name": "Opus 4.6" },
+  "workspace": { "current_dir": "/Users/you/Desktop/claude-cat", "project_dir": "/Users/you/Desktop/claude-cat" },
+  "cost": {
+    "total_cost_usd": 0.1234,
+    "total_duration_ms": 45000,
+    "total_api_duration_ms": 2300,
+    "total_lines_added": 156,
+    "total_lines_removed": 23
+  },
+  "rate_limits": {
+    "five_hour":  { "used_percentage": 10, "resets_at": 1776074709 },
+    "seven_day":  { "used_percentage": 18, "resets_at": 1776400000 }
+  }
+}

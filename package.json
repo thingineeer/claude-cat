@@ -1,0 +1,45 @@
+{
+  "name": "claude-cat",
+  "version": "0.1.0",
+  "description": "A cute cat on your Claude Code status line that shows remaining credits at a glance.",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "statusline",
+    "cli",
+    "cat",
+    "usage",
+    "credits"
+  ],
+  "homepage": "https://github.com/thingineeer/claude-cat#readme",
+  "bugs": {
+    "url": "https://github.com/thingineeer/claude-cat/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thingineeer/claude-cat.git"
+  },
+  "license": "MIT",
+  "author": "thingineeer <dlaudwls1203@gmail.com>",
+  "type": "module",
+  "bin": {
+    "claude-cat": "./bin/cli.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "examples",
+    "README.md",
+    "README.ko.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node bin/cli.js",
+    "test:sample": "cat examples/sample-stdin.json | node bin/cli.js",
+    "test:full": "cat examples/sample-stdin.json | node bin/cli.js --full",
+    "test:critical": "cat examples/sample-critical.json | node bin/cli.js"
+  }
+}
