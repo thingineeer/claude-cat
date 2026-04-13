@@ -39,27 +39,48 @@ External contributors: always target `dev`. The maintainer handles the
 
 ## Workflow: one worktree per topic
 
-Never commit directly on `main` or `dev` — the pre-commit hook rejects
-it. Work on a dedicated git worktree so your main checkout stays
-clean:
+The primary checkout (the directory you cloned into) stays on `dev`
+and is **read-only** — just fetch and pull. All editing happens in
+**side worktrees** on short-lived branches.
+
+```
+~/code/claude-cat                 ← primary checkout, stays on dev, read-only
+~/code/claude-cat.feat-foo        ← side worktree for feat/foo
+~/code/claude-cat.fix-bar         ← side worktree for fix/bar
+~/code/claude-cat.chore-baz       ← yet another
+```
+
+`pre-commit` and `pre-push` hooks reject commits or pushes on `main`
+and `dev`, so an accidental edit in the primary checkout gets caught
+locally before it reaches the server.
+
+### Create a side worktree
 
 ```bash
-# from the repo root
 git fetch origin
 git worktree add ../claude-cat.feat-<topic> -b feat/<topic> origin/dev
 cd ../claude-cat.feat-<topic>
+./scripts/setup.sh                # first time only — wires hooks + .env identity
 # … focused, logical commits …
 git push -u origin feat/<topic>
 gh pr create --base dev --head feat/<topic>
-# after squash-merge:
-git worktree remove ../claude-cat.feat-<topic>
-git branch -D feat/<topic>
 ```
 
-Rules:
-- One feature / fix per branch. Unrelated changes go in separate PRs.
-- Split commits by **logical unit**, not "end of day". Reviewers should
-  be able to read commits one by one.
+### After the PR merges
+
+```bash
+# from the primary checkout
+git worktree remove ../claude-cat.feat-<topic>
+git branch -D feat/<topic>
+git fetch origin && git pull --ff-only origin dev
+```
+
+### Rules
+- One topic per worktree. Unrelated changes go in separate worktrees.
+- Run several side worktrees in parallel when several topics are in
+  flight. They share the same `.git` store, so it's cheap.
+- Split commits by **logical unit**, not "end of day". Reviewers (and
+  CodeRabbit) should be able to read commits one by one.
 - Rebase on `origin/dev` before opening a PR.
 - Squash-merge is the default; fast-forward is fine when history is
   already linear.

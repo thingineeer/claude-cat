@@ -24,12 +24,22 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   fi
   if [[ "$branch" =~ $protected_re ]]; then
     if [[ "${ALLOW_DIRECT_PUSH:-0}" != "1" ]]; then
-      echo "✖ push blocked: direct push to '$branch' on '$remote' is not allowed." >&2
-      echo "  Open a PR instead:" >&2
-      echo "    1. git worktree add ../claude-cat.feat-<topic> -b feat/<topic> origin/dev" >&2
-      echo "    2. work, commit, push the feature branch" >&2
-      echo "    3. gh pr create --base dev --head feat/<topic>" >&2
-      echo "  (Release cuts: ALLOW_DIRECT_PUSH=1 is only for maintainer fast-forwarding dev↔main.)" >&2
+      cat >&2 <<EOF
+✖ push blocked: direct push to '$branch' on '$remote' is not allowed.
+
+This repo uses a worktree-only policy — every change to main or dev
+lands through a reviewed pull request so CodeRabbit + maintainers
+have a chance to weigh in.
+
+    1. git worktree add ../claude-cat.<kind>-<topic> -b <kind>/<topic> origin/dev
+    2. cd there, commit in logical units, push the feature branch
+    3. gh pr create --base dev --head <kind>/<topic>
+
+<kind> is one of: feat | fix | chore | docs | refactor | test.
+
+(Maintainer-only: ALLOW_DIRECT_PUSH=1 is reserved for fast-forwarding
+dev onto main after a release merge.)
+EOF
       exit 1
     fi
   fi

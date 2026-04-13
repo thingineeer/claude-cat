@@ -7,10 +7,26 @@ branch="$(git symbolic-ref --short HEAD 2>/dev/null || echo '')"
 protected_re='^(main|master|dev|release/.*)$'
 if [[ "$branch" =~ $protected_re ]]; then
   if [[ "${ALLOW_DIRECT_COMMIT:-0}" != "1" ]]; then
-    echo "✖ commit blocked: direct commits to '$branch' are not allowed." >&2
-    echo "  Open a PR from a feature branch instead:" >&2
-    echo "    git worktree add ../claude-cat.feat-<topic> -b feat/<topic> origin/dev" >&2
-    echo "  Then PR feat/<topic> → dev. Use ALLOW_DIRECT_COMMIT=1 only for repo bootstrap." >&2
+    cat >&2 <<'EOF'
+✖ commit blocked: direct commits to this branch are not allowed.
+
+This repo uses a worktree-only policy:
+  • the main checkout stays on main/dev for fetch/pull only — no edits
+  • all editing happens in a dedicated side worktree on a feature branch
+  • every change reaches main/dev through a pull request
+
+Create a side worktree for your topic:
+    git fetch origin
+    git worktree add ../claude-cat.<kind>-<topic> -b <kind>/<topic> origin/dev
+    cd ../claude-cat.<kind>-<topic>
+    # ... edit, commit, push ...
+    gh pr create --base dev --head <kind>/<topic>
+
+<kind> is one of: feat | fix | chore | docs | refactor | test. One topic
+per worktree so CodeRabbit + reviewers see a single coherent change.
+
+(Bypass once with ALLOW_DIRECT_COMMIT=1 — reserved for repo bootstrap.)
+EOF
     exit 1
   fi
 fi

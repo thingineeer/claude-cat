@@ -216,6 +216,23 @@ Claude-Code sessions see [CLAUDE.md](./CLAUDE.md).
   to `main` and `dev`. Activate locally with `./scripts/setup.sh`
   after cloning.
 
+#### Worktree-only policy
+
+The cloned checkout stays on `dev` for fetch/pull only; all edits live
+in side worktrees:
+
+```bash
+git worktree add ../claude-cat.feat-<topic> -b feat/<topic> origin/dev
+cd ../claude-cat.feat-<topic>
+./scripts/setup.sh      # wire hooks + local git identity via .env
+# … edit, commit, push …
+gh pr create --base dev --head feat/<topic>
+```
+
+Run multiple side worktrees in parallel when several topics are in
+flight — each ships a separate PR for CodeRabbit + reviewer to see one
+coherent change at a time.
+
 ## License
 
 MIT © thingineeer
