@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Block AI-attribution lines in commit messages.
+# Enable locally with:
+#   git config core.hooksPath .githooks
+set -euo pipefail
+
+msg_file="$1"
+
+if grep -qiE '^(Co-Authored-By:|Signed-off-by:).*(claude|anthropic|copilot|chatgpt|openai)' "$msg_file"; then
+  echo "✖ commit blocked: AI attribution lines are not allowed." >&2
+  echo "  Remove any 'Co-Authored-By: Claude / Anthropic / Copilot' lines." >&2
+  exit 1
+fi
+
+if grep -qiE '(🤖 Generated with \[Claude Code\]|noreply@anthropic\.com)' "$msg_file"; then
+  echo "✖ commit blocked: Claude Code attribution footer is not allowed." >&2
+  exit 1
+fi
