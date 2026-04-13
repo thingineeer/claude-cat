@@ -21,8 +21,9 @@ statusLine scripts. Pick the one that fits your terminal.
 
 ### 1. Default — `compact` cat, single line
 
-Terse, fits narrow terminal widths. No flags needed. Labels are shortened
-to `5h` / `week` and the reset time rides inside parentheses.
+Terse, fits narrow terminal widths. No flags needed. Short labels
+(`5h` / `week`) render in **Claude Peach** (`#DE7356`); the reset time
+rides inside parentheses next to each window.
 
 <p align="left">
   <img src="assets/screenshots/compact-short.png" alt="compact cat status line" width="780" />
@@ -40,6 +41,27 @@ to `5h` / `week` and the reset time rides inside parentheses.
   "padding": 1, "refreshInterval": 5 } }
 ```
 </details>
+
+#### Auto-stack on narrow terminals
+
+When the line would overflow, compact automatically wraps onto two
+rows — cat + window bars on line 1, cost / ctx / debug on line 2
+(indented so it reads as a continuation, not a new entry):
+
+```
+/ᐠ ^ᴥ^ ᐟ\  |  5h ▓░░░░░░░░░ 10% (3h 15m)
+  week ▓▓▓░░░░░░░ 18% (Fri 1pm)  |  $0.123  |  ctx 23% used (77% left)
+```
+
+Width source priority: `CLAUDE_CAT_COLUMNS` env → `COLUMNS` env →
+`process.stdout.columns` → 120 fallback. Override per taste:
+
+| flag | effect |
+| --- | --- |
+| `--stack=auto` *(default)*      | wrap only when the line would overflow |
+| `--stack=always` / `--stack`    | always wrap onto two rows |
+| `--stack=never` / `--no-stack`  | force one line, overflow be damned |
+| `--max-cols=<n>`                | override detected width for the threshold |
 
 ### 2. Kawaii — 3-row card with ASCII cat
 
