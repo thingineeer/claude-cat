@@ -1,0 +1,7 @@
+{
+  "hook_event_name": "Status",
+  "session_id": "example-warming-up",
+  "model": { "id": "claude-sonnet-4-6[1m]", "display_name": "Sonnet 4.6 (1M context)" },
+  "cost": { "total_cost_usd": 0 },
+  "context_window": { "used_percentage": 5, "remaining_percentage": 95 }
+}

@@ -16,7 +16,15 @@ mkdir -p "$out/raw" "$out/plain"
 
 layouts=(compact full wide)
 themes=(compact kawaii none)
-fixtures=(examples/sample-stdin.json examples/sample-with-sonnet.json examples/sample-critical.json examples/sample-api-only.json)
+fixtures=(
+  examples/sample-stdin.json
+  examples/sample-with-sonnet.json
+  examples/sample-critical.json
+  examples/sample-api-only.json
+  examples/sample-warming-up.json
+  examples/sample-weekly-saturated.json
+  examples/sample-api-cost-only.json
+)
 
 strip_ansi() { sed -E $'s/\x1b\\[[0-9;]*m//g'; }
 
@@ -37,7 +45,14 @@ echo "✓ ${#fixtures[@]} fixtures × ${#layouts[@]} layouts × ${#themes[@]} th
 echo "  wrote $(find "$out" -type f | wc -l | tr -d ' ') files under $out/"
 echo
 echo "quick peek:"
-for tag in sample-stdin__full__kawaii sample-critical__full__kawaii sample-with-sonnet__wide__compact; do
+for tag in \
+  sample-stdin__full__kawaii \
+  sample-warming-up__full__kawaii \
+  sample-api-cost-only__full__kawaii \
+  sample-weekly-saturated__full__kawaii \
+  sample-critical__full__kawaii \
+  sample-with-sonnet__wide__compact; do
   echo "--- $tag ---"
   cat "$out/plain/${tag}.txt"
+  echo
 done

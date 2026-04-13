@@ -111,10 +111,38 @@ function collectWindows(d) {
 // Inline cat glyph for single-line layouts (compact / wide). Kawaii
 // art is multi-line so we fall back to the compact glyph there — the
 // kawaii 3-line art only makes sense in 'full'.
-function inlineCatGlyph(pct, theme) {
+function inlineCatGlyph({ windows, state }, theme) {
   if (theme === "none") return null;
-  const art = catArt(pct, "compact");  // always single-line here
+  const art = catArt({ windows, state }, "compact");  // always single-line here
   return art ? art.lines[0] : null;
+}
+
+// Classify the *situation* independent of usage percent. Drives which
+// fallback phrase to print and whether the cat should rest instead of
+// react to windows. Signals:
+//   - windows.length > 0                       → 'normal'
+//   - cost > 0 and no windows                  → 'cost_only'
+//     (API-key or provider that reports cost but not rate_limits)
+//   - cost === 0 and no windows and ctx exists → 'warming_up'
+//     (Pro/Max session before the first reply, most common)
+//   - nothing at all                           → 'warming_up' (conservative)
+function inferState(d, windows) {
+  if (windows.length > 0) return "normal";
+  const cost = d?.cost?.total_cost_usd;
+  if (typeof cost === "number" && cost > 0) return "cost_only";
+  return "warming_up";
+}
+
+function stateHint(state) {
+  if (state === "cost_only")   return t("cost_only_mode");
+  if (state === "warming_up")  return t("warming_up");
+  return null;
+}
+
+// Debug chip for the header. Kept to a short tag ('[Debug]') since the
+// actual dump path is documented and the user knows where to look.
+function debugChip() {
+  return debugEnabled() ? t("debug_tag") : null;
 }
 
 // Compact context-window chip for the header. Matches the phrasing of
@@ -133,19 +161,20 @@ function renderContextChip(d) {
 
 function renderCompact(d, { iconMode = "none", locale = "en", catTheme = "compact" } = {}) {
   const windows = collectWindows(d);
+  const state = inferState(d, windows);
   const cost = d?.cost?.total_cost_usd;
   const ctx = renderContextChip(d);
-  const maxPct = windows.length ? Math.max(...windows.map((w) => w.pct)) : 0;
-  const face = inlineCatGlyph(maxPct, catTheme);
+  const face = inlineCatGlyph({ windows, state: state === "normal" ? null : "resting" }, catTheme);
 
   const parts = [];
   if (face) parts.push(`${C.cyan}${face}${C.reset}`);
 
-  if (windows.length === 0) {
+  if (state !== "normal") {
     const cs = fmtCost(cost);
     if (cs)  parts.push(`${C.dim}${cs}${C.reset}`);
     if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
-    if (!cs && !ctx) parts.push(`${C.dim}${t("warming_up")}${C.reset}`);
+    const hint = stateHint(state);
+    if (hint) parts.push(`${C.dim}${hint}${C.reset}`);
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
@@ -159,19 +188,23 @@ function renderCompact(d, { iconMode = "none", locale = "en", catTheme = "compac
     if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
   }
 
+  const dbg = debugChip();
+  if (dbg) parts.push(`${C.dim}${dbg}${C.reset}`);
+
   return parts.join(`  ${C.gray}·${C.reset}  `);
 }
 
 // Build the 'data block' lines for the full layout:
-//   line 0   — header  (model · cost · ctx)
-//   line 1+  — one per window
+//   line 0   — header  (model · cost · ctx · [Debug])
+//   line 1+  — one per window, OR a single short status hint
 // No indentation here; callers add padding if they place the block
 // next to cat art.
-function buildDataBlock(d, { iconMode, locale }) {
+function buildDataBlock(d, { iconMode, locale, state }) {
   const windows = collectWindows(d);
   const cost = d?.cost?.total_cost_usd;
   const model = d?.model?.display_name;
   const ctx = renderContextChip(d);
+  const dbg = debugChip();
 
   const lines = [];
   const header = [];
@@ -179,29 +212,35 @@ function buildDataBlock(d, { iconMode, locale }) {
   const cs = fmtCost(cost);
   if (cs)  header.push(`${C.dim}${cs}${C.reset}`);
   if (ctx) header.push(`${C.dim}${ctx}${C.reset}`);
+  if (dbg) header.push(`${C.dim}${dbg}${C.reset}`);
   if (header.length) lines.push(header.join(`  ${C.gray}·${C.reset}  `));
 
+  if (state !== "normal") {
+    const hint = stateHint(state);
+    if (hint) lines.push(`${C.dim}${hint}${C.reset}`);
+    return lines;
+  }
+
   const labelCols = 26;
-  if (windows.length === 0) {
-    lines.push(`${C.dim}${t("api_only_hint")}${C.reset}`);
-  } else {
-    for (const w of windows) {
-      const pct = Math.round(w.pct);
-      const phrase = fmtResetPhrase(w.key, w.resets_at, locale);
-      const icon = iconFor(iconMode, w.key);
-      const label = padEndDisplay(icon + w.label, labelCols);
-      const right = phrase ? ` ${C.dim}· ${phrase}${C.reset}` : "";
-      lines.push(`${C.dim}${label}${C.reset}${bar(pct, 14)} ${colorByPct(pct)}${String(pct).padStart(3)}%${C.reset}${right}`);
-    }
+  for (const w of windows) {
+    const pct = Math.round(w.pct);
+    const phrase = fmtResetPhrase(w.key, w.resets_at, locale);
+    const icon = iconFor(iconMode, w.key);
+    const label = padEndDisplay(icon + w.label, labelCols);
+    const right = phrase ? ` ${C.dim}· ${phrase}${C.reset}` : "";
+    lines.push(`${C.dim}${label}${C.reset}${bar(pct, 14)} ${colorByPct(pct)}${String(pct).padStart(3)}%${C.reset}${right}`);
   }
   return lines;
 }
 
 function renderFull(d, { iconMode = "none", locale = "en", catTheme = "compact" } = {}) {
   const windows = collectWindows(d);
-  const maxPct = windows.length ? Math.max(...windows.map((w) => w.pct)) : 0;
-  const art = catArt(maxPct, catTheme);
-  const data = buildDataBlock(d, { iconMode, locale });
+  const state = inferState(d, windows);
+  const art = catArt(
+    state === "normal" ? { windows } : { state: "resting" },
+    catTheme,
+  );
+  const data = buildDataBlock(d, { iconMode, locale, state });
 
   // Compact-cat full: inline the 1-line face into the header and indent
   // every data line with 2 spaces, matching the previous look.
@@ -242,19 +281,25 @@ function renderFull(d, { iconMode = "none", locale = "en", catTheme = "compact" 
 // as more windows appear.
 function renderWide(d, { iconMode = "none", locale = "en", catTheme = "compact" } = {}) {
   const windows = collectWindows(d);
+  const state = inferState(d, windows);
   const cost = d?.cost?.total_cost_usd;
   const model = d?.model?.display_name;
   const ctx = renderContextChip(d);
-  const maxPct = windows.length ? Math.max(...windows.map((w) => w.pct)) : 0;
-  const face = inlineCatGlyph(maxPct, catTheme);
+  const face = inlineCatGlyph(
+    state === "normal" ? { windows } : { state: "resting" },
+    catTheme,
+  );
 
   const parts = [];
   if (face) parts.push(`${C.cyan}${face}${C.reset}`);
   if (model) parts.push(`${C.dim}${model}${C.reset}`);
-  if (windows.length === 0) {
+
+  if (state !== "normal") {
     const cs = fmtCost(cost);
     if (cs)  parts.push(`${C.dim}${cs}${C.reset}`);
     if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
+    const hint = stateHint(state);
+    if (hint) parts.push(`${C.dim}${hint}${C.reset}`);
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
@@ -267,6 +312,10 @@ function renderWide(d, { iconMode = "none", locale = "en", catTheme = "compact" 
     if (cs)  parts.push(`${C.dim}${cs}${C.reset}`);
     if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
   }
+
+  const dbg = debugChip();
+  if (dbg) parts.push(`${C.dim}${dbg}${C.reset}`);
+
   return parts.join(`  ${C.gray}·${C.reset}  `);
 }
 
@@ -310,9 +359,6 @@ async function main() {
   else if (layout === "full") out = renderFull(d, opts);
   else out = renderCompact(d, opts);
 
-  if (debugEnabled()) {
-    out += `  ${C.dim}[debug→~/.claude/claude-cat]${C.reset}`;
-  }
   process.stdout.write(out + "\n");
 }
 

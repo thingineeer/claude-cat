@@ -1,13 +1,18 @@
-// Cat art — each theme exposes 5 moods keyed to usage percentage.
-// Themes return either a single-line string (compact) or an array of
-// lines (kawaii). Thresholds below are inclusive on the lower bound.
+// Cat art — each theme exposes moods keyed either to usage percentage
+// or to an explicit state (e.g. 'resting' while waiting for the first
+// assistant reply). Themes return either a single-line string (compact)
+// or an array of lines (kawaii).
 //
-// MOODS (shared by every theme):
+// USAGE-DRIVEN MOODS:
 //   chill     0–30%    — calm, enjoying something
 //   curious   30–60%   — focused, working
 //   alert     60–85%   — starting to feel the load
 //   nervous   85–95%   — tired, needs a break
 //   critical  95%+     — conked out
+//
+// STATE-DRIVEN MOODS:
+//   resting            — no windows yet (warming up, api-only, etc.)
+//                        dozing pose, independent of usage percent
 
 const THRESHOLDS = [
   { max: 30,  mood: "chill"    },
@@ -17,72 +22,103 @@ const THRESHOLDS = [
   { max: 101, mood: "critical" },
 ];
 
-// One-line cat that fits even the tightest compact layout.
+// One-line cat for the compact theme.
 const COMPACT = {
   chill:    "/ᐠ - ˕ - ᐟ\\",
   curious:  "/ᐠ ｡ㅅ｡ᐟ\\",
   alert:    "/ᐠ •ㅅ• ᐟ\\",
   nervous:  "/ᐠ ≻ㅅ≺ ᐟ\\",
   critical: "/ᐠ ✖ㅅ✖ ᐟ\\",
+  resting:  "/ᐠ ⌒ㅅ⌒ ᐟ\\",  // eyes closed, napping
 };
 
-// Kawaii 3-line cat with a prop that shifts with the mood.
-// Props (sushi / keyboard / coffee / zzz / sleeping) narrate the vibe
-// without words. Kept to ASCII + a single emoji per pose so it renders
-// on most terminals.
+// Kawaii 3-line cat with a mood-specific prop.
 const KAWAII = {
-  chill: [
-    " /\\_/\\",
-    "( ^ω^ )",
-    " / >🍣",
-  ],
-  curious: [
-    " /\\_/\\",
-    "( •ㅅ•)",
-    " / >⌨️",
-  ],
-  alert: [
-    " /\\_/\\",
-    "( -ㅅ-)",
-    " / づ☕",
-  ],
-  nervous: [
-    " /\\_/\\",
-    "( xㅅx)",
-    " / づ💤",
-  ],
-  critical: [
-    " /\\_/|",
-    "( -.-)zzZ",
-    " /   \\",
-  ],
+  chill:    [" /\\_/\\",  "( ^ω^ )",   " / >🍣"],
+  curious:  [" /\\_/\\",  "( •ㅅ•)",   " / >⌨️"],
+  alert:    [" /\\_/\\",  "( -ㅅ-)",   " / づ☕"],
+  nervous:  [" /\\_/\\",  "( xㅅx)",   " / づ💤"],
+  critical: [" /\\_/|",   "( -.-)zzZ", " /   \\"],
+  resting:  [" /\\_/\\",  "( -.-)",    " / z z"],  // dozing, z z breath
 };
 
 const THEMES = { compact: COMPACT, kawaii: KAWAII, none: null };
 
 export const THEME_NAMES = Object.keys(THEMES);
 
+// Map a single percentage to a mood (legacy; prefer moodFromWindows).
 export function moodFor(percent) {
   const p = Math.max(0, Math.min(100, percent ?? 0));
   for (const t of THRESHOLDS) if (p < t.max) return t.mood;
   return THRESHOLDS[THRESHOLDS.length - 1].mood;
 }
 
-// Returns either:
-//   { lines: [...], mood }   — art to render (compact is [line])
-//   null                     — theme 'none' / unknown mood
-export function catArt(percent, theme = "compact") {
-  const mood = moodFor(percent);
+// Pick a mood from the full window set.
+//
+// Policy — "weekly drives the mood, session can escalate it":
+//   - Session windows that already reset (resets_at ≤ now) are ignored
+//     — a 100% session that's about to flip doesn't make the cat panic.
+//   - critical  if any remaining window ≥ 95
+//   - nervous   if any remaining window ≥ 85
+//   - alert     if weekly ≥ 60, OR session ≥ 75 (short burst)
+//   - curious   if any remaining window ≥ 30
+//   - chill     otherwise (incl. no windows at all)
+//
+// The rationale: the 5-hour bar resets fast and is forgiving; the 7-day
+// bar is the one that actually constrains your week. So weekly
+// saturation is weighted earlier (60%) than session saturation (75%).
+export function moodFromWindows(windows, { now = Math.floor(Date.now() / 1000) } = {}) {
+  const live = (windows || []).filter((w) => !(w.resets_at && w.resets_at <= now));
+  if (live.length === 0) return "chill";
+
+  const pct = (key) => {
+    const w = live.find((x) => x.key === key);
+    return w ? w.pct ?? 0 : 0;
+  };
+  const session = pct("five_hour");
+  const weekly = Math.max(
+    ...live.filter((w) => w.key.startsWith("seven_day")).map((w) => w.pct ?? 0),
+    0,
+  );
+  const anyMax = Math.max(...live.map((w) => w.pct ?? 0), 0);
+
+  if (anyMax >= 95) return "critical";
+  if (anyMax >= 85) return "nervous";
+  if (weekly >= 60 || session >= 75) return "alert";
+  if (anyMax >= 30) return "curious";
+  return "chill";
+}
+
+// Pick art for a given mood. Accepts either:
+//   catArt(percent, theme)                — legacy, uses moodFor(pct)
+//   catArt({ windows, state }, theme)     — preferred
+// State takes priority over window-derived mood when provided.
+//
+// Returns { lines, mood } or null.
+export function catArt(source, theme = "compact") {
   const table = THEMES[theme];
   if (!table) return null;
+
+  let mood;
+  if (typeof source === "number") {
+    mood = moodFor(source);
+  } else if (source && typeof source === "object") {
+    if (source.state === "resting") {
+      mood = "resting";
+    } else {
+      mood = moodFromWindows(source.windows || []);
+    }
+  } else {
+    return null;
+  }
+
   const art = table[mood];
   if (!art) return null;
   const lines = Array.isArray(art) ? art : [art];
   return { lines, mood };
 }
 
-// Back-compat shim for the old single-face API. Existing callers can
-// keep pickCat(pct).face without any changes.
+// Back-compat shim for the old single-face API.
 export function pickCat(percent) {
   const mood = moodFor(percent);
   return { mood, face: COMPACT[mood] };
