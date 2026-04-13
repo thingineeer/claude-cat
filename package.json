@@ -40,6 +40,7 @@
     "start": "node bin/cli.js",
     "test:sample": "cat examples/sample-stdin.json | node bin/cli.js",
     "test:full": "cat examples/sample-stdin.json | node bin/cli.js --full",
-    "test:critical": "cat examples/sample-critical.json | node bin/cli.js"
+    "test:critical": "cat examples/sample-critical.json | node bin/cli.js",
+    "test:sonnet": "cat examples/sample-with-sonnet.json | node bin/cli.js --full"
   }
 }

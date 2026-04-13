@@ -52,39 +52,39 @@ function labelFor(key) {
   return key;
 }
 
+// Accept any shape the server sends: collect every rate_limits.* entry
+// that looks like { used_percentage, resets_at, ... }. This lets
+// model-scoped weekly buckets (e.g. Sonnet-only) appear automatically,
+// regardless of the exact key Claude Code chooses.
+function isWindowEntry(v) {
+  return v && typeof v === "object" && !Array.isArray(v)
+    && (typeof v.used_percentage === "number" || typeof v.resets_at === "number");
+}
+
+// Ordering: five_hour first, then seven_day, then every other weekly-style
+// key (alphabetical), then anything else. Deterministic and predictable.
+function orderKey(k) {
+  if (k === "five_hour") return [0, k];
+  if (k === "seven_day") return [1, k];
+  if (k.startsWith("seven_day_")) return [2, k];
+  return [3, k];
+}
+
 function collectWindows(d) {
-  const out = [];
   const rl = d.rate_limits || {};
-  if (rl.five_hour) {
-    out.push({
-      key: "five_hour",
-      label: labelFor("five_hour"),
-      pct: rl.five_hour.used_percentage ?? 0,
-      resets_at: rl.five_hour.resets_at,
-    });
-  }
-  if (rl.seven_day) {
-    out.push({
-      key: "seven_day",
-      label: labelFor("seven_day"),
-      pct: rl.seven_day.used_percentage ?? 0,
-      resets_at: rl.seven_day.resets_at,
-    });
-  }
-  // Sonnet-only / opus-only windows have been observed under different keys
-  // across Claude Code versions; pick up any extra known shapes.
-  const extras = ["seven_day_opus", "seven_day_opus_4x", "seven_day_sonnet"];
-  for (const k of extras) {
-    if (rl[k]) {
-      out.push({
-        key: k,
-        label: labelFor(k),
-        pct: rl[k].used_percentage ?? 0,
-        resets_at: rl[k].resets_at,
-      });
-    }
-  }
-  return out;
+  return Object.entries(rl)
+    .filter(([, v]) => isWindowEntry(v))
+    .sort(([a], [b]) => {
+      const [oa, ka] = orderKey(a);
+      const [ob, kb] = orderKey(b);
+      return oa - ob || ka.localeCompare(kb);
+    })
+    .map(([k, v]) => ({
+      key: k,
+      label: labelFor(k),
+      pct: v.used_percentage ?? 0,
+      resets_at: v.resets_at,
+    }));
 }
 
 function renderCompact(d) {
