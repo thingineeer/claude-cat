@@ -197,11 +197,24 @@ npm run test:critical
 
 ### Contributing
 
-PRs welcome — please read [CONTRIBUTING.md](./CONTRIBUTING.md) first. TL;DR:
-- feature branch in a dedicated **git worktree**, one topic per branch
-- logical, small commits
-- **no AI-attribution lines** in commit messages (enforced by hook)
-- PR review happens via CodeRabbit + maintainer
+PRs welcome. Full guide in [CONTRIBUTING.md](./CONTRIBUTING.md); for
+Claude-Code sessions see [CLAUDE.md](./CLAUDE.md).
+
+```
+  feat/*   ──PR──▶  dev   ──release PR──▶  main   ──tagged──▶  GitHub Release
+  fix/*               │                     │
+  chore/*             │              (maintainer only)
+  docs/*              │
+            day-to-day integration         released versions
+```
+
+- **Open every PR against `dev`**. External contributors never target
+  `main` directly — the maintainer cuts releases from `dev`.
+- One topic per branch, logical commits, Conventional Commit subjects.
+- No AI-attribution lines in commit messages (`commit-msg` hook rejects).
+- `pre-commit` / `pre-push` hooks also reject direct commits or pushes
+  to `main` and `dev`. Activate locally with `./scripts/setup.sh`
+  after cloning.
 
 ## License
 
