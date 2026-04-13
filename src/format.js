@@ -82,7 +82,9 @@ export function fmtCountdown(resetsAtSec) {
   const m = Math.floor((s % 3600) / 60);
   if (d > 0) return h > 0 ? `${d}d ${h}h` : `${d}d`;
   if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
-  return `${m}m`;
+  // Sub-minute remainders (s in [1, 59]) would round down to `0m`,
+  // which misreads as "already reset". Floor at 1m instead.
+  return `${Math.max(1, m)}m`;
 }
 
 // 12-hour clock in the exact form Claude's /usage screen uses:
