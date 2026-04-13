@@ -7,6 +7,23 @@ tag/release cut on 2026-04-13 has been demoted to a draft so we can
 keep shaping the layout (Extra usage, wide layout, official CLI
 labels) before a proper public launch.
 
+### Recently landed (branch strategy + repo policy)
+- new long-lived `dev` branch between feature work and `main`:
+  `feat/*` / `fix/*` / `chore/*` / `docs/*` PRs target `dev`; the
+  maintainer cuts `dev → main` release PRs
+- `pre-commit` hook protects `dev` alongside `main`; bypass with
+  `ALLOW_DIRECT_COMMIT=1` is reserved for bootstrap only
+- new `pre-push` hook rejects direct pushes to `main` / `dev`;
+  bypass with `ALLOW_DIRECT_PUSH=1` for release fast-forwards
+- CI fires on push+PR for both `main` and `dev`
+- PR template asks contributors to confirm the base branch target
+- CONTRIBUTING rewritten around the new model + 'Where do I open my
+  PR?' table + maintainer release checklist
+- new CLAUDE.md session playbook so AI-assisted sessions default to
+  the PR-based flow automatically
+- new release-draft workflow: every push to `main` opens a draft
+  GitHub Release; maintainer publishes when actually ready
+
 ### Recently landed (mood policy + startup polish)
 - mood now reads from the whole window set, not a blind max:
   weekly ≥ 60 % → alert, session ≥ 75 % → alert, any window ≥ 85 % →
