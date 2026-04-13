@@ -112,8 +112,9 @@ cd ../claude-cat.<kind>-<topic>
 - Open UX invariants (don't break in PRs without discussion):
   - `full` layout still mirrors `/usage` verbatim (English-fixed
     labels, `·` separator, dim palette)
-  - `compact` / `wide` are **data-only** (no cat, no cost) — the cat
-    lives in `--full --kawaii`
+  - `compact` / `wide` stay cat-less (the cat lives in `--full
+    --kawaii`); both carry a bold-white `$` cost chip next to the
+    dim-cyan `ctx` chip for Max-plan users
   - mood policy is weekly-first (weekly ≥ 60 → alert, any ≥ 85 →
     nervous, ≥ 95 → critical, windows already past `resets_at`
     ignored, no rate_limits ⇒ resting)
