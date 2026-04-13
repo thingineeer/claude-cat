@@ -4,13 +4,13 @@ set -euo pipefail
 
 branch="$(git symbolic-ref --short HEAD 2>/dev/null || echo '')"
 
-protected_re='^(main|master|release/.*)$'
+protected_re='^(main|master|dev|release/.*)$'
 if [[ "$branch" =~ $protected_re ]]; then
   if [[ "${ALLOW_DIRECT_COMMIT:-0}" != "1" ]]; then
     echo "✖ commit blocked: direct commits to '$branch' are not allowed." >&2
-    echo "  Create a feature branch in a worktree:" >&2
-    echo "    git worktree add ../claude-cat.feat-<topic> -b feat/<topic> origin/main" >&2
-    echo "  Or bypass once with: ALLOW_DIRECT_COMMIT=1 git commit …" >&2
+    echo "  Open a PR from a feature branch instead:" >&2
+    echo "    git worktree add ../claude-cat.feat-<topic> -b feat/<topic> origin/dev" >&2
+    echo "  Then PR feat/<topic> → dev. Use ALLOW_DIRECT_COMMIT=1 only for repo bootstrap." >&2
     exit 1
   fi
 fi
