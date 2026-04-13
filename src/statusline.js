@@ -184,9 +184,49 @@ function renderFull(d, { iconMode = "none", locale = "en" } = {}) {
   return lines.join("\n");
 }
 
+// Wide layout: everything on a single line separated by middle-dots.
+// Useful for heavy users who don't want the status line growing taller
+// as more windows appear.
+function renderWide(d, { iconMode = "none", locale = "en" } = {}) {
+  const windows = collectWindows(d, locale);
+  const cost = d?.cost?.total_cost_usd;
+  const model = d?.model?.display_name;
+  const maxPct = windows.length ? Math.max(...windows.map((w) => w.pct)) : 0;
+  const cat = pickCat(maxPct);
+
+  const parts = [`${C.cyan}${cat.face}${C.reset}`];
+  if (model) parts.push(`${C.dim}${model}${C.reset}`);
+  if (windows.length === 0) {
+    const cs = fmtCost(cost);
+    if (cs) parts.push(`${C.dim}${cs}${C.reset}`);
+  } else {
+    for (const w of windows) {
+      const pct = Math.round(w.pct);
+      const phrase = fmtResetPhrase(w.key, w.resets_at, locale);
+      const tail = phrase ? ` ${C.dim}${phrase}${C.reset}` : "";
+      const icon = iconFor(iconMode, w.key);
+      parts.push(`${C.dim}${icon}${w.label}${C.reset} ${bar(pct, 8)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
+    }
+    const ctx = d?.context_window;
+    if (ctx && typeof ctx.used_percentage === "number") {
+      const pct = Math.round(ctx.used_percentage);
+      parts.push(`${C.dim}${t(locale, "context_window")}${C.reset} ${bar(pct, 6)} ${colorByPct(pct)}${pct}%${C.reset}`);
+    }
+    const cs = fmtCost(cost);
+    if (cs) parts.push(`${C.dim}${cs}${C.reset}`);
+  }
+  return parts.join(`  ${C.gray}·${C.reset}  `);
+}
+
+function parseLayout(args) {
+  if (args.includes("--layout=wide") || args.includes("--wide")) return "wide";
+  if (args.includes("--full") || args.includes("-f") || args.includes("--layout=full")) return "full";
+  return "compact";
+}
+
 async function main() {
   const args = process.argv.slice(2);
-  const full = args.includes("--full") || args.includes("-f");
+  const layout = parseLayout(args);
   const iconMode = parseIconMode(args);
   const locale = detectLocale();
   const raw = await readStdin();
@@ -198,7 +238,10 @@ async function main() {
   maybeDumpStdin(raw, d);
 
   const opts = { iconMode, locale };
-  let out = full ? renderFull(d, opts) : renderCompact(d, opts);
+  let out;
+  if (layout === "wide") out = renderWide(d, opts);
+  else if (layout === "full") out = renderFull(d, opts);
+  else out = renderCompact(d, opts);
 
   if (debugEnabled()) {
     out += `  ${C.dim}[debug→~/.claude/claude-cat]${C.reset}`;
