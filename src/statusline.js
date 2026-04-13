@@ -162,35 +162,28 @@ function renderCompact(d, { iconMode = "none", locale = "en", catTheme = "compac
   return parts.join(`  ${C.gray}·${C.reset}  `);
 }
 
-function renderFull(d, { iconMode = "none", locale = "en", catTheme = "compact" } = {}) {
+// Build the 'data block' lines for the full layout:
+//   line 0   — header  (model · cost · ctx)
+//   line 1+  — one per window
+// No indentation here; callers add padding if they place the block
+// next to cat art.
+function buildDataBlock(d, { iconMode, locale }) {
   const windows = collectWindows(d);
   const cost = d?.cost?.total_cost_usd;
   const model = d?.model?.display_name;
   const ctx = renderContextChip(d);
-  const maxPct = windows.length ? Math.max(...windows.map((w) => w.pct)) : 0;
-  const art = catArt(maxPct, catTheme);
 
   const lines = [];
-
-  // Kawaii art is multi-line; render it above the window block. Compact
-  // art stays inline in the header so the first visible line still
-  // carries model + cost + ctx.
-  if (art && art.lines.length > 1) {
-    for (const line of art.lines) lines.push(`${C.cyan}${line}${C.reset}`);
-  }
-
   const header = [];
-  if (art && art.lines.length === 1) header.push(`${C.cyan}${art.lines[0]}${C.reset}`);
   if (model) header.push(`${C.dim}${model}${C.reset}`);
   const cs = fmtCost(cost);
   if (cs)  header.push(`${C.dim}${cs}${C.reset}`);
   if (ctx) header.push(`${C.dim}${ctx}${C.reset}`);
   if (header.length) lines.push(header.join(`  ${C.gray}·${C.reset}  `));
 
-  // Labels are English-fixed; widest is 'Current week (Sonnet only)' = 26 cols.
   const labelCols = 26;
   if (windows.length === 0) {
-    lines.push(`  ${C.dim}${t("api_only_hint")}${C.reset}`);
+    lines.push(`${C.dim}${t("api_only_hint")}${C.reset}`);
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
@@ -198,10 +191,38 @@ function renderFull(d, { iconMode = "none", locale = "en", catTheme = "compact" 
       const icon = iconFor(iconMode, w.key);
       const label = padEndDisplay(icon + w.label, labelCols);
       const right = phrase ? ` ${C.dim}· ${phrase}${C.reset}` : "";
-      lines.push(`  ${C.dim}${label}${C.reset}${bar(pct, 14)} ${colorByPct(pct)}${String(pct).padStart(3)}%${C.reset}${right}`);
+      lines.push(`${C.dim}${label}${C.reset}${bar(pct, 14)} ${colorByPct(pct)}${String(pct).padStart(3)}%${C.reset}${right}`);
     }
   }
-  return lines.join("\n");
+  return lines;
+}
+
+function renderFull(d, { iconMode = "none", locale = "en", catTheme = "compact" } = {}) {
+  const windows = collectWindows(d);
+  const maxPct = windows.length ? Math.max(...windows.map((w) => w.pct)) : 0;
+  const art = catArt(maxPct, catTheme);
+  const data = buildDataBlock(d, { iconMode, locale });
+
+  // Compact-cat full: inline the 1-line face into the header and indent
+  // every data line with 2 spaces, matching the previous look.
+  if (!art || art.lines.length === 1) {
+    const out = [];
+    if (art) {
+      const head = data[0] ? ` ${C.gray}·${C.reset}  ${data[0]}` : "";
+      out.push(`${C.cyan}${art.lines[0]}${C.reset}${head ? "  " + head : ""}`);
+      for (let i = 1; i < data.length; i++) out.push(`  ${data[i]}`);
+    } else {
+      for (let i = 0; i < data.length; i++) out.push(i === 0 ? data[i] : `  ${data[i]}`);
+    }
+    return out.join("\n");
+  }
+
+  // Multi-line cat (kawaii): stacked above the data block, each data line
+  // indented by 2 spaces so the bars line up under the header.
+  const out = [];
+  for (const line of art.lines) out.push(`${C.cyan}${line}${C.reset}`);
+  for (let i = 0; i < data.length; i++) out.push(i === 0 ? data[i] : `  ${data[i]}`);
+  return out.join("\n");
 }
 
 // Wide layout: everything on a single line separated by middle-dots.
