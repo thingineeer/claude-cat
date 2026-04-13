@@ -19,18 +19,20 @@
 Every mode reads from the same stdin JSON Claude Code already pipes to
 statusLine scripts. Pick the one that fits your terminal.
 
-### 1. Default — `compact` cat, single line
+### 1. Default — compact, single line (data-only)
 
-Terse, fits narrow terminal widths. No flags needed. Short labels
-(`5h` / `week`) render in **Claude Peach** (`#DE7356`); the reset time
-rides inside parentheses next to each window.
+Terse, fits any terminal width. No flags needed. Short labels
+(`5h` / `week` / `sonnet`) render in **Claude Peach** (`#DE7356`);
+reset time rides inside parentheses next to each window. No cat, no
+dollar number — the cat lives in mode 2, and capacity scanning
+doesn't benefit from a `$` number mixed into the percentages.
 
 <p align="left">
-  <img src="assets/screenshots/compact-short.png" alt="compact cat status line" width="780" />
+  <img src="assets/screenshots/compact-short.png" alt="compact status line" width="780" />
 </p>
 
 ```
-/ᐠ ^ᴥ^ ᐟ\  |  5h ▓░░░░░░░░░ 10% (3h 15m)  |  week ▓▓▓░░░░░░░ 18% (Fri 1pm)  |  $0.123
+5h ▓▓▓▓▓▓▓░░░ 66% (1h 11m)  |  week ▓▓▓░░░░░░░ 25% (Fri 1pm)  |  sonnet ▓▓▓░░░░░░░ 11% (1h 11m)  |  ctx 28%
 ```
 
 <details><summary>settings.json</summary>
@@ -42,24 +44,28 @@ rides inside parentheses next to each window.
 ```
 </details>
 
-#### Auto-stack on narrow terminals
+#### Auto-wrap on narrow terminals
 
-When the line would overflow, compact automatically wraps onto two
-rows — cat + window bars on line 1, cost / ctx / debug on line 2
-(indented so it reads as a continuation, not a new entry):
+When the line would overflow, compact greedily packs onto as many
+rows as needed — window bars fill each row, extras (`ctx`, `[Debug]`)
+attach to the last row. Continuation rows are indented so the block
+reads as one entry:
 
 ```
-/ᐠ ^ᴥ^ ᐟ\  |  5h ▓░░░░░░░░░ 10% (3h 15m)
-  week ▓▓▓░░░░░░░ 18% (Fri 1pm)  |  $0.123  |  ctx 23% used (77% left)
+5h ▓▓▓▓▓▓▓░░░ 66% (1h 11m)  |  week ▓▓▓░░░░░░░ 25% (Fri 1pm)
+  sonnet ▓▓▓░░░░░░░ 11% (1h 11m)  |  ctx 28%
 ```
 
-Width source priority: `CLAUDE_CAT_COLUMNS` env → `COLUMNS` env →
-`process.stdout.columns` → 120 fallback. Override per taste:
+Width source (first defined wins): `CLAUDE_CAT_COLUMNS` env → live
+`stty size </dev/tty` → `tput cols </dev/tty` → `COLUMNS` env →
+`process.stdout.columns` → 200 fallback. The live `stty` / `tput`
+paths mean a terminal resize gets picked up on the next
+`refreshInterval` tick, no configuration needed.
 
 | flag | effect |
 | --- | --- |
 | `--stack=auto` *(default)*      | wrap only when the line would overflow |
-| `--stack=always` / `--stack`    | always wrap onto two rows |
+| `--stack=always` / `--stack`    | always wrap, even on a wide pane |
 | `--stack=never` / `--no-stack`  | force one line, overflow be damned |
 | `--max-cols=<n>`                | override detected width for the threshold |
 
@@ -82,13 +88,13 @@ the cat's fixed-width left column.
 ```
 </details>
 
-### 3. Wide — one horizontal line, everything on it
+### 3. Wide — one horizontal line, forced
 
-For users running several windows (Sonnet-only bar, context) who don't
-want the status line growing taller. Uses the same short labels as
-compact.
+Same data-only feel as compact (no cat, no cost) but **never wraps**.
+Use it on very wide panes when you'd rather have the line get long
+than have it auto-stack.
 ```
-/ᐠ ◕ᴥ◕ ᐟ\  |  Opus 4.6  |  5h ▓▓░░ 25% (3h 15m)  |  week ▓▓░░ 20% (Fri 1pm)  |  week·Sonnet ░░ 0% (Fri 1pm)  |  $0.420
+5h ▓▓░░ 25% (3h 15m)  |  week ▓▓░░ 20% (Fri 1pm)  |  sonnet ░░ 0% (Fri 1pm)  |  ctx 28%
 ```
 
 <details><summary>settings.json</summary>
