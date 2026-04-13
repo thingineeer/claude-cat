@@ -7,6 +7,22 @@ tag/release cut on 2026-04-13 has been demoted to a draft so we can
 keep shaping the layout (Extra usage, wide layout, official CLI
 labels) before a proper public launch.
 
+### Recently landed (terminal width + readability + compact cleanup)
+- **live terminal width** via `stty size </dev/tty` / `tput cols
+  </dev/tty`, so a resize is picked up on the next `refreshInterval`
+  tick (no more staying stuck on the startup `COLUMNS` value)
+- compact now **wraps across 3+ rows** on very narrow panes, not
+  just 2, with continuation rows indented so the block reads as one
+  entry
+- **role-based color palette** so each section of the status line
+  reads at a different weight: bars keep their green/yellow/red;
+  labels are Claude Peach; cost is bold white; separator is visible
+  gray (not dim); ctx is soft cyan; debug chip is magenta
+- **compact + wide are now data-only**: cat and cost are removed
+  from both; ctx shrinks to `ctx 28%`; model-scoped weekly labels
+  render as just `sonnet` / `opus` (no `week·` prefix).
+  Users who want the cat pick `--full --kawaii`.
+
 ### Recently landed (brand color + auto-stack)
 - short window labels (`5h` / `week` / `week·<Model>`) now render in
   **Claude Peach** (`#DE7356`, RGB 222/115/86) via 24-bit truecolor.
