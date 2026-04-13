@@ -13,6 +13,7 @@
 
 import { pickCat } from "./cats.js";
 import { bar, fmtResetFor, fmtCost, colorByPct, colors as C } from "./format.js";
+import { parseIconMode, iconFor } from "./icons.js";
 
 // "resets in 3h 51m" for relative windows; "resets Fri 1:00 PM" for absolute.
 function fmtResetPhrase(key, resetsAtSec) {
@@ -87,7 +88,7 @@ function collectWindows(d) {
     }));
 }
 
-function renderCompact(d) {
+function renderCompact(d, { iconMode = "none" } = {}) {
   const windows = collectWindows(d);
   const cost = d?.cost?.total_cost_usd;
   const maxPct = windows.length ? Math.max(...windows.map((w) => w.pct)) : 0;
@@ -106,7 +107,8 @@ function renderCompact(d) {
       const pct = Math.round(w.pct);
       const phrase = fmtResetPhrase(w.key, w.resets_at);
       const tail = phrase ? ` ${C.dim}· ${phrase}${C.reset}` : "";
-      parts.push(`${C.dim}${w.label}${C.reset} ${bar(pct)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
+      const icon = iconFor(iconMode, w.key);
+      parts.push(`${C.dim}${icon}${w.label}${C.reset} ${bar(pct)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
     const cs = fmtCost(cost);
     if (cs) parts.push(`${C.dim}${cs}${C.reset}`);
@@ -115,7 +117,7 @@ function renderCompact(d) {
   return parts.join(`  ${C.gray}·${C.reset}  `);
 }
 
-function renderFull(d) {
+function renderFull(d, { iconMode = "none" } = {}) {
   const windows = collectWindows(d);
   const cost = d?.cost?.total_cost_usd;
   const model = d?.model?.display_name;
@@ -135,7 +137,8 @@ function renderFull(d) {
     for (const w of windows) {
       const pct = Math.round(w.pct);
       const phrase = fmtResetPhrase(w.key, w.resets_at);
-      const label = w.label.padEnd(18);
+      const icon = iconFor(iconMode, w.key);
+      const label = (icon + w.label).padEnd(icon ? 20 : 18);
       const right = phrase ? ` ${C.dim}· ${phrase}${C.reset}` : "";
       lines.push(`  ${C.dim}${label}${C.reset}${bar(pct, 14)} ${colorByPct(pct)}${String(pct).padStart(3)}%${C.reset}${right}`);
     }
@@ -146,10 +149,11 @@ function renderFull(d) {
 async function main() {
   const args = process.argv.slice(2);
   const full = args.includes("--full") || args.includes("-f");
+  const iconMode = parseIconMode(args);
   const raw = await readStdin();
   const d = safeParse(raw);
 
-  const out = full ? renderFull(d) : renderCompact(d);
+  const out = full ? renderFull(d, { iconMode }) : renderCompact(d, { iconMode });
   process.stdout.write(out + "\n");
 }
 
