@@ -7,6 +7,23 @@ tag/release cut on 2026-04-13 has been demoted to a draft so we can
 keep shaping the layout (Extra usage, wide layout, official CLI
 labels) before a proper public launch.
 
+### Recently landed (mood policy + startup polish)
+- mood now reads from the whole window set, not a blind max:
+  weekly ≥ 60 % → alert, session ≥ 75 % → alert, any window ≥ 85 % →
+  nervous, ≥ 95 % → critical. Windows already past `resets_at` are
+  ignored so a 100 % session about to flip doesn't read as panic.
+- new `resting` state for when rate_limits aren't in the stdin JSON yet:
+  compact `/ᐠ ⌒ㅅ⌒ ᐟ\`, kawaii `/ z z` breath. Paired with short phrases
+  `resting — waiting for first reply` or `API mode — cost only` picked
+  from the actual stdin signature.
+- debug marker moves from "(steals the 3rd data row)" to a compact
+  `· [Debug]` chip on the header row, so side-by-side kawaii layout
+  stops losing its bottom line to debug output.
+- README gains a 6-frame "What you'll see" gallery showing every
+  scenario in place, plus an explainer for the mood policy.
+- 3 new fixtures (`warming-up`, `api-cost-only`, `weekly-saturated`)
+  wired into package scripts + CI + capture-all.
+
 ### Recently landed (side-by-side batch)
 - kawaii cat now renders in a fixed-width **left column** next to the
   data block instead of stacked above it, so the status line reads as

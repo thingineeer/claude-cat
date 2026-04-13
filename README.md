@@ -32,17 +32,81 @@ Same labels and reset phrasing as the `/usage` popup inside Claude Code.
 The only locale-aware piece is the session countdown — in a Korean
 terminal the first row reads `3시간 15분 후` instead of `3h 15m`.
 
-### Cat moods (5 steps, pick any theme)
+### Cat moods
 
-| usage   | `--cat=compact` | `--kawaii` prop |
-| ------- | --------------- | --------------- |
-| 0–30 %  | `/ᐠ - ˕ - ᐟ\` chill    | 🍣 sushi |
-| 30–60 % | `/ᐠ ｡ㅅ｡ᐟ\` curious  | ⌨️ keyboard |
-| 60–85 % | `/ᐠ •ㅅ• ᐟ\` alert    | ☕ coffee |
-| 85–95 % | `/ᐠ ≻ㅅ≺ ᐟ\` nervous  | 💤 break |
-| 95 %+   | `/ᐠ ✖ㅅ✖ ᐟ\` critical | 🛌 sleeping |
+Six moods — five driven by usage, one state-driven.
+
+| trigger                         | `--cat=compact` | `--kawaii` prop |
+| ------------------------------- | --------------- | --------------- |
+| no rate limits yet (*resting*)  | `/ᐠ ⌒ㅅ⌒ ᐟ\`    | `z z` breath    |
+| usage 0–30 %  (*chill*)          | `/ᐠ - ˕ - ᐟ\`   | 🍣 sushi        |
+| usage 30–60 % (*curious*)        | `/ᐠ ｡ㅅ｡ᐟ\`    | ⌨️ keyboard      |
+| usage 60–85 % (*alert*)          | `/ᐠ •ㅅ• ᐟ\`    | ☕ coffee        |
+| usage 85–95 % (*nervous*)        | `/ᐠ ≻ㅅ≺ ᐟ\`    | 💤 break         |
+| usage 95 %+   (*critical*)       | `/ᐠ ✖ㅅ✖ ᐟ\`    | 🛌 sleeping      |
+
+#### Why weekly drives the mood
+
+"Usage" isn't a single number — the session (5h) and weekly (7d) bars
+reset on very different timelines. claude-cat picks the mood from both,
+with a small bias toward weekly because that's the bar that actually
+constrains your week:
+
+- any window ≥ 95 % → **critical**
+- any window ≥ 85 % → **nervous**
+- weekly ≥ 60 % **or** session ≥ 75 % → **alert**
+- anything ≥ 30 % → **curious**
+- otherwise → **chill**
+
+Session windows whose `resets_at` has already passed are excluded —
+a 100 % session about to flip shouldn't read as a panic.
 
 `--no-cat` drops the cat entirely — pure data line.
+
+### What you'll see — scenario gallery
+
+Each sample below is real `./scripts/capture-all.sh` output, no edits.
+
+**1. Fresh session** (Pro/Max, before the first reply)
+```
+ /\_/\   Sonnet 4.6 (1M context)  ·  $0.0000  ·  ctx 5% used (95% left)
+( -.-)   resting — waiting for first reply
+ / z z
+```
+
+**2. Normal use** — chill
+```
+ /\_/\    Opus 4.6  ·  $0.123
+( ^ω^ )   Current session           ▓░░░░░░░░░░░░░  10%  · 3h 15m
+ / >🍣    Current week (all models) ▓▓▓░░░░░░░░░░░  18%  · Resets Apr 17, 1:26 pm
+```
+
+**3. Weekly bar getting heavy** — nervous (driven by weekly alone)
+```
+ /\_/\    Opus 4.6  ·  $42.50  ·  ctx 28% used (72% left)
+( xㅅx)   Current session           ▓▓▓░░░░░░░░░░░  18%  · 3h 15m
+ / づ💤   Current week (all models) ▓▓▓▓▓▓▓▓▓▓▓▓▓░  91%  · Resets Apr 17, 1:26 pm
+```
+
+**4. Session about to reset** — critical
+```
+ /\_/|      Opus 4.6  ·  $12.34
+( -.-)zzZ   Current session           ▓▓▓▓▓▓▓▓▓▓▓▓▓▓  97%  · 2h 59m
+ /   \      Current week (all models) ▓▓▓▓▓▓▓▓▓▓▓▓░░  88%  · Resets Apr 17, 1:26 pm
+```
+
+**5. API key / cost-only** — resting
+```
+ /\_/\   Sonnet 4.6  ·  $0.0042  ·  ctx 12% used (88% left)
+( -.-)   API mode — cost only
+ / z z
+```
+
+**6. Debug mode on**
+```
+/ᐠ ⌒ㅅ⌒ ᐟ\   ·  Sonnet 4.6  ·  $0.0000  ·  [Debug]
+  resting — waiting for first reply
+```
 
 ## Why
 
