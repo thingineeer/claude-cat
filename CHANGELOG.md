@@ -16,8 +16,9 @@ labels) before a proper public launch.
   compact + wide (full stays on `·` because each row already stands
   alone on its own line)
 - unified compact-cat glyph family: only the eyes change per mood,
-  mouth stays `ᴥ`. Baseline chill is `◕ᴥ◕` (round, eye-catching).
-  Previous mixed-width glyphs (`｡`, `≻`, `⌒`) are gone.
+  mouth stays `ᴥ`. Baseline chill is `^ᴥ^` (smiling, friendliest for
+  the state users see most). Previous mixed-width glyphs (`｡`, `≻`,
+  `⌒`) are gone.
 - README gains a `compact-short.png` capture; `assets/screenshots/`
   now has its own README documenting the shot list + re-capture steps.
 

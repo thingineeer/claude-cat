@@ -29,7 +29,7 @@ to `5h` / `week` and the reset time rides inside parentheses.
 </p>
 
 ```
-/ᐠ ◕ᴥ◕ ᐟ\  |  5h ▓░░░░░░░░░ 10% (3h 15m)  |  week ▓▓▓░░░░░░░ 18% (Fri 1pm)  |  $0.123
+/ᐠ ^ᴥ^ ᐟ\  |  5h ▓░░░░░░░░░ 10% (3h 15m)  |  week ▓▓▓░░░░░░░ 18% (Fri 1pm)  |  $0.123
 ```
 
 <details><summary>settings.json</summary>
@@ -107,7 +107,7 @@ Six moods — five driven by usage, one state-driven.
 | trigger                         | `--cat=compact` | `--kawaii` prop |
 | ------------------------------- | --------------- | --------------- |
 | no rate limits yet (*resting*)  | `/ᐠ -ᴥ- ᐟ\`    | `z z` breath    |
-| usage 0–30 %  (*chill*)          | `/ᐠ ◕ᴥ◕ ᐟ\`    | 🍣 sushi        |
+| usage 0–30 %  (*chill*)          | `/ᐠ ^ᴥ^ ᐟ\`    | 🍣 sushi        |
 | usage 30–60 % (*curious*)        | `/ᐠ •ᴥ• ᐟ\`    | ⌨️ keyboard      |
 | usage 60–85 % (*alert*)          | `/ᐠ ◉ᴥ◉ ᐟ\`    | ☕ coffee        |
 | usage 85–95 % (*nervous*)        | `/ᐠ ⊙ᴥ⊙ ᐟ\`    | 💤 break         |
