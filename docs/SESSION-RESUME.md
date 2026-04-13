@@ -112,14 +112,17 @@ cd ../claude-cat.<kind>-<topic>
 - Open UX invariants (don't break in PRs without discussion):
   - `full` layout still mirrors `/usage` verbatim (English-fixed
     labels, `·` separator, dim palette)
-  - `compact` / `wide` are **data-only** (no cat, no cost) — the cat
-    lives in `--full --kawaii`
+  - `compact` / `wide` stay cat-less (the cat lives in `--full
+    --kawaii`); both carry a bold-white `$` cost chip next to the
+    dim-cyan `ctx` chip for Max-plan users
   - mood policy is weekly-first (weekly ≥ 60 → alert, any ≥ 85 →
     nervous, ≥ 95 → critical, windows already past `resets_at`
     ignored, no rate_limits ⇒ resting)
   - section separator is `|` for compact/wide, `·` for full
   - short labels: `5h` / `week` / `sonnet` / `opus` / etc.
   - Claude Peach (`#DE7356`) for the short labels only
+  - countdown is **universal English** (`3h 38m`, `15m`, `2d 4h`) —
+    no locale dispatch, no `CLAUDE_CAT_LANG`
   - statusline script must never read `~/.claude/.credentials.json`,
     never hit network endpoints, never write outside
     `~/.claude/claude-cat/`

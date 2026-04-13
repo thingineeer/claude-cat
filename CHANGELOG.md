@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-_Nothing yet — see `## [1.0.0]` below for the latest release._
+_Nothing yet — see `## [1.0.0]` below._
 
 ### Still planned (post-1.0.0)
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
@@ -27,10 +27,11 @@ PR-enforced branch / worktree maintainer workflow.
   reads at a different weight: bars keep their green/yellow/red;
   labels are Claude Peach; cost is bold white; separator is visible
   gray (not dim); ctx is soft cyan; debug chip is magenta
-- **compact + wide are now data-only**: cat and cost are removed
-  from both; ctx shrinks to `ctx 28%`; model-scoped weekly labels
-  render as just `sonnet` / `opus` (no `week·` prefix).
-  Users who want the cat pick `--full --kawaii`.
+- **compact + wide are cat-less** (the cat lives in `--full --kawaii`);
+  both still carry a bold-white `$` cost chip next to the dim-cyan
+  `ctx %` chip so Max-plan users can eyeball spend without dropping
+  to `--full`. Model-scoped weekly labels render as just `sonnet` /
+  `opus` (no `week·` prefix).
 
 ### Brand color + auto-stack
 - short window labels (`5h` / `week` / `week·<Model>`) now render in
@@ -126,6 +127,29 @@ PR-enforced branch / worktree maintainer workflow.
 - `--layout=wide` (alias `--wide`) keeps everything on a single line so
   the chat area never grows taller as more windows appear
 - `CLAUDE_CAT_DEBUG=1` still available for dumping stdin JSON locally
+
+### Post-cut polish (folded into this 1.0.0)
+- **cost chip back on compact + wide** — bold-white `$0.1234` sits
+  next to the dim-cyan `ctx 28%` chip. The cat-less invariant stays;
+  only the dollar number returns. Max-plan users asked for it.
+- **sub-minute remainder clamps to `1m`** — the countdown never prints
+  `0m`, which would misread as "already reset" for s in [1, 59].
+- **universal `3h 38m` countdown** — locale dispatch removed. The
+  session countdown is now Latin-only (`3h 38m` / `15m` / `2d 4h`),
+  reading the same in every terminal worldwide. `CLAUDE_CAT_LANG`
+  env var is no longer read; `i18n.js` shrinks to a simple label
+  table. Labels and reset phrases were already English-fixed — this
+  completes the "no locale branches" story.
+- **resting kawaii holds a smoke** (`>🚬~`) — replaces the old
+  `z z` breath glyph, matching the mood-prop convention (sushi /
+  keyboard / coffee / 💤) of the other kawaii moods. Compact one-line
+  cat is unchanged (`/ᐠ -ᴥ- ᐟ\`).
+- **README rewrite** — "Pick your mode" table with ⭐ recommended
+  default, per-mode install blocks with live previews and
+  copy-pasteable Claude prompts, new **Reading the output** legend
+  (clarifies `$` is session cost, not "Extra usage" fees), unified
+  **Configuration** section (flags + env vars in one place), and
+  Korean README parity.
 
 ### Shipped earlier (pre-1.0.0)
 - statusLine renderer parsing Claude Code's stdin JSON

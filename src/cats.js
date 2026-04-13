@@ -43,7 +43,7 @@ const KAWAII = {
   alert:    [" /\\_/\\",  "( -ㅅ-)",   " / づ☕"],
   nervous:  [" /\\_/\\",  "( xㅅx)",   " / づ💤"],
   critical: [" /\\_/|",   "( -.-)zzZ", " /   \\"],
-  resting:  [" /\\_/\\",  "( -.-)",    " / z z"],  // dozing, z z breath
+  resting:  [" /\\_/\\",  "( -.-)",    " / >🚬~"], // chilling with a smoke while it waits
 };
 
 const THEMES = { compact: COMPACT, kawaii: KAWAII, none: null };

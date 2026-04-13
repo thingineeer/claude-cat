@@ -1,5 +1,4 @@
 // ANSI colors. Keep minimal — status lines render in many terminals.
-import { countdown } from "./i18n.js";
 
 // Palette — organized by semantic role so each section of the status
 // line reads at the same glance-weight:
@@ -69,19 +68,23 @@ export function bar(pct, width = 10) {
   return `${col}${"▓".repeat(filled)}${C.gray}${"░".repeat(empty)}${C.reset}`;
 }
 
-// Short relative countdown for the session window. This is the only
-// locale-dependent string in claude-cat — the English copy is "3h 15m",
-// Korean is "3시간 15분 후".
-export function fmtCountdown(resetsAtSec, { locale = "en" } = {}) {
+// Short relative countdown for the session window. Always English-
+// Latin (`3h 34m` / `2d 4h` / `15m`): `h`/`m`/`d` are universally
+// recognized unit abbreviations in developer-facing tooling, so the
+// format reads the same in every terminal worldwide — no locale
+// dispatch, no wrong-word-order edge cases.
+export function fmtCountdown(resetsAtSec) {
   if (!resetsAtSec) return null;
   const s = resetsAtSec - Math.floor(Date.now() / 1000);
   if (s <= 0) return "ready";
   const d = Math.floor(s / 86400);
   const h = Math.floor((s % 86400) / 3600);
   const m = Math.floor((s % 3600) / 60);
-  if (d > 0) return countdown(locale, "days_hours", d, h);
-  if (h > 0) return countdown(locale, "hours_min", h, m);
-  return countdown(locale, "minutes", m);
+  if (d > 0) return h > 0 ? `${d}d ${h}h` : `${d}d`;
+  if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  // Sub-minute remainders (s in [1, 59]) would round down to `0m`,
+  // which misreads as "already reset". Floor at 1m instead.
+  return `${Math.max(1, m)}m`;
 }
 
 // 12-hour clock in the exact form Claude's /usage screen uses:
