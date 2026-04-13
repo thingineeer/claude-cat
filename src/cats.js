@@ -23,13 +23,17 @@ const THRESHOLDS = [
 ];
 
 // One-line cat for the compact theme.
+// A single 'eyes + ᴥ + eyes' family. Only the eye glyph changes across
+// moods so the face shape stays consistent and reads the same in every
+// monospace font — previous mixed-width glyphs (｡, ≻, ⌒) wobbled the
+// cursor column in some terminals.
 const COMPACT = {
-  chill:    "/ᐠ - ˕ - ᐟ\\",
-  curious:  "/ᐠ ｡ㅅ｡ᐟ\\",
-  alert:    "/ᐠ •ㅅ• ᐟ\\",
-  nervous:  "/ᐠ ≻ㅅ≺ ᐟ\\",
-  critical: "/ᐠ ✖ㅅ✖ ᐟ\\",
-  resting:  "/ᐠ ⌒ㅅ⌒ ᐟ\\",  // eyes closed, napping
+  chill:    "/ᐠ ◡ᴥ◡ ᐟ\\",  // half-lidded, relaxed
+  curious:  "/ᐠ •ᴥ• ᐟ\\",  // round eyes, watching
+  alert:    "/ᐠ ◉ᴥ◉ ᐟ\\",  // wide open
+  nervous:  "/ᐠ ⊙ᴥ⊙ ᐟ\\",  // dilated
+  critical: "/ᐠ ✖ᴥ✖ ᐟ\\",  // X eyes, done
+  resting:  "/ᐠ -ᴥ- ᐟ\\",  // dozing, eyes shut
 };
 
 // Kawaii 3-line cat with a mood-specific prop.
