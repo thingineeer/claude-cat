@@ -180,10 +180,24 @@ CI runs every `test:*` script on every PR into `dev` or `main`.
 
 ## Useful pointers
 
+- **docs/SESSION-RESUME.md** — if you're resuming work on a new
+  machine or after a long break, read this first. Short playbook:
+  branch model, where things live, new-machine setup, current state
+  snapshot, known gaps still pending.
 - CONTRIBUTING.md — contributor-facing workflow (branches, commits,
   release checklist)
-- README.md — user-facing install/install/layout docs + scenario gallery
+- README.md — user-facing install/layout docs + scenario gallery
 - CHANGELOG.md — "Unreleased" section is where in-flight notes live
 - examples/*.json — fixtures for each scenario
 - scripts/capture-all.sh — render every (fixture × layout × theme)
   into tmp/snapshots/ before opening a PR
+
+## Maintainer: the private env vault
+
+The maintainer's local `.env` (git identity, hooks path) lives in a
+separate **private** GitHub repo at
+[`thingineeer/thingineeer-env`](https://github.com/thingineeer/thingineeer-env).
+It's cloned to `~/.env-vault` on each machine; `envpull claude-cat`
+drops a symlink at `./.env` so `./scripts/setup.sh` can load the
+right identity. Contributors don't need this — they just run
+`cp .env.example .env` and fill in their own values.
