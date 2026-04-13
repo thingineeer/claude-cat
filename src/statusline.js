@@ -14,6 +14,7 @@
 import { pickCat } from "./cats.js";
 import { bar, fmtResetFor, fmtCost, colorByPct, colors as C } from "./format.js";
 import { parseIconMode, iconFor } from "./icons.js";
+import { maybeDumpStdin, debugEnabled } from "./debug.js";
 
 // "resets in 3h 51m" for relative windows; "resets Fri 1:00 PM" for absolute.
 function fmtResetPhrase(key, resetsAtSec) {
@@ -153,7 +154,15 @@ async function main() {
   const raw = await readStdin();
   const d = safeParse(raw);
 
-  const out = full ? renderFull(d, { iconMode }) : renderCompact(d, { iconMode });
+  // Opt-in: dump the payload we just received so we can confirm which
+  // rate_limits.* keys (and any extra-usage fields) the server actually
+  // sends on this machine/plan. No-op unless CLAUDE_CAT_DEBUG=1.
+  maybeDumpStdin(raw, d);
+
+  let out = full ? renderFull(d, { iconMode }) : renderCompact(d, { iconMode });
+  if (debugEnabled()) {
+    out += `  ${C.dim}[debug→~/.claude/claude-cat]${C.reset}`;
+  }
   process.stdout.write(out + "\n");
 }
 
