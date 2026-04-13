@@ -28,58 +28,69 @@ export function bar(pct, width = 10) {
 }
 
 // Short relative countdown — best for short windows (session / 5h).
-// Inserts a space between units so readers can parse it at a glance:
-//   "3h 51m", "45m", "1d 4h", "12m", "ready"
-export function fmtCountdown(resetsAtSec) {
+// English uses compact units ("3h 51m"). Korean uses native words
+// ("3시간 51분 후"). In both we drop trailing zero units.
+export function fmtCountdown(resetsAtSec, { locale = "en" } = {}) {
   if (!resetsAtSec) return null;
-  const now = Math.floor(Date.now() / 1000);
-  const s = resetsAtSec - now;
+  const s = resetsAtSec - Math.floor(Date.now() / 1000);
   if (s <= 0) return "ready";
-  const h = Math.floor(s / 3600);
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
   const m = Math.floor((s % 3600) / 60);
-  if (h >= 24) {
-    const d = Math.floor(h / 24);
-    const rh = h % 24;
-    return rh > 0 ? `${d}d ${rh}h` : `${d}d`;
+  if (locale === "ko") {
+    if (d > 0) return h > 0 ? `${d}일 ${h}시간 후` : `${d}일 후`;
+    if (h > 0) return m > 0 ? `${h}시간 ${m}분 후` : `${h}시간 후`;
+    return `${m}분 후`;
   }
+  if (d > 0) return h > 0 ? `${d}d ${h}h` : `${d}d`;
   if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
   return `${m}m`;
 }
 
-// Absolute reset time — best for long windows (weekly / 7d).
-// Uses weekday + wall-clock in the user's local time, with "today" and
-// "tomorrow" shortcuts so the next reset feels concrete:
-//   "today 5:30 PM", "tomorrow 1:00 AM", "Fri 1:00 PM", "Apr 20 1:00 PM"
-export function fmtAbsoluteReset(resetsAtSec, now = new Date()) {
+// 12-hour clock in the same compact form as Claude's /usage screen:
+//   "7pm", "1:00 pm" (en) / "오후 7시", "오후 1시 30분" (ko)
+function fmtClock(date, locale) {
+  const h24 = date.getHours();
+  const h12 = h24 % 12 || 12;
+  const m = date.getMinutes();
+  if (locale === "ko") {
+    const ampm = h24 < 12 ? "오전" : "오후";
+    return m === 0 ? `${ampm} ${h12}시` : `${ampm} ${h12}시 ${m}분`;
+  }
+  const ampm = h24 < 12 ? "am" : "pm";
+  return m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
+}
+
+function fmtShortDate(date, locale) {
+  if (locale === "ko") return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+// IANA timezone (e.g. "Asia/Seoul"); null when the runtime can't resolve it.
+export function tzName() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    return null;
+  }
+}
+
+// Absolute reset phrase data for long windows (weekly / 7d), returned as
+// a struct so the renderer can compose the locale-specific sentence via
+// i18n instead of hard-coding word order. Shape:
+//   { clock: "1pm", date: "Apr 17" | null, tz: "Asia/Seoul" | null }
+// If 'resets_at' is in the past, returns "ready".
+export function absoluteResetParts(resetsAtSec, { now = new Date(), locale = "en" } = {}) {
   if (!resetsAtSec) return null;
   const target = new Date(resetsAtSec * 1000);
   if (target.getTime() - now.getTime() <= 0) return "ready";
-
-  const time = target.toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-
   const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const dayDiff = Math.round((startOfDay(target) - startOfDay(now)) / 86_400_000);
-
-  if (dayDiff === 0) return `today ${time}`;
-  if (dayDiff === 1) return `tomorrow ${time}`;
-  if (dayDiff >= 2 && dayDiff <= 6) {
-    const wd = target.toLocaleDateString(undefined, { weekday: "short" });
-    return `${wd} ${time}`;
-  }
-  const md = target.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  return `${md} ${time}`;
-}
-
-// Humanize a reset time for a given window key.
-// Session/5h-style windows stay relative; weekly-style windows go absolute.
-export function fmtResetFor(key, resetsAtSec, now = new Date()) {
-  if (!resetsAtSec) return null;
-  if (key === "five_hour") return fmtCountdown(resetsAtSec);
-  if (key && key.startsWith("seven_day")) return fmtAbsoluteReset(resetsAtSec, now);
-  return fmtCountdown(resetsAtSec);
+  const sameDay = startOfDay(target) === startOfDay(now);
+  return {
+    clock: fmtClock(target, locale),
+    date: sameDay ? null : fmtShortDate(target, locale),
+    tz: tzName(),
+  };
 }
 
 export function fmtCost(usd) {
