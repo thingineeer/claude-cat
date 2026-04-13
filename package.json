@@ -1,6 +1,6 @@
 {
   "name": "claude-cat",
-  "version": "0.2.0-dev",
+  "version": "1.0.0",
   "description": "A cute cat on your Claude Code status line that shows remaining credits at a glance.",
   "keywords": [
     "claude",
