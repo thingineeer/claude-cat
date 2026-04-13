@@ -8,29 +8,125 @@
 
 ![status: alpha](https://img.shields.io/badge/status-alpha-orange) ![license](https://img.shields.io/badge/license-MIT-blue) ![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
 
-### Default (compact cat, 1 line + window block)
+<p align="center">
+  <img src="assets/screenshots/kawaii-full.png" alt="kawaii cat + usage bars in a terminal" width="780" />
+  <br />
+  <em>3-row kawaii card — <code>--full --kawaii</code>, Korean locale</em>
+</p>
+
+## Modes at a glance
+
+Every mode reads from the same stdin JSON Claude Code already pipes to
+statusLine scripts. Pick the one that fits your terminal.
+
+### 1. Default — compact, single line (data-only)
+
+Terse, fits any terminal width. No flags needed. Short labels
+(`5h` / `week` / `sonnet`) render in **Claude Peach** (`#DE7356`);
+reset time rides inside parentheses next to each window. No cat, no
+dollar number — the cat lives in mode 2, and capacity scanning
+doesn't benefit from a `$` number mixed into the percentages.
+
+<p align="left">
+  <img src="assets/screenshots/compact-short.png" alt="compact status line" width="780" />
+</p>
+
 ```
- /ᐠ - ˕ - ᐟ\  ·  Sonnet 4.6 (1M context)  ·  $0.123  ·  ctx 23% used (77% left)
-   Current session            ▓░░░░░░░░░░░░░  10% · 3h 15m
-   Current week (all models)  ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm
-   Current week (Sonnet only) ░░░░░░░░░░░░░░   0% · Resets Apr 15, 1pm
+5h ▓▓▓▓▓▓▓░░░ 66% (1h 11m)  |  week ▓▓▓░░░░░░░ 25% (Fri 1pm)  |  sonnet ▓▓▓░░░░░░░ 11% (1h 11m)  |  ctx 28%
 ```
 
-### Kawaii cat (`--kawaii`) — side-by-side
+<details><summary>settings.json</summary>
+
+```json
+{ "statusLine": { "type": "command",
+  "command": "npx -y claude-cat@latest",
+  "padding": 1, "refreshInterval": 5 } }
+```
+</details>
+
+#### Auto-wrap on narrow terminals
+
+When the line would overflow, compact greedily packs onto as many
+rows as needed — window bars fill each row, extras (`ctx`, `[Debug]`)
+attach to the last row. Continuation rows are indented so the block
+reads as one entry:
+
+```
+5h ▓▓▓▓▓▓▓░░░ 66% (1h 11m)  |  week ▓▓▓░░░░░░░ 25% (Fri 1pm)
+  sonnet ▓▓▓░░░░░░░ 11% (1h 11m)  |  ctx 28%
+```
+
+Width source (first defined wins): `CLAUDE_CAT_COLUMNS` env → live
+`stty size </dev/tty` → `tput cols </dev/tty` → `COLUMNS` env →
+`process.stdout.columns` → 200 fallback. The live `stty` / `tput`
+paths mean a terminal resize gets picked up on the next
+`refreshInterval` tick, no configuration needed.
+
+| flag | effect |
+| --- | --- |
+| `--stack=auto` *(default)*      | wrap only when the line would overflow |
+| `--stack=always` / `--stack`    | always wrap, even on a wide pane |
+| `--stack=never` / `--no-stack`  | force one line, overflow be damned |
+| `--max-cols=<n>`                | override detected width for the threshold |
+
+### 2. Kawaii — 3-row card with ASCII cat
+
+For anyone who wants the cat more present. Each window lines up next to
+the cat's fixed-width left column.
 ```
  /\_/\    Sonnet 4.6 (1M context)  ·  $0.123  ·  ctx 23% used (77% left)
 ( ^ω^ )   Current session            ▓░░░░░░░░░░░░░  10% · 3h 15m
  / >🍣    Current week (all models)  ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm
 ```
 
-The cat sits in a fixed-width left column so the whole line reads as a
-single 3-row card. If you have more windows (e.g. a Sonnet-only bar),
-extra data rows drop into the right column with the cat column blank —
-bars stay vertically aligned no matter how many rows you have.
+<details><summary>settings.json</summary>
+
+```json
+{ "statusLine": { "type": "command",
+  "command": "npx -y claude-cat@latest --full --kawaii",
+  "padding": 1, "refreshInterval": 5 } }
+```
+</details>
+
+### 3. Wide — one horizontal line, forced
+
+Same data-only feel as compact (no cat, no cost) but **never wraps**.
+Use it on very wide panes when you'd rather have the line get long
+than have it auto-stack.
+```
+5h ▓▓░░ 25% (3h 15m)  |  week ▓▓░░ 20% (Fri 1pm)  |  sonnet ░░ 0% (Fri 1pm)  |  ctx 28%
+```
+
+<details><summary>settings.json</summary>
+
+```json
+{ "statusLine": { "type": "command",
+  "command": "npx -y claude-cat@latest --wide",
+  "padding": 1, "refreshInterval": 5 } }
+```
+</details>
+
+### 4. No cat — pure data
+
+Drops the cat glyph entirely.
+```
+Sonnet 4.6  ·  $0.123  ·  ctx 23% used
+  Current session            ▓░░░░░░░░░░░░░  10% · 3h 15m
+  Current week (all models)  ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm
+```
+
+<details><summary>settings.json</summary>
+
+```json
+{ "statusLine": { "type": "command",
+  "command": "npx -y claude-cat@latest --full --no-cat",
+  "padding": 1, "refreshInterval": 5 } }
+```
+</details>
 
 Same labels and reset phrasing as the `/usage` popup inside Claude Code.
-The only locale-aware piece is the session countdown — in a Korean
-terminal the first row reads `3시간 15분 후` instead of `3h 15m`.
+The only locale-aware piece is the session countdown — a Korean
+terminal (`LANG=ko_KR.UTF-8`) shows `3시간 15분 후` instead of `3h 15m`.
 
 ### Cat moods
 
@@ -38,12 +134,12 @@ Six moods — five driven by usage, one state-driven.
 
 | trigger                         | `--cat=compact` | `--kawaii` prop |
 | ------------------------------- | --------------- | --------------- |
-| no rate limits yet (*resting*)  | `/ᐠ ⌒ㅅ⌒ ᐟ\`    | `z z` breath    |
-| usage 0–30 %  (*chill*)          | `/ᐠ - ˕ - ᐟ\`   | 🍣 sushi        |
-| usage 30–60 % (*curious*)        | `/ᐠ ｡ㅅ｡ᐟ\`    | ⌨️ keyboard      |
-| usage 60–85 % (*alert*)          | `/ᐠ •ㅅ• ᐟ\`    | ☕ coffee        |
-| usage 85–95 % (*nervous*)        | `/ᐠ ≻ㅅ≺ ᐟ\`    | 💤 break         |
-| usage 95 %+   (*critical*)       | `/ᐠ ✖ㅅ✖ ᐟ\`    | 🛌 sleeping      |
+| no rate limits yet (*resting*)  | `/ᐠ -ᴥ- ᐟ\`    | `z z` breath    |
+| usage 0–30 %  (*chill*)          | `/ᐠ ^ᴥ^ ᐟ\`    | 🍣 sushi        |
+| usage 30–60 % (*curious*)        | `/ᐠ •ᴥ• ᐟ\`    | ⌨️ keyboard      |
+| usage 60–85 % (*alert*)          | `/ᐠ ◉ᴥ◉ ᐟ\`    | ☕ coffee        |
+| usage 85–95 % (*nervous*)        | `/ᐠ ⊙ᴥ⊙ ᐟ\`    | 💤 break         |
+| usage 95 %+   (*critical*)       | `/ᐠ ✖ᴥ✖ ᐟ\`    | 🛌 sleeping      |
 
 #### Why weekly drives the mood
 
@@ -116,24 +212,37 @@ No API keys. No OAuth reads. No network requests. Your credentials never leave C
 
 ## Install
 
-```bash
-# 1) make sure you have Node ≥ 18
-# 2) add this to ~/.claude/settings.json
+### Option 1 — ask Claude Code to install it for you
+
+Paste this into any Claude Code session:
+
+> Install claude-cat (https://github.com/thingineeer/claude-cat) into my
+> `~/.claude/settings.json` as the statusLine. Use the default compact
+> layout, refreshInterval 5, padding 1. Don't touch any other key. Show
+> me the diff first.
+
+Claude Code will add the single `statusLine` block below to your
+settings file, leave the rest untouched, and show you the diff before
+writing. Restart Claude Code and the line shows up on the next turn.
+
+### Option 2 — edit `~/.claude/settings.json` by hand
+
+```json
 {
   "statusLine": {
     "type": "command",
     "command": "npx -y claude-cat@latest",
     "padding": 1,
-    "refreshInterval": 30
+    "refreshInterval": 5
   }
 }
 ```
 
-Prefer a local clone?
+### Option 3 — local clone (for a maintainer / contributor)
 
 ```bash
-git clone https://github.com/thingineeer/claude-cat.git ~/.local/share/claude-cat
-# settings.json → "command": "node ~/.local/share/claude-cat/bin/cli.js"
+git clone https://github.com/thingineeer/claude-cat.git ~/code/claude-cat
+# settings.json → "command": "node /Users/<you>/code/claude-cat/bin/cli.js"
 ```
 
 ### Layouts
@@ -197,11 +306,41 @@ npm run test:critical
 
 ### Contributing
 
-PRs welcome — please read [CONTRIBUTING.md](./CONTRIBUTING.md) first. TL;DR:
-- feature branch in a dedicated **git worktree**, one topic per branch
-- logical, small commits
-- **no AI-attribution lines** in commit messages (enforced by hook)
-- PR review happens via CodeRabbit + maintainer
+PRs welcome. Full guide in [CONTRIBUTING.md](./CONTRIBUTING.md); for
+Claude-Code sessions see [CLAUDE.md](./CLAUDE.md).
+
+```
+  feat/*   ──PR──▶  dev   ──release PR──▶  main   ──tagged──▶  GitHub Release
+  fix/*               │                     │
+  chore/*             │              (maintainer only)
+  docs/*              │
+            day-to-day integration         released versions
+```
+
+- **Open every PR against `dev`**. External contributors never target
+  `main` directly — the maintainer cuts releases from `dev`.
+- One topic per branch, logical commits, Conventional Commit subjects.
+- No AI-attribution lines in commit messages (`commit-msg` hook rejects).
+- `pre-commit` / `pre-push` hooks also reject direct commits or pushes
+  to `main` and `dev`. Activate locally with `./scripts/setup.sh`
+  after cloning.
+
+#### Worktree-only policy
+
+The cloned checkout stays on `dev` for fetch/pull only; all edits live
+in side worktrees:
+
+```bash
+git worktree add ../claude-cat.feat-<topic> -b feat/<topic> origin/dev
+cd ../claude-cat.feat-<topic>
+./scripts/setup.sh      # wire hooks + local git identity via .env
+# … edit, commit, push …
+gh pr create --base dev --head feat/<topic>
+```
+
+Run multiple side worktrees in parallel when several topics are in
+flight — each ships a separate PR for CodeRabbit + reviewer to see one
+coherent change at a time.
 
 ## License
 

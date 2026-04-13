@@ -1,0 +1,28 @@
+name: guard-main
+
+# Enforce the branch model: only 'dev', 'release/*', or 'hotfix/*'
+# branches may PR into main. Any other source branch fails this check.
+# Pair with required-status-check so GitHub blocks the merge.
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  allowed-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR head branch
+        env:
+          HEAD: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          echo "PR head = $HEAD"
+          case "$HEAD" in
+            dev|release/*|hotfix/*) echo "✓ allowed source" ;;
+            *)
+              echo "::error::main only accepts PRs from 'dev', 'release/*', or 'hotfix/*'. Got '$HEAD'."
+              echo "  → Open your PR against 'dev' instead."
+              exit 1
+              ;;
+          esac

@@ -22,8 +22,9 @@ import { padEndDisplay, displayWidth } from "./width.js";
 // - session (five_hour): relative, the only locale-dependent string we emit
 //   ('3h 15m' / '3시간 15분 후')
 // - every other window: absolute, English-fixed, no timezone
-//   ('Resets 7pm' / 'Resets Apr 17, 1pm')
-function fmtResetPhrase(key, resetsAtSec, locale) {
+//     variant='long'  → 'Resets 7pm'           / 'Resets Apr 17, 1pm'
+//     variant='short' → '7pm'                  / 'Fri 1pm'
+function fmtResetPhrase(key, resetsAtSec, locale, { variant = "long" } = {}) {
   if (!resetsAtSec) return null;
   if (key === "five_hour") {
     const v = fmtCountdown(resetsAtSec, { locale });
@@ -33,6 +34,14 @@ function fmtResetPhrase(key, resetsAtSec, locale) {
   const parts = absoluteResetParts(resetsAtSec);
   if (!parts) return null;
   if (parts === "ready") return t("ready_now");
+  if (variant === "short") {
+    // Same-day → just the clock ('7pm'). Other day → weekday + clock
+    // ('Fri 1pm'). Drops the 'Resets' prefix entirely — the parentheses
+    // that wrap the phrase in compact/wide already imply "resets at".
+    const wd = new Date(resetsAtSec * 1000)
+      .toLocaleDateString("en-US", { weekday: "short" });
+    return parts.date ? `${wd} ${parts.clock}` : parts.clock;
+  }
   return parts.date
     ? t("resets_on", parts.date, parts.clock)
     : t("resets_at", parts.clock);
@@ -56,16 +65,34 @@ function safeParse(raw) {
 // English only — we want the in-terminal wording identical to the popup
 // so users don't have to map two sets of phrases. Only the session
 // countdown is localized.
-function labelFor(key) {
-  if (key === "five_hour") return t("current_session");
-  if (key === "seven_day") return t("current_week_all");
-  if (key.startsWith("seven_day_")) {
-    const suffix = key.slice("seven_day_".length);
-    const pretty = suffix
+function labelFor(key, { variant = "long" } = {}) {
+  const modelPretty = (suffix) =>
+    suffix
       .split("_")
       .map((p) => (p === "4x" ? "4x" : p.charAt(0).toUpperCase() + p.slice(1)))
       .join(" ");
-    return t("current_week_scope", pretty);
+
+  if (variant === "short") {
+    // Single-line layouts (compact / wide) pack a lot of info onto one
+    // line; trim labels so the status line still fits an 80-col pane.
+    //
+    //   five_hour       → '5h'
+    //   seven_day       → 'week'
+    //   seven_day_<m>   → '<m>' (lower-cased), e.g. 'sonnet', 'opus'.
+    //     We drop the 'week·' prefix: the model name alone already
+    //     reads as "the weekly bucket for that model" in context.
+    if (key === "five_hour") return "5h";
+    if (key === "seven_day") return "week";
+    if (key.startsWith("seven_day_")) {
+      return key.slice("seven_day_".length).toLowerCase();
+    }
+    return key;
+  }
+
+  if (key === "five_hour") return t("current_session");
+  if (key === "seven_day") return t("current_week_all");
+  if (key.startsWith("seven_day_")) {
+    return t("current_week_scope", modelPretty(key.slice("seven_day_".length)));
   }
   return key;
 }
@@ -88,7 +115,7 @@ function orderKey(k) {
   return [3, k];
 }
 
-function collectWindows(d) {
+function collectWindows(d, { variant = "long" } = {}) {
   const rl = d.rate_limits || {};
   return Object.entries(rl)
     .filter(([, v]) => isWindowEntry(v))
@@ -99,7 +126,7 @@ function collectWindows(d) {
     })
     .map(([k, v]) => ({
       key: k,
-      label: labelFor(k),
+      label: labelFor(k, { variant }),
       pct: v.used_percentage ?? 0,
       resets_at: v.resets_at,
     }));
@@ -141,57 +168,186 @@ function stateHint(state) {
 
 // Debug chip for the header. Kept to a short tag ('[Debug]') since the
 // actual dump path is documented and the user knows where to look.
-function debugChip() {
+// Suppressed entirely when the caller passes showDebugChip=false — useful
+// for clean screenshots while CLAUDE_CAT_DEBUG is still dumping JSON.
+function debugChip({ showDebugChip = true } = {}) {
+  if (!showDebugChip) return null;
   return debugEnabled() ? t("debug_tag") : null;
 }
 
-// Compact context-window chip for the header. Matches the phrasing of
-// thingineeer's prior shell status line so the switch to claude-cat
-// feels invisible: 'ctx 23% used (77% left)'. Label is fixed English —
-// terminal real estate beats literal translation for a six-word chip.
-function renderContextChip(d) {
+// Context-window chip.
+//   variant='long'  → 'ctx 23% used (77% left)' (full-layout header)
+//   variant='short' → 'ctx 23%'                 (compact/wide tail)
+// Label is fixed English — terminal real estate beats literal
+// translation for a chip this small.
+function renderContextChip(d, { variant = "long" } = {}) {
   const ctx = d?.context_window;
   if (!ctx || typeof ctx.used_percentage !== "number") return null;
   const used = Math.round(ctx.used_percentage);
+  if (variant === "short") return `ctx ${used}%`;
   const left = typeof ctx.remaining_percentage === "number"
     ? Math.round(ctx.remaining_percentage)
     : Math.max(0, 100 - used);
   return `ctx ${used}% used (${left}% left)`;
 }
 
-function renderCompact(d, { iconMode = "none", locale = "en", catTheme = "compact" } = {}) {
-  const windows = collectWindows(d);
+// How wide is the actual terminal (columns)?
+//
+// Claude Code spawns statusLine scripts with stdin/stdout/stderr as
+// pipes, so process.stdout.columns is undefined and $COLUMNS reflects
+// the *parent shell* at launch time, not the current terminal. To get
+// the live width we have to ask the controlling terminal directly via
+// /dev/tty — that file descriptor still points at the real terminal
+// even when stdout is a pipe.
+//
+// Priority:
+//   1. CLAUDE_CAT_COLUMNS env — explicit override
+//   2. stty size </dev/tty — live, updates on resize
+//   3. tput cols </dev/tty — same idea, different tool
+//   4. COLUMNS env — only correct if the shell exports live updates
+//   5. process.stdout.columns — rare (when stdout happens to be a TTY)
+//   6. fallback 200 — high default so an unknown width doesn't wrap
+//      prematurely; users on narrow panes can still force it with
+//      --stack=always or --max-cols.
+import { execSync } from "node:child_process";
+
+function parsePositiveInt(v) {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function ttyColumnsViaStty() {
+  try {
+    // stty size prints "<rows> <cols>"; read cols.
+    const out = execSync("stty size </dev/tty", {
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 200,
+    }).toString().trim();
+    const m = out.match(/\d+\s+(\d+)/);
+    return m ? parsePositiveInt(m[1]) : null;
+  } catch { return null; }
+}
+
+function ttyColumnsViaTput() {
+  try {
+    const out = execSync("tput cols </dev/tty", {
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 200,
+    }).toString().trim();
+    return parsePositiveInt(out);
+  } catch { return null; }
+}
+
+function detectTerminalColumns() {
+  return (
+    parsePositiveInt(process.env.CLAUDE_CAT_COLUMNS) ||
+    ttyColumnsViaStty() ||
+    ttyColumnsViaTput() ||
+    parsePositiveInt(process.env.COLUMNS) ||
+    (process.stdout && process.stdout.columns) ||
+    200
+  );
+}
+
+// Greedy multi-line pack. `head` is locked to the first line (it's
+// usually the cat). `body` items fill line 1 until the next one would
+// overflow; the overflow starts line 2, which fills the same way; and
+// so on. `tail` items (cost / ctx / debug) attach to the last line
+// when they fit, otherwise they open one more line. Continuation
+// lines get a small indent so the block reads as one entry, not a
+// list of siblings.
+function joinWithWrap({ head, body, tail, sep, lineSep, cap }) {
+  const sepWidth = displayWidth(sep);
+  const full = [...head, ...body, ...tail].join(sep);
+  if (displayWidth(full) <= cap) return full;
+
+  const indent = "  ";
+  const indentW = indent.length;
+
+  // Start with the locked head on line 1 (no indent).
+  const lines = [[...head]];
+  const widthOf = (line, isContinuation) =>
+    (isContinuation ? indentW : 0) +
+    (line.length === 0 ? 0 : displayWidth(line.join(sep)));
+
+  const pushItem = (item) => {
+    const last = lines[lines.length - 1];
+    const isCont = lines.length > 1;
+    const candidate = [...last, item];
+    if (widthOf(candidate, isCont) <= cap) {
+      last.push(item);
+    } else if (last.length === 0) {
+      // Single item wider than cap — accept it as-is rather than drop.
+      last.push(item);
+    } else {
+      lines.push([item]);
+    }
+  };
+
+  for (const p of body) pushItem(p);
+  for (const p of tail) pushItem(p);
+
+  return lines
+    .map((line, i) => (i === 0 ? line.join(sep) : indent + line.join(sep)))
+    .join(lineSep);
+}
+
+function renderCompact(d, {
+  iconMode = "none",
+  locale = "en",
+  showDebugChip = true,
+  stack = "auto",
+  cols,
+} = {}) {
+  const windows = collectWindows(d, { variant: "short" });
   const state = inferState(d, windows);
-  const cost = d?.cost?.total_cost_usd;
-  const ctx = renderContextChip(d);
-  const face = inlineCatGlyph({ windows, state: state === "normal" ? null : "resting" }, catTheme);
+  const ctx = renderContextChip(d, { variant: "short" });
 
-  const parts = [];
-  if (face) parts.push(`${C.cyan}${face}${C.reset}`);
+  // Compact is data-only: no cat, no cost. The cat lives in --full
+  // --kawaii, which is the layout people pick precisely to make room
+  // for it. The $ cost line gets dropped because users scanning the
+  // single line want to see 'how much capacity do I have left?' —
+  // the dollar number is noise here and is still one keystroke away
+  // in /cost.
+  const head = [];
 
+  const body = [];
   if (state !== "normal") {
-    const cs = fmtCost(cost);
-    if (cs)  parts.push(`${C.dim}${cs}${C.reset}`);
-    if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
     const hint = stateHint(state);
-    if (hint) parts.push(`${C.dim}${hint}${C.reset}`);
+    if (hint) body.push(`${C.dim}${hint}${C.reset}`);
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
-      const phrase = fmtResetPhrase(w.key, w.resets_at, locale);
-      const tail = phrase ? ` ${C.dim}· ${phrase}${C.reset}` : "";
+      const phrase = fmtResetPhrase(w.key, w.resets_at, locale, { variant: "short" });
+      // Compact packs reset time straight into parentheses, mirroring
+      // the maintainer's previous shell status line:
+      //    5h ▓▓░░░░░░░░ 10% (4h43m)
+      //    week ▓▓░░░░░░░░ 18% (Fri 13:00)
+      const tail = phrase ? ` ${C.dim}(${phrase})${C.reset}` : "";
       const icon = iconFor(iconMode, w.key);
-      parts.push(`${C.dim}${icon}${w.label}${C.reset} ${bar(pct)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
+      body.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
-    const cs = fmtCost(cost);
-    if (cs)  parts.push(`${C.dim}${cs}${C.reset}`);
-    if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
   }
 
-  const dbg = debugChip();
-  if (dbg) parts.push(`${C.dim}${dbg}${C.reset}`);
+  const tailGroup = [];
+  if (ctx) tailGroup.push(`${C.ctx}${ctx}${C.reset}`);
+  const dbg = debugChip({ showDebugChip });
+  if (dbg) tailGroup.push(`${C.debug}${dbg}${C.reset}`);
 
-  return parts.join(`  ${C.gray}·${C.reset}  `);
+  const sep = `  ${C.sep}|${C.reset}  `;
+  const lineSep = "\n";
+  const allParts = [...head, ...body, ...tailGroup];
+
+  if (stack === "never") return allParts.join(sep);
+  if (stack === "always") {
+    const line1 = [...head, ...body].join(sep);
+    const line2 = tailGroup.join(sep);
+    return line2 ? `${line1}${lineSep}  ${line2}` : line1;
+  }
+
+  // auto
+  const cap = typeof cols === "number" ? cols : detectTerminalColumns();
+  return joinWithWrap({ head, body, tail: tailGroup, sep, lineSep, cap });
 }
 
 // Build the 'data block' lines for the full layout:
@@ -199,12 +355,12 @@ function renderCompact(d, { iconMode = "none", locale = "en", catTheme = "compac
 //   line 1+  — one per window, OR a single short status hint
 // No indentation here; callers add padding if they place the block
 // next to cat art.
-function buildDataBlock(d, { iconMode, locale, state }) {
+function buildDataBlock(d, { iconMode, locale, state, showDebugChip = true }) {
   const windows = collectWindows(d);
   const cost = d?.cost?.total_cost_usd;
   const model = d?.model?.display_name;
   const ctx = renderContextChip(d);
-  const dbg = debugChip();
+  const dbg = debugChip({ showDebugChip });
 
   const lines = [];
   const header = [];
@@ -233,14 +389,14 @@ function buildDataBlock(d, { iconMode, locale, state }) {
   return lines;
 }
 
-function renderFull(d, { iconMode = "none", locale = "en", catTheme = "compact" } = {}) {
+function renderFull(d, { iconMode = "none", locale = "en", catTheme = "compact", showDebugChip = true } = {}) {
   const windows = collectWindows(d);
   const state = inferState(d, windows);
   const art = catArt(
     state === "normal" ? { windows } : { state: "resting" },
     catTheme,
   );
-  const data = buildDataBlock(d, { iconMode, locale, state });
+  const data = buildDataBlock(d, { iconMode, locale, state, showDebugChip });
 
   // Compact-cat full: inline the 1-line face into the header and indent
   // every data line with 2 spaces, matching the previous look.
@@ -276,47 +432,35 @@ function renderFull(d, { iconMode = "none", locale = "en", catTheme = "compact" 
   return out.join("\n");
 }
 
-// Wide layout: everything on a single line separated by middle-dots.
-// Useful for heavy users who don't want the status line growing taller
-// as more windows appear.
-function renderWide(d, { iconMode = "none", locale = "en", catTheme = "compact" } = {}) {
-  const windows = collectWindows(d);
+// Wide layout: every window on a single horizontal line. No cat, no
+// cost — same data-only ethos as compact, just forced onto one row.
+// Wide is for heavy users who don't want the line to ever wrap.
+function renderWide(d, { iconMode = "none", locale = "en", showDebugChip = true } = {}) {
+  const windows = collectWindows(d, { variant: "short" });
   const state = inferState(d, windows);
-  const cost = d?.cost?.total_cost_usd;
-  const model = d?.model?.display_name;
-  const ctx = renderContextChip(d);
-  const face = inlineCatGlyph(
-    state === "normal" ? { windows } : { state: "resting" },
-    catTheme,
-  );
+  const ctx = renderContextChip(d, { variant: "short" });
 
   const parts = [];
-  if (face) parts.push(`${C.cyan}${face}${C.reset}`);
-  if (model) parts.push(`${C.dim}${model}${C.reset}`);
 
   if (state !== "normal") {
-    const cs = fmtCost(cost);
-    if (cs)  parts.push(`${C.dim}${cs}${C.reset}`);
-    if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
     const hint = stateHint(state);
     if (hint) parts.push(`${C.dim}${hint}${C.reset}`);
+    if (ctx)  parts.push(`${C.ctx}${ctx}${C.reset}`);
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
-      const phrase = fmtResetPhrase(w.key, w.resets_at, locale);
-      const tail = phrase ? ` ${C.dim}${phrase}${C.reset}` : "";
+      const phrase = fmtResetPhrase(w.key, w.resets_at, locale, { variant: "short" });
+      const tail = phrase ? ` ${C.dim}(${phrase})${C.reset}` : "";
       const icon = iconFor(iconMode, w.key);
-      parts.push(`${C.dim}${icon}${w.label}${C.reset} ${bar(pct, 8)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
+      parts.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct, 8)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
-    const cs = fmtCost(cost);
-    if (cs)  parts.push(`${C.dim}${cs}${C.reset}`);
-    if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
+    if (ctx) parts.push(`${C.ctx}${ctx}${C.reset}`);
   }
 
-  const dbg = debugChip();
-  if (dbg) parts.push(`${C.dim}${dbg}${C.reset}`);
+  const dbg = debugChip({ showDebugChip });
+  if (dbg) parts.push(`${C.debug}${dbg}${C.reset}`);
 
-  return parts.join(`  ${C.gray}·${C.reset}  `);
+  return parts.join(`  ${C.sep}|${C.reset}  `);
 }
 
 function parseLayout(args) {
@@ -339,11 +483,41 @@ function parseCatTheme(args) {
   return "compact";
 }
 
+// --stack=auto|always|never (default: auto). Controls whether the compact
+// layout wraps into two lines when the terminal is narrow.
+function parseStackMode(args) {
+  if (args.includes("--stack") || args.includes("--stack=always")) return "always";
+  if (args.includes("--no-stack") || args.includes("--stack=never")) return "never";
+  for (const a of args) {
+    if (a.startsWith("--stack=")) {
+      const v = a.slice("--stack=".length);
+      if (["auto", "always", "never"].includes(v)) return v;
+    }
+  }
+  return "auto";
+}
+
+// --max-cols=<n> caps the single-line width used for auto-stack
+// detection. Useful when COLUMNS / stdout.columns don't match what the
+// user actually sees (e.g. embedded statusLine panes).
+function parseMaxCols(args) {
+  for (const a of args) {
+    if (a.startsWith("--max-cols=")) {
+      const n = parseInt(a.slice("--max-cols=".length), 10);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+  }
+  return undefined;
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const layout = parseLayout(args);
   const iconMode = parseIconMode(args);
   const catTheme = parseCatTheme(args);
+  const stack = parseStackMode(args);
+  const cols = parseMaxCols(args);
+  const showDebugChip = !args.includes("--no-debug-chip");
   const locale = detectLocale();
   const raw = await readStdin();
   const d = safeParse(raw);
@@ -353,7 +527,7 @@ async function main() {
   // sends on this machine/plan. No-op unless CLAUDE_CAT_DEBUG=1.
   maybeDumpStdin(raw, d);
 
-  const opts = { iconMode, locale, catTheme };
+  const opts = { iconMode, locale, catTheme, showDebugChip, stack, cols };
   let out;
   if (layout === "wide") out = renderWide(d, opts);
   else if (layout === "full") out = renderFull(d, opts);

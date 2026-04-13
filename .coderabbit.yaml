@@ -13,7 +13,9 @@ reviews:
   auto_review:
     enabled: true
     drafts: false
+    # day-to-day PRs target 'dev'; release PRs target 'main'. Review both.
     base_branches:
+      - dev
       - main
   path_filters:
     - "!**/node_modules/**"

@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Block direct pushes to protected branches — every change on main or
+# dev must flow through a pull request. This is the last line of
+# defense before GitHub branch protection kicks in; stopping the push
+# locally is faster feedback than waiting for GitHub to reject it.
+#
+# Bypass (rarely needed) with:  ALLOW_DIRECT_PUSH=1 git push …
+#   The maintainer uses this only for the initial repo bootstrap and
+#   for fast-forwarding dev onto main after a release merge.
+set -euo pipefail
+
+remote="${1:-origin}"
+protected_re='^(main|master|dev)$'
+
+# The hook receives `<local_ref> <local_sha> <remote_ref> <remote_sha>` on stdin,
+# one line per ref being pushed.
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [[ -z "${remote_ref:-}" ]] && continue
+  branch="${remote_ref#refs/heads/}"
+  # Deletions (local_sha = zeros) on any branch are fine to pass through;
+  # branch protection handles them on the server.
+  if [[ "$local_sha" =~ ^0+$ ]]; then
+    continue
+  fi
+  if [[ "$branch" =~ $protected_re ]]; then
+    if [[ "${ALLOW_DIRECT_PUSH:-0}" != "1" ]]; then
+      cat >&2 <<EOF
+✖ push blocked: direct push to '$branch' on '$remote' is not allowed.
+
+This repo uses a worktree-only policy — every change to main or dev
+lands through a reviewed pull request so CodeRabbit + maintainers
+have a chance to weigh in.
+
+    1. git worktree add ../claude-cat.<kind>-<topic> -b <kind>/<topic> origin/dev
+    2. cd there, commit in logical units, push the feature branch
+    3. gh pr create --base dev --head <kind>/<topic>
+
+<kind> is one of: feat | fix | chore | docs | refactor | test.
+
+(Maintainer-only: ALLOW_DIRECT_PUSH=1 is reserved for fast-forwarding
+dev onto main after a release merge.)
+EOF
+      exit 1
+    fi
+  fi
+done
