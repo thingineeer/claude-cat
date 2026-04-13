@@ -28,3 +28,12 @@ git config --local core.hooksPath "$HOOKS_PATH"
 echo "✓ git user.name  = $(git config --local user.name)"
 echo "✓ git user.email = $(git config --local user.email)"
 echo "✓ core.hooksPath = $(git config --local core.hooksPath)"
+
+# Maintainer-only: if the .env carries an npm publish token (it does in
+# the private vault, not in .env.example), wire it into ~/.npmrc so
+# `npm publish` works without an extra login on every new machine.
+# Contributors won't have NPM_TOKEN set and this block is a no-op for them.
+if [[ -n "${NPM_TOKEN:-}" ]]; then
+  npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN" >/dev/null
+  echo "✓ ~/.npmrc //registry.npmjs.org/:_authToken set (npm publish ready)"
+fi

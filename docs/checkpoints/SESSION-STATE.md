@@ -50,6 +50,4 @@ Read these first to get the full picture:
   2. publish GitHub Release from `## [X.Y.Z]` CHANGELOG section
   3. `cd ~/Desktop/claude-cat && npm publish` — token already in `~/.npmrc` (granular, Bypass 2FA = ✓)
   4. fast-forward `dev` onto `main`
-- **npm token caveat**: granular access tokens MUST have "Bypass 2FA" checked at creation, otherwise publish gets E403 even with the token (`~/.claude/projects/-Users-imyeongjin-Desktop/memory/npm_publish_2fa.md` for full notes).
-- **`.env` location**: `./.env` is a symlink to `~/.env-vault/projects/claude-cat/.env` (private vault, maintainer-only). New machines: `gh repo clone thingineeer/thingineeer-env ~/.env-vault && cd ~/.env-vault && ./bin/bootstrap.sh && cd ~/Desktop/claude-cat && envpull claude-cat && ./scripts/setup.sh`.
-- **Statusline currently active** for this machine: `node /Users/imyeongjin/Desktop/claude-cat/bin/cli.js --full --kawaii` in `~/.claude/settings.json` (3-row card).
+- **Maintainer setup on new machines**: see [`docs/MAINTAINER.md`](../MAINTAINER.md). One `./scripts/setup.sh` after `envpull claude-cat` writes the git config, hooks path, AND the npm publish token from the private vault — so `npm publish` works straight away with no extra login.

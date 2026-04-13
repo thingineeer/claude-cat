@@ -185,6 +185,8 @@ CI runs every `test:*` script on every PR into `dev` or `main`.
   machine or after a long break, read this first. Short playbook:
   branch model, where things live, new-machine setup, current state
   snapshot, known gaps still pending.
+- **docs/MAINTAINER.md** — maintainer-only ops: cutting a release,
+  npm publish, rotating the npm token. Contributors can ignore.
 - CONTRIBUTING.md — contributor-facing workflow (branches, commits,
   release checklist)
 - README.md — user-facing install/layout docs + scenario gallery
@@ -195,10 +197,17 @@ CI runs every `test:*` script on every PR into `dev` or `main`.
 
 ## Maintainer: the private env vault
 
-The maintainer's local `.env` (git identity, hooks path) lives in a
-separate **private** GitHub repo at
+The maintainer's local `.env` (git identity, hooks path, **npm
+publish token**) lives in a separate **private** GitHub repo at
 [`thingineeer/thingineeer-env`](https://github.com/thingineeer/thingineeer-env).
 It's cloned to `~/.env-vault` on each machine; `envpull claude-cat`
-drops a symlink at `./.env` so `./scripts/setup.sh` can load the
-right identity. Contributors don't need this — they just run
-`cp .env.example .env` and fill in their own values.
+drops a symlink at `./.env` so `./scripts/setup.sh` can apply git
+identity + hooks AND wire `NPM_TOKEN` into `~/.npmrc` for one-step
+`npm publish`.
+
+Contributors don't need this — they just run `cp .env.example .env`
+and fill in their own git identity values; `NPM_TOKEN` is absent in
+that template so the `~/.npmrc` step is a no-op for them.
+
+Full new-machine + release-publish flow: see
+[`docs/MAINTAINER.md`](docs/MAINTAINER.md).
