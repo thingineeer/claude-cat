@@ -183,22 +183,82 @@ function renderContextChip(d) {
   return `ctx ${used}% used (${left}% left)`;
 }
 
-function renderCompact(d, { iconMode = "none", locale = "en", catTheme = "compact", showDebugChip = true } = {}) {
+// How wide is the terminal (columns)? In priority:
+//   1. CLAUDE_CAT_COLUMNS env — explicit override
+//   2. COLUMNS env — many shells export this
+//   3. process.stdout.columns — only set when stdout is a TTY
+//   4. fallback of 120, a comfortable default that doesn't force stack
+//      unnecessarily when we really can't tell.
+function detectTerminalColumns() {
+  const from = (v) => {
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+  return (
+    from(process.env.CLAUDE_CAT_COLUMNS) ||
+    from(process.env.COLUMNS) ||
+    (process.stdout && process.stdout.columns) ||
+    120
+  );
+}
+
+// Join `parts` with `sep`. If the single-line width exceeds `cap`, split
+// into two lines by treating `head` as locked to line 1, then greedily
+// filling line 1 with `body` items until the next one would overflow —
+// everything after that, plus `tail`, flows onto line 2.
+function joinWithWrap({ head, body, tail, sep, lineSep, cap }) {
+  const sepWidth = displayWidth(sep);
+  const full = [...head, ...body, ...tail].join(sep);
+  if (displayWidth(full) <= cap) return full;
+
+  // Start line 1 with the locked head.
+  const line1 = [...head];
+  let w = line1.length ? displayWidth(line1.join(sep)) : 0;
+
+  const leftover = [];
+  let wrapped = false;
+  for (const p of body) {
+    const add = (line1.length ? sepWidth : 0) + displayWidth(p);
+    if (!wrapped && w + add <= cap) {
+      line1.push(p);
+      w += add;
+    } else {
+      wrapped = true;
+      leftover.push(p);
+    }
+  }
+  const line2 = [...leftover, ...tail];
+  // Line 2 gets a small indent so it reads as a continuation, not a
+  // new entry in a list.
+  const indent = "  ";
+  return line1.join(sep) + lineSep + indent + line2.join(sep);
+}
+
+function renderCompact(d, {
+  iconMode = "none",
+  locale = "en",
+  catTheme = "compact",
+  showDebugChip = true,
+  stack = "auto",
+  cols,
+} = {}) {
   const windows = collectWindows(d, { variant: "short" });
   const state = inferState(d, windows);
   const cost = d?.cost?.total_cost_usd;
   const ctx = renderContextChip(d);
   const face = inlineCatGlyph({ windows, state: state === "normal" ? null : "resting" }, catTheme);
 
-  const parts = [];
-  if (face) parts.push(`${C.cyan}${face}${C.reset}`);
+  // The status line is modelled as three groups so auto-stack can pick
+  // a meaningful split: cat stays with the windows it reports on, and
+  // extras (cost / ctx / debug) flow to line 2 when the terminal gets
+  // narrow.
+  const head = [];
+  if (face) head.push(`${C.cyan}${face}${C.reset}`);
 
+  const body = [];
   if (state !== "normal") {
-    const cs = fmtCost(cost);
-    if (cs)  parts.push(`${C.dim}${cs}${C.reset}`);
-    if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
     const hint = stateHint(state);
-    if (hint) parts.push(`${C.dim}${hint}${C.reset}`);
+    if (hint) body.push(`${C.dim}${hint}${C.reset}`);
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
@@ -209,19 +269,31 @@ function renderCompact(d, { iconMode = "none", locale = "en", catTheme = "compac
       //    week ▓▓░░░░░░░░ 18% (Fri 13:00)
       const tail = phrase ? ` ${C.dim}(${phrase})${C.reset}` : "";
       const icon = iconFor(iconMode, w.key);
-      parts.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
+      body.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
-    const cs = fmtCost(cost);
-    if (cs)  parts.push(`${C.dim}${cs}${C.reset}`);
-    if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
   }
 
+  const tailGroup = [];
+  const cs = fmtCost(cost);
+  if (cs)  tailGroup.push(`${C.dim}${cs}${C.reset}`);
+  if (ctx) tailGroup.push(`${C.dim}${ctx}${C.reset}`);
   const dbg = debugChip({ showDebugChip });
-  if (dbg) parts.push(`${C.dim}${dbg}${C.reset}`);
+  if (dbg) tailGroup.push(`${C.dim}${dbg}${C.reset}`);
 
-  // Pipe separator reads cleaner than a middle dot when the line gets
-  // packed — each section boundary pops out in a scanning glance.
-  return parts.join(`  ${C.gray}|${C.reset}  `);
+  const sep = `  ${C.gray}|${C.reset}  `;
+  const lineSep = "\n";
+  const allParts = [...head, ...body, ...tailGroup];
+
+  if (stack === "never") return allParts.join(sep);
+  if (stack === "always") {
+    const line1 = [...head, ...body].join(sep);
+    const line2 = tailGroup.join(sep);
+    return line2 ? `${line1}${lineSep}  ${line2}` : line1;
+  }
+
+  // auto
+  const cap = typeof cols === "number" ? cols : detectTerminalColumns();
+  return joinWithWrap({ head, body, tail: tailGroup, sep, lineSep, cap });
 }
 
 // Build the 'data block' lines for the full layout:
@@ -369,11 +441,40 @@ function parseCatTheme(args) {
   return "compact";
 }
 
+// --stack=auto|always|never (default: auto). Controls whether the compact
+// layout wraps into two lines when the terminal is narrow.
+function parseStackMode(args) {
+  if (args.includes("--stack") || args.includes("--stack=always")) return "always";
+  if (args.includes("--no-stack") || args.includes("--stack=never")) return "never";
+  for (const a of args) {
+    if (a.startsWith("--stack=")) {
+      const v = a.slice("--stack=".length);
+      if (["auto", "always", "never"].includes(v)) return v;
+    }
+  }
+  return "auto";
+}
+
+// --max-cols=<n> caps the single-line width used for auto-stack
+// detection. Useful when COLUMNS / stdout.columns don't match what the
+// user actually sees (e.g. embedded statusLine panes).
+function parseMaxCols(args) {
+  for (const a of args) {
+    if (a.startsWith("--max-cols=")) {
+      const n = parseInt(a.slice("--max-cols=".length), 10);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+  }
+  return undefined;
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const layout = parseLayout(args);
   const iconMode = parseIconMode(args);
   const catTheme = parseCatTheme(args);
+  const stack = parseStackMode(args);
+  const cols = parseMaxCols(args);
   const showDebugChip = !args.includes("--no-debug-chip");
   const locale = detectLocale();
   const raw = await readStdin();
@@ -384,7 +485,7 @@ async function main() {
   // sends on this machine/plan. No-op unless CLAUDE_CAT_DEBUG=1.
   maybeDumpStdin(raw, d);
 
-  const opts = { iconMode, locale, catTheme, showDebugChip };
+  const opts = { iconMode, locale, catTheme, showDebugChip, stack, cols };
   let out;
   if (layout === "wide") out = renderWide(d, opts);
   else if (layout === "full") out = renderFull(d, opts);
