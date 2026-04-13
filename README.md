@@ -8,26 +8,39 @@
 
 ![status: alpha](https://img.shields.io/badge/status-alpha-orange) ![license](https://img.shields.io/badge/license-MIT-blue) ![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
 
+### Default (compact cat, 1 line + window block)
 ```
  /ᐠ - ˕ - ᐟ\  ·  Sonnet 4.6 (1M context)  ·  $0.123  ·  ctx 23% used (77% left)
-   Current session            ▓░░░░░░░░░░░░░  10%  · 3h 15m
-   Current week (all models)  ▓▓▓░░░░░░░░░░░  18%  · Resets Apr 17, 1pm (Asia/Seoul)
-   Current week (Sonnet only) ░░░░░░░░░░░░░░   0%  · Resets Apr 15, 1pm (Asia/Seoul)
+   Current session            ▓░░░░░░░░░░░░░  10% · 3h 15m
+   Current week (all models)  ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm
+   Current week (Sonnet only) ░░░░░░░░░░░░░░   0% · Resets Apr 15, 1pm
+```
+
+### Kawaii cat (`--kawaii`)
+```
+ /\_/\
+( ^ω^ )
+ / >🍣
+Sonnet 4.6 (1M context)  ·  $0.123  ·  ctx 23% used (77% left)
+  Current session            ▓░░░░░░░░░░░░░  10% · 3h 15m
+  Current week (all models)  ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm
 ```
 
 Same labels and reset phrasing as the `/usage` popup inside Claude Code.
 The only locale-aware piece is the session countdown — in a Korean
 terminal the first row reads `3시간 15분 후` instead of `3h 15m`.
 
-When your usage climbs, the cat's face changes — so you notice the ceiling before you hit it.
+### Cat moods (5 steps, pick any theme)
 
-| usage   | cat                |
-| ------- | ------------------ |
-| 0–30 %  | `/ᐠ - ˕ - ᐟ\` chill |
-| 30–60 % | `/ᐠ ｡ㅅ｡ᐟ\` curious |
-| 60–85 % | `/ᐠ •ㅅ• ᐟ\` alert |
-| 85–95 % | `/ᐠ ≻ㅅ≺ ᐟ\` nervous |
-| 95 %+   | `/ᐠ ✖ㅅ✖ ᐟ\` critical |
+| usage   | `--cat=compact` | `--kawaii` prop |
+| ------- | --------------- | --------------- |
+| 0–30 %  | `/ᐠ - ˕ - ᐟ\` chill    | 🍣 sushi |
+| 30–60 % | `/ᐠ ｡ㅅ｡ᐟ\` curious  | ⌨️ keyboard |
+| 60–85 % | `/ᐠ •ㅅ• ᐟ\` alert    | ☕ coffee |
+| 85–95 % | `/ᐠ ≻ㅅ≺ ᐟ\` nervous  | 💤 break |
+| 95 %+   | `/ᐠ ✖ㅅ✖ ᐟ\` critical | 🛌 sleeping |
+
+`--no-cat` drops the cat entirely — pure data line.
 
 ## Why
 
@@ -94,6 +107,15 @@ same. The only localized piece is the session countdown word order:
 Claude Code runs your status-line command and pipes a JSON blob to stdin on every assistant message (and on `refreshInterval`). claude-cat reads that blob and prints one line (or a few, with `--full`). That's it.
 
 No file access outside the process, no network.
+
+## What's *not* in stdin JSON (yet)
+
+Two things the `/usage` popup shows that claude-cat **cannot surface today**, because Claude Code doesn't pipe them to status-line scripts:
+
+- **Current week (Sonnet only)** — the server only includes `rate_limits.seven_day_sonnet` in the stdin payload *sometimes* (the condition isn't documented). On many accounts it's simply absent, even while the in-app `/usage` popup displays it. Verified against Claude Code v2.1.104.
+- **Extra usage** (e.g. `$14 / $20 spent · Resets May 1`) — never in stdin JSON. The popup fetches it from `/api/oauth/usage` with the OAuth token, which is a private endpoint.
+
+We're exploring an opt-in background daemon that would call that endpoint locally and cache the values, so every terminal sees the same numbers. Tracking the work in [issues](https://github.com/thingineeer/claude-cat/issues).
 
 ## Development
 

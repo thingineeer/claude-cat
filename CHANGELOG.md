@@ -7,11 +7,20 @@ tag/release cut on 2026-04-13 has been demoted to a draft so we can
 keep shaping the layout (Extra usage, wide layout, official CLI
 labels) before a proper public launch.
 
+### Recently landed (cat themes batch)
+- `--cat=compact|kawaii|none` (aliases `--kawaii`, `--no-cat`) picks
+  the art style. Compact (default) keeps the 1-line cat; kawaii uses
+  a 3-line ASCII body with mood-specific props (sushi / keyboard /
+  coffee / 💤 / sleeping); none drops the cat entirely.
+- Reset phrases no longer print the timezone suffix — local time is
+  implicit in a terminal session, so 'Resets Apr 17, 1pm' is enough.
+- `scripts/capture-all.sh` renders every layout × theme × fixture to
+  `tmp/snapshots/` for eyes-on verification before merging.
+
 ### Recently landed
 - labels and reset phrases now mirror the `/usage` popup **verbatim**
   (English only): "Current session", "Current week (all models)",
-  "Current week (Sonnet only)", "Resets 7pm (Asia/Seoul)",
-  "Resets Apr 17, 1pm (Asia/Seoul)"
+  "Current week (Sonnet only)", "Resets 7pm", "Resets Apr 17, 1pm"
 - session countdown is the only localized string — Korean terminals see
   `3시간 15분 후` instead of `3h 15m`
 - context window now surfaces as a compact header chip
