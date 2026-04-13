@@ -303,7 +303,7 @@ function renderCompact(d, {
   // extras (cost / ctx / debug) flow to line 2 when the terminal gets
   // narrow.
   const head = [];
-  if (face) head.push(`${C.cyan}${face}${C.reset}`);
+  if (face) head.push(`${C.cat}${face}${C.reset}`);
 
   const body = [];
   if (state !== "normal") {
@@ -325,12 +325,12 @@ function renderCompact(d, {
 
   const tailGroup = [];
   const cs = fmtCost(cost);
-  if (cs)  tailGroup.push(`${C.dim}${cs}${C.reset}`);
-  if (ctx) tailGroup.push(`${C.dim}${ctx}${C.reset}`);
+  if (cs)  tailGroup.push(`${C.cost}${cs}${C.reset}`);
+  if (ctx) tailGroup.push(`${C.ctx}${ctx}${C.reset}`);
   const dbg = debugChip({ showDebugChip });
-  if (dbg) tailGroup.push(`${C.dim}${dbg}${C.reset}`);
+  if (dbg) tailGroup.push(`${C.debug}${dbg}${C.reset}`);
 
-  const sep = `  ${C.gray}|${C.reset}  `;
+  const sep = `  ${C.sep}|${C.reset}  `;
   const lineSep = "\n";
   const allParts = [...head, ...body, ...tailGroup];
 
@@ -443,13 +443,13 @@ function renderWide(d, { iconMode = "none", locale = "en", catTheme = "compact",
   );
 
   const parts = [];
-  if (face) parts.push(`${C.cyan}${face}${C.reset}`);
+  if (face) parts.push(`${C.cat}${face}${C.reset}`);
   if (model) parts.push(`${C.dim}${model}${C.reset}`);
 
   if (state !== "normal") {
     const cs = fmtCost(cost);
-    if (cs)  parts.push(`${C.dim}${cs}${C.reset}`);
-    if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
+    if (cs)  parts.push(`${C.cost}${cs}${C.reset}`);
+    if (ctx) parts.push(`${C.ctx}${ctx}${C.reset}`);
     const hint = stateHint(state);
     if (hint) parts.push(`${C.dim}${hint}${C.reset}`);
   } else {
@@ -461,14 +461,14 @@ function renderWide(d, { iconMode = "none", locale = "en", catTheme = "compact",
       parts.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct, 8)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
     const cs = fmtCost(cost);
-    if (cs)  parts.push(`${C.dim}${cs}${C.reset}`);
-    if (ctx) parts.push(`${C.dim}${ctx}${C.reset}`);
+    if (cs)  parts.push(`${C.cost}${cs}${C.reset}`);
+    if (ctx) parts.push(`${C.ctx}${ctx}${C.reset}`);
   }
 
   const dbg = debugChip({ showDebugChip });
-  if (dbg) parts.push(`${C.dim}${dbg}${C.reset}`);
+  if (dbg) parts.push(`${C.debug}${dbg}${C.reset}`);
 
-  return parts.join(`  ${C.gray}|${C.reset}  `);
+  return parts.join(`  ${C.sep}|${C.reset}  `);
 }
 
 function parseLayout(args) {

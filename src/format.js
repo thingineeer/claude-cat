@@ -1,22 +1,56 @@
 // ANSI colors. Keep minimal — status lines render in many terminals.
 import { countdown } from "./i18n.js";
 
+// Palette — organized by semantic role so each section of the status
+// line reads at the same glance-weight:
+//
+//   bar / pct         progress (green → yellow → magenta → red)
+//   brand             short window label "5h" / "week" (Claude Peach)
+//   cat               cyan cat glyph
+//   cost              bright white — most important number
+//   separator         subtle but visible gray (not quite dim)
+//   reset phrase      dim gray — secondary info
+//   ctx chip          soft cyan — system info, pairs visually with cat
+//   debug chip        magenta — intentionally loud, so "debug mode on"
+//                     is impossible to miss
+//   hint              dim gray
+//
+// Truecolor escapes are used for the brand peach and the soft-cyan
+// ctx chip; terminals without truecolor ignore the CSI and fall back
+// to default foreground.
 const C = {
-  reset: "\x1b[0m",
-  dim:   "\x1b[2m",
-  bold:  "\x1b[1m",
-  green: "\x1b[32m",
-  yellow:"\x1b[33m",
-  red:   "\x1b[31m",
-  cyan:  "\x1b[36m",
-  gray:  "\x1b[90m",
-  magenta:"\x1b[35m",
-  // Claude brand peach (#DE7356, RGB 222/115/86) for short window labels
-  // in compact/wide. Uses 24-bit truecolor; modern terminals (iTerm2,
-  // macOS Terminal, Alacritty, kitty, WezTerm, Windows Terminal) all
-  // support it. On terminals without truecolor the CSI is ignored and
-  // the text falls back to default foreground — no visual break.
-  brand: "\x1b[38;2;222;115;86m",
+  reset:     "\x1b[0m",
+  dim:       "\x1b[2m",
+  bold:      "\x1b[1m",
+
+  // progress-bar colors by percentage
+  green:     "\x1b[32m",
+  yellow:    "\x1b[33m",
+  red:       "\x1b[31m",
+  magenta:   "\x1b[35m",
+
+  // cat glyph
+  cat:       "\x1b[36m",              // cyan
+
+  // section separator ('|') — brighter than dim so sections read apart
+  sep:       "\x1b[37m\x1b[2m",       // white + dim = visible gray
+
+  // cost is the single 'money' number — use bright white, no dim
+  cost:      "\x1b[1m\x1b[37m",       // bold white
+
+  // ctx chip — soft cyan to pair with the cat, dim so it sits behind
+  // the window bars in scanning order
+  ctx:       "\x1b[2m\x1b[36m",
+
+  // debug chip — magenta so "debug on" is impossible to miss
+  debug:     "\x1b[35m",
+
+  // Claude Peach (#DE7356) — short window labels '5h' / 'week'
+  brand:     "\x1b[38;2;222;115;86m",
+
+  // Back-compat aliases so older call sites keep compiling.
+  gray:      "\x1b[90m",
+  cyan:      "\x1b[36m",
 };
 
 export function colorByPct(pct) {
