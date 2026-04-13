@@ -2,7 +2,12 @@
 
 ## Unreleased
 
-_Nothing yet — see `## [1.0.0]` below for the latest release._
+### Recently landed (compact + wide)
+- **cost chip returns** to `compact` and `wide` layouts — a bold-white
+  `$0.1234` rides next to the dim-cyan `ctx 28%` chip so Max-plan
+  users can eyeball spend without dropping to `--full` or running
+  `/cost`. The cat stays in `--full --kawaii` as before; this only
+  reintroduces the dollar number, not the cat.
 
 ### Still planned (post-1.0.0)
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose

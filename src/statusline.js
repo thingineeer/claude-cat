@@ -302,13 +302,12 @@ function renderCompact(d, {
   const windows = collectWindows(d, { variant: "short" });
   const state = inferState(d, windows);
   const ctx = renderContextChip(d, { variant: "short" });
+  const cs = fmtCost(d?.cost?.total_cost_usd);
 
-  // Compact is data-only: no cat, no cost. The cat lives in --full
-  // --kawaii, which is the layout people pick precisely to make room
-  // for it. The $ cost line gets dropped because users scanning the
-  // single line want to see 'how much capacity do I have left?' —
-  // the dollar number is noise here and is still one keystroke away
-  // in /cost.
+  // Compact stays cat-less — the cat lives in --full --kawaii — but
+  // cost now rides alongside ctx in the tail group. Max-plan users
+  // asked for the $ back; the bold-white cost chip sits next to the
+  // dim-cyan ctx chip so the bars still lead the eye.
   const head = [];
 
   const body = [];
@@ -330,6 +329,7 @@ function renderCompact(d, {
   }
 
   const tailGroup = [];
+  if (cs)  tailGroup.push(`${C.cost}${cs}${C.reset}`);
   if (ctx) tailGroup.push(`${C.ctx}${ctx}${C.reset}`);
   const dbg = debugChip({ showDebugChip });
   if (dbg) tailGroup.push(`${C.debug}${dbg}${C.reset}`);
@@ -432,19 +432,22 @@ function renderFull(d, { iconMode = "none", locale = "en", catTheme = "compact",
   return out.join("\n");
 }
 
-// Wide layout: every window on a single horizontal line. No cat, no
-// cost — same data-only ethos as compact, just forced onto one row.
+// Wide layout: every window on a single horizontal line. Cat-less
+// like compact, but now carries the cost chip alongside ctx so Max-
+// plan users can eyeball spend without leaving the row.
 // Wide is for heavy users who don't want the line to ever wrap.
 function renderWide(d, { iconMode = "none", locale = "en", showDebugChip = true } = {}) {
   const windows = collectWindows(d, { variant: "short" });
   const state = inferState(d, windows);
   const ctx = renderContextChip(d, { variant: "short" });
+  const cs = fmtCost(d?.cost?.total_cost_usd);
 
   const parts = [];
 
   if (state !== "normal") {
     const hint = stateHint(state);
     if (hint) parts.push(`${C.dim}${hint}${C.reset}`);
+    if (cs)   parts.push(`${C.cost}${cs}${C.reset}`);
     if (ctx)  parts.push(`${C.ctx}${ctx}${C.reset}`);
   } else {
     for (const w of windows) {
@@ -454,6 +457,7 @@ function renderWide(d, { iconMode = "none", locale = "en", showDebugChip = true 
       const icon = iconFor(iconMode, w.key);
       parts.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct, 8)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
+    if (cs)  parts.push(`${C.cost}${cs}${C.reset}`);
     if (ctx) parts.push(`${C.ctx}${ctx}${C.reset}`);
   }
 
