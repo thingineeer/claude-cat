@@ -357,8 +357,18 @@ Copy the prompt below into any active Claude Code session. Claude
 will edit `~/.claude/settings.json` for you, show a diff before
 writing, and leave every other setting untouched.
 
-**Default (⭐ compact, recommended):**
+#### A) Default — ⭐ compact, single line (recommended for most people)
 
+Installs the **one-line data-only** status line: bar | bar | `$` cost
+| `ctx %`. No cat. Wraps automatically on narrow terminals. Exactly
+what the compact screenshot near the top of this README shows.
+
+Preview:
+```
+5h ▓▓▓▓░░░░░░ 47% (1h 19m)  |  week ▓▓▓░░░░░░░ 31% (Fri 1pm)  |  $37.37  |  ctx 20%
+```
+
+Paste this into Claude Code:
 ```text
 Install claude-cat (https://github.com/thingineeer/claude-cat) into my
 ~/.claude/settings.json as the statusLine.
@@ -370,8 +380,21 @@ Install claude-cat (https://github.com/thingineeer/claude-cat) into my
 Don't touch any other key. Show me the diff first.
 ```
 
-**Want the 3-row kawaii cat instead:**
+#### B) 3-row kawaii cat — the cute one
 
+Installs the **multi-row `--full --kawaii`** layout: a 3-line ASCII
+cat in a left column, one data row per rate-limit window on the
+right. The cat's face and prop change with your usage. This is the
+version in the hero image at the top of this README.
+
+Preview:
+```
+ /\_/\    Opus 4.6  ·  $38.52  ·  ctx 23% used (77% left)
+( ^ω^ )   Current session            ▓▓▓▓▓▓░░░░░░░  51% · 1h 15m
+ / >🍣    Current week (all models)  ▓▓▓░░░░░░░░░░  31% · Resets Apr 17, 1pm
+```
+
+Paste this into Claude Code:
 ```text
 Install claude-cat (https://github.com/thingineeer/claude-cat) into my
 ~/.claude/settings.json as the statusLine.
@@ -383,8 +406,8 @@ Install claude-cat (https://github.com/thingineeer/claude-cat) into my
 Don't touch any other key. Show me the diff first.
 ```
 
-After Claude applies the change, restart Claude Code — the status line
-shows up on the next assistant turn.
+After Claude applies either change, restart Claude Code — the status
+line shows up on the next assistant turn.
 
 ### Option 2 — edit `~/.claude/settings.json` by hand
 

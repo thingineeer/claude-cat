@@ -113,8 +113,17 @@ API 키 안 씁니다. OAuth 토큰 안 읽습니다. 외부 네트워크 호출
 `~/.claude/settings.json` 을 수정해주며, 쓰기 전에 diff 를 보여줍니다.
 다른 키는 건드리지 않습니다.
 
-**기본 (⭐ compact, 추천):**
+#### A) 기본 — ⭐ compact, 한 줄 (대부분 이걸 추천)
 
+**한 줄 데이터 전용** status line 이 깔립니다: bar | bar | `$` 비용 | `ctx %`.
+고양이 없음. 좁은 터미널에선 자동 줄바꿈. README 상단의 compact 스크린샷과 동일.
+
+미리보기:
+```
+5h ▓▓▓▓░░░░░░ 47% (1h 19m)  |  week ▓▓▓░░░░░░░ 31% (Fri 1pm)  |  $37.37  |  ctx 20%
+```
+
+Claude Code 세션에 붙여넣기:
 ```text
 Install claude-cat (https://github.com/thingineeer/claude-cat) into my
 ~/.claude/settings.json as the statusLine.
@@ -126,8 +135,20 @@ Install claude-cat (https://github.com/thingineeer/claude-cat) into my
 Don't touch any other key. Show me the diff first.
 ```
 
-**3줄 kawaii 고양이 원하면:**
+#### B) 3줄 kawaii 고양이 — 귀여운 버전
 
+**여러 줄 `--full --kawaii`** 레이아웃이 깔립니다: 왼쪽 컬럼에 3줄 ASCII
+고양이, 오른쪽에 rate-limit 창별 데이터 행. 사용량에 따라 얼굴과 소품이
+바뀜. README 상단 hero 이미지가 이 버전입니다.
+
+미리보기:
+```
+ /\_/\    Opus 4.6  ·  $38.52  ·  ctx 23% used (77% left)
+( ^ω^ )   Current session            ▓▓▓▓▓▓░░░░░░░  51% · 1h 15m
+ / >🍣    Current week (all models)  ▓▓▓░░░░░░░░░░  31% · Resets Apr 17, 1pm
+```
+
+Claude Code 세션에 붙여넣기:
 ```text
 Install claude-cat (https://github.com/thingineeer/claude-cat) into my
 ~/.claude/settings.json as the statusLine.
