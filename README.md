@@ -32,7 +32,7 @@ doesn't benefit from a `$` number mixed into the percentages.
 </p>
 
 ```
-5h ▓▓▓▓▓▓▓░░░ 66% (1h 11m)  |  week ▓▓▓░░░░░░░ 25% (Fri 1pm)  |  sonnet ▓▓▓░░░░░░░ 11% (1h 11m)  |  ctx 28%
+5h ▓▓▓▓▓▓▓░░░ 66% (1h 11m)  |  week ▓▓▓░░░░░░░ 25% (Fri 1pm)  |  sonnet ▓▓▓░░░░░░░ 11% (1h 11m)  |  $0.420  |  ctx 28%
 ```
 
 <details><summary>settings.json</summary>
@@ -53,7 +53,7 @@ reads as one entry:
 
 ```
 5h ▓▓▓▓▓▓▓░░░ 66% (1h 11m)  |  week ▓▓▓░░░░░░░ 25% (Fri 1pm)
-  sonnet ▓▓▓░░░░░░░ 11% (1h 11m)  |  ctx 28%
+  sonnet ▓▓▓░░░░░░░ 11% (1h 11m)  |  $0.420  |  ctx 28%
 ```
 
 Width source (first defined wins): `CLAUDE_CAT_COLUMNS` env → live
@@ -90,11 +90,11 @@ the cat's fixed-width left column.
 
 ### 3. Wide — one horizontal line, forced
 
-Same data-only feel as compact (no cat, no cost) but **never wraps**.
-Use it on very wide panes when you'd rather have the line get long
-than have it auto-stack.
+Cat-less like compact, but **never wraps**. Use it on very wide panes
+when you'd rather have the line get long than have it auto-stack.
+Carries the same `$ cost | ctx %` tail as compact.
 ```
-5h ▓▓░░ 25% (3h 15m)  |  week ▓▓░░ 20% (Fri 1pm)  |  sonnet ░░ 0% (Fri 1pm)  |  ctx 28%
+5h ▓▓░░ 25% (3h 38m)  |  week ▓▓░░ 20% (Fri 1pm)  |  sonnet ░░ 0% (Fri 1pm)  |  $0.420  |  ctx 28%
 ```
 
 <details><summary>settings.json</summary>
@@ -246,24 +246,54 @@ git clone https://github.com/thingineeer/claude-cat.git ~/code/claude-cat
 # settings.json → "command": "node /Users/<you>/code/claude-cat/bin/cli.js"
 ```
 
-### Layouts
+## Configuration
 
-```json
-"command": "npx -y claude-cat@latest"              // compact (default, one line)
-"command": "npx -y claude-cat@latest --full"       // multi-line with bars + context window
-"command": "npx -y claude-cat@latest --wide"       // one horizontal line, even with many windows
-```
+All flags and env vars live here. Four layout modes up top, plus a
+handful of chips and width knobs.
 
-- `compact` — terse, fits most terminal widths
-- `full` — one line per window + a `Context ▓░░░ 23%` bar when present
-- `wide` — heavy-user mode: keeps everything on a single line so the chat area never shifts vertically when a new window appears
+### Layout (pick one)
 
-### Language
+| flag                        | effect                                                       |
+| --------------------------- | ------------------------------------------------------------ |
+| *(none)* → `compact`        | single-line data, auto-wraps on narrow panes                 |
+| `--full` / `-f`             | multi-line, one window per row; the only layout that shows the cat |
+| `--wide`                    | single line, never wraps (for very wide panes)               |
 
-Every string is fixed English — labels and reset phrases mirror the
-`/usage` popup one-to-one; the session countdown uses Latin unit
-abbreviations (`3h 38m`, `15m`, `2d 4h`) that read the same in every
-terminal worldwide. No locale dispatch, no `CLAUDE_CAT_LANG`.
+### Cat (for `--full`)
+
+| flag                                 | effect                                            |
+| ------------------------------------ | ------------------------------------------------- |
+| *(default)* `--cat=compact`          | inline 1-line cat next to the header              |
+| `--kawaii` / `--cat=kawaii`          | 3-row ASCII cat in a left column                  |
+| `--no-cat` / `--cat=none`            | pure data, no cat                                 |
+
+### Compact wrap (for default / `--wide`)
+
+| flag                                 | effect                                            |
+| ------------------------------------ | ------------------------------------------------- |
+| *(default)* `--stack=auto`           | wrap only when the line would overflow            |
+| `--stack` / `--stack=always`         | always wrap, even on a wide pane                  |
+| `--no-stack` / `--stack=never`       | force one line, overflow be damned                |
+| `--max-cols=<n>`                     | override detected width for the wrap threshold    |
+
+### Chips & misc
+
+| flag                                 | effect                                            |
+| ------------------------------------ | ------------------------------------------------- |
+| `--no-debug-chip`                    | hide the `[Debug]` chip even when the env flag is on |
+| `--icons=none\|emoji\|nerd`          | icon set for window labels (default `none`)       |
+
+### Environment variables
+
+| env var               | effect                                                                 |
+| --------------------- | ---------------------------------------------------------------------- |
+| `CLAUDE_CAT_COLUMNS`  | force a specific terminal width (overrides detection)                  |
+| `CLAUDE_CAT_DEBUG=1`  | dump the raw stdin JSON into `~/.claude/claude-cat/` for inspection    |
+
+Width detection (first defined wins): `CLAUDE_CAT_COLUMNS` →
+live `stty size </dev/tty` → `tput cols </dev/tty` → `COLUMNS` env →
+`process.stdout.columns` → 200 fallback. A terminal resize is picked
+up on the next `refreshInterval` tick, no configuration needed.
 
 ## Plan compatibility
 
