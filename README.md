@@ -9,8 +9,11 @@
 ![status: alpha](https://img.shields.io/badge/status-alpha-orange) ![license](https://img.shields.io/badge/license-MIT-blue) ![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
 
 ```
- /ᐠ - ˕ - ᐟ\  ·  Session ▓░░░░░░░░░ 10%  · resets in 3h 51m  ·  Weekly ▓▓░░░░░░░░ 18%  · resets Fri 1:00 PM  ·  $0.123
+ /ᐠ - ˕ - ᐟ\  ·  Current session ▓░░░░░░░░░ 10% · 3h 15m  ·  Current week (all models) ▓▓░░░░░░░░ 18% · Resets Apr 17, 1pm (Asia/Seoul)  ·  $0.123
 ```
+
+Same labels as the `/usage` screen. Locale-aware too — set `LANG=ko_KR.UTF-8`
+and the line reads `현재 세션 … 3시간 15분 후 · 이번 주 (모든 모델) … 4월 17일 오후 1시에 재설정 (Asia/Seoul)`.
 
 When your usage climbs, the cat's face changes — so you notice the ceiling before you hit it.
 
@@ -50,11 +53,22 @@ git clone https://github.com/thingineeer/claude-cat.git ~/.local/share/claude-ca
 # settings.json → "command": "node ~/.local/share/claude-cat/bin/cli.js"
 ```
 
-### Full (multi-line) mode
+### Layouts
 
 ```json
-"command": "npx -y claude-cat@latest --full"
+"command": "npx -y claude-cat@latest"              // compact (default, one line)
+"command": "npx -y claude-cat@latest --full"       // multi-line with bars + context window
+"command": "npx -y claude-cat@latest --wide"       // one horizontal line, even with many windows
 ```
+
+- `compact` — terse, fits most terminal widths
+- `full` — one line per window + a `Context ▓░░░ 23%` bar when present
+- `wide` — heavy-user mode: keeps everything on a single line so the chat area never shifts vertically when a new window appears
+
+### Language
+
+- Defaults to your `LANG` / `LC_ALL`. `ko_KR.*` gets Korean labels, everything else falls back to English.
+- Force it explicitly with `CLAUDE_CAT_LANG=ko` or `CLAUDE_CAT_LANG=en`.
 
 ## Plan compatibility
 
