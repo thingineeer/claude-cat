@@ -15,19 +15,19 @@ import { pickCat, catArt, THEME_NAMES } from "./cats.js";
 import { bar, fmtCountdown, absoluteResetParts, fmtCost, colorByPct, colors as C } from "./format.js";
 import { parseIconMode, iconFor } from "./icons.js";
 import { maybeDumpStdin, debugEnabled } from "./debug.js";
-import { detectLocale, t } from "./i18n.js";
+import { t } from "./i18n.js";
 import { padEndDisplay, displayWidth } from "./width.js";
 
 // Build the reset phrase for a given window.
-// - session (five_hour): relative, the only locale-dependent string we emit
-//   ('3h 15m' / '3시간 15분 후')
+// - session (five_hour): relative, universal format (`3h 34m`, `15m`,
+//   `2d 4h`) — English letters only, readable in any terminal locale.
 // - every other window: absolute, English-fixed, no timezone
 //     variant='long'  → 'Resets 7pm'           / 'Resets Apr 17, 1pm'
 //     variant='short' → '7pm'                  / 'Fri 1pm'
-function fmtResetPhrase(key, resetsAtSec, locale, { variant = "long" } = {}) {
+function fmtResetPhrase(key, resetsAtSec, { variant = "long" } = {}) {
   if (!resetsAtSec) return null;
   if (key === "five_hour") {
-    const v = fmtCountdown(resetsAtSec, { locale });
+    const v = fmtCountdown(resetsAtSec);
     if (v === "ready") return t("ready_now");
     return v;
   }
@@ -294,7 +294,6 @@ function joinWithWrap({ head, body, tail, sep, lineSep, cap }) {
 
 function renderCompact(d, {
   iconMode = "none",
-  locale = "en",
   showDebugChip = true,
   stack = "auto",
   cols,
@@ -317,7 +316,7 @@ function renderCompact(d, {
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
-      const phrase = fmtResetPhrase(w.key, w.resets_at, locale, { variant: "short" });
+      const phrase = fmtResetPhrase(w.key, w.resets_at, { variant: "short" });
       // Compact packs reset time straight into parentheses, mirroring
       // the maintainer's previous shell status line:
       //    5h ▓▓░░░░░░░░ 10% (4h43m)
@@ -355,7 +354,7 @@ function renderCompact(d, {
 //   line 1+  — one per window, OR a single short status hint
 // No indentation here; callers add padding if they place the block
 // next to cat art.
-function buildDataBlock(d, { iconMode, locale, state, showDebugChip = true }) {
+function buildDataBlock(d, { iconMode, state, showDebugChip = true }) {
   const windows = collectWindows(d);
   const cost = d?.cost?.total_cost_usd;
   const model = d?.model?.display_name;
@@ -380,7 +379,7 @@ function buildDataBlock(d, { iconMode, locale, state, showDebugChip = true }) {
   const labelCols = 26;
   for (const w of windows) {
     const pct = Math.round(w.pct);
-    const phrase = fmtResetPhrase(w.key, w.resets_at, locale);
+    const phrase = fmtResetPhrase(w.key, w.resets_at);
     const icon = iconFor(iconMode, w.key);
     const label = padEndDisplay(icon + w.label, labelCols);
     const right = phrase ? ` ${C.dim}· ${phrase}${C.reset}` : "";
@@ -389,14 +388,14 @@ function buildDataBlock(d, { iconMode, locale, state, showDebugChip = true }) {
   return lines;
 }
 
-function renderFull(d, { iconMode = "none", locale = "en", catTheme = "compact", showDebugChip = true } = {}) {
+function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip = true } = {}) {
   const windows = collectWindows(d);
   const state = inferState(d, windows);
   const art = catArt(
     state === "normal" ? { windows } : { state: "resting" },
     catTheme,
   );
-  const data = buildDataBlock(d, { iconMode, locale, state, showDebugChip });
+  const data = buildDataBlock(d, { iconMode, state, showDebugChip });
 
   // Compact-cat full: inline the 1-line face into the header and indent
   // every data line with 2 spaces, matching the previous look.
@@ -436,7 +435,7 @@ function renderFull(d, { iconMode = "none", locale = "en", catTheme = "compact",
 // like compact, but now carries the cost chip alongside ctx so Max-
 // plan users can eyeball spend without leaving the row.
 // Wide is for heavy users who don't want the line to ever wrap.
-function renderWide(d, { iconMode = "none", locale = "en", showDebugChip = true } = {}) {
+function renderWide(d, { iconMode = "none", showDebugChip = true } = {}) {
   const windows = collectWindows(d, { variant: "short" });
   const state = inferState(d, windows);
   const ctx = renderContextChip(d, { variant: "short" });
@@ -452,7 +451,7 @@ function renderWide(d, { iconMode = "none", locale = "en", showDebugChip = true 
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
-      const phrase = fmtResetPhrase(w.key, w.resets_at, locale, { variant: "short" });
+      const phrase = fmtResetPhrase(w.key, w.resets_at, { variant: "short" });
       const tail = phrase ? ` ${C.dim}(${phrase})${C.reset}` : "";
       const icon = iconFor(iconMode, w.key);
       parts.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct, 8)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
@@ -522,7 +521,6 @@ async function main() {
   const stack = parseStackMode(args);
   const cols = parseMaxCols(args);
   const showDebugChip = !args.includes("--no-debug-chip");
-  const locale = detectLocale();
   const raw = await readStdin();
   const d = safeParse(raw);
 
@@ -531,7 +529,7 @@ async function main() {
   // sends on this machine/plan. No-op unless CLAUDE_CAT_DEBUG=1.
   maybeDumpStdin(raw, d);
 
-  const opts = { iconMode, locale, catTheme, showDebugChip, stack, cols };
+  const opts = { iconMode, catTheme, showDebugChip, stack, cols };
   let out;
   if (layout === "wide") out = renderWide(d, opts);
   else if (layout === "full") out = renderFull(d, opts);

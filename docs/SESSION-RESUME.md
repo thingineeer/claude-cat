@@ -121,6 +121,8 @@ cd ../claude-cat.<kind>-<topic>
   - section separator is `|` for compact/wide, `·` for full
   - short labels: `5h` / `week` / `sonnet` / `opus` / etc.
   - Claude Peach (`#DE7356`) for the short labels only
+  - countdown is **universal English** (`3h 38m`, `15m`, `2d 4h`) —
+    no locale dispatch, no `CLAUDE_CAT_LANG`
   - statusline script must never read `~/.claude/.credentials.json`,
     never hit network endpoints, never write outside
     `~/.claude/claude-cat/`
