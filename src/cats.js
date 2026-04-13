@@ -28,7 +28,7 @@ const THRESHOLDS = [
 // monospace font — previous mixed-width glyphs (｡, ≻, ⌒) wobbled the
 // cursor column in some terminals.
 const COMPACT = {
-  chill:    "/ᐠ ◡ᴥ◡ ᐟ\\",  // half-lidded, relaxed
+  chill:    "/ᐠ ◕ᴥ◕ ᐟ\\",  // big friendly eyes — this is the face users see most
   curious:  "/ᐠ •ᴥ• ᐟ\\",  // round eyes, watching
   alert:    "/ᐠ ◉ᴥ◉ ᐟ\\",  // wide open
   nervous:  "/ᐠ ⊙ᴥ⊙ ᐟ\\",  // dilated
