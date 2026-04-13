@@ -28,21 +28,36 @@ function safeParse(raw) {
   try { return raw ? JSON.parse(raw) : {}; } catch { return {}; }
 }
 
+// Window labels mirror the official Claude usage UI.
+function labelFor(key) {
+  if (key === "five_hour") return "Session";
+  if (key === "seven_day") return "Weekly";
+  if (key.startsWith("seven_day_")) {
+    const suffix = key.slice("seven_day_".length);
+    const pretty = suffix
+      .split("_")
+      .map((p) => (p === "4x" ? "4x" : p.charAt(0).toUpperCase() + p.slice(1)))
+      .join(" ");
+    return `Weekly · ${pretty}`;
+  }
+  return key;
+}
+
 function collectWindows(d) {
   const out = [];
   const rl = d.rate_limits || {};
   if (rl.five_hour) {
     out.push({
-      key: "session",
-      label: "5h",
+      key: "five_hour",
+      label: labelFor("five_hour"),
       pct: rl.five_hour.used_percentage ?? 0,
       resets_at: rl.five_hour.resets_at,
     });
   }
   if (rl.seven_day) {
     out.push({
-      key: "weekly",
-      label: "7d",
+      key: "seven_day",
+      label: labelFor("seven_day"),
       pct: rl.seven_day.used_percentage ?? 0,
       resets_at: rl.seven_day.resets_at,
     });
@@ -54,7 +69,7 @@ function collectWindows(d) {
     if (rl[k]) {
       out.push({
         key: k,
-        label: k.replace("seven_day_", "7d·"),
+        label: labelFor(k),
         pct: rl[k].used_percentage ?? 0,
         resets_at: rl[k].resets_at,
       });
@@ -111,7 +126,7 @@ function renderFull(d) {
     for (const w of windows) {
       const pct = Math.round(w.pct);
       const cd = fmtCountdown(w.resets_at);
-      const label = w.label.padEnd(6);
+      const label = w.label.padEnd(18);
       const right = cd ? ` ${C.dim}reset ${cd}${C.reset}` : "";
       lines.push(`  ${C.dim}${label}${C.reset}${bar(pct, 14)} ${colorByPct(pct)}${String(pct).padStart(3)}%${C.reset}${right}`);
     }
