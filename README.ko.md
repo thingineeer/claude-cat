@@ -6,7 +6,18 @@
 
 ![status: alpha](https://img.shields.io/badge/status-alpha-orange) ![license](https://img.shields.io/badge/license-MIT-blue) ![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
 
+<p align="center">
+  <img src="assets/screenshots/kawaii-chill.png" alt="3줄 kawaii 카드 — chill 모드, Opus 4.6" width="780" />
+  <br />
+  <em>3줄 kawaii 카드 — <code>--full --kawaii</code> (chill 모드)</em>
+</p>
+
 기본 `compact` 출력 (한 줄):
+
+<p align="left">
+  <img src="assets/screenshots/compact-short.png" alt="compact 한 줄 status line — $37.37, ctx 20%" width="780" />
+</p>
+
 ```
 5h ▓░░░░░░░░░ 10% (3h 38m)  |  week ▓▓░░░░░░░░ 18% (Fri 1pm)  |  $0.420  |  ctx 28%
 ```

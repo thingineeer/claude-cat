@@ -4,10 +4,11 @@ Terminal captures used by the main README's "Modes at a glance" gallery.
 Stored as PNGs rather than GIFs so GitHub can inline them without
 autoplaying.
 
-| file                  | mode shown                               | command                                            |
-| --------------------- | ---------------------------------------- | -------------------------------------------------- |
-| `kawaii-full.png`     | `--full --kawaii` (3-row card)           | `node bin/cli.js --full --kawaii --no-debug-chip`  |
-| `compact-short.png`   | default single-line (short labels + `|`) | `node bin/cli.js --no-debug-chip`                  |
+| file                  | mode shown                                          | command                                            |
+| --------------------- | --------------------------------------------------- | -------------------------------------------------- |
+| `kawaii-full.png`     | `--full --kawaii`, curious mood (English README hero) | `node bin/cli.js --full --kawaii --no-debug-chip`  |
+| `kawaii-chill.png`    | `--full --kawaii`, chill mood (Korean README hero)    | `node bin/cli.js --full --kawaii --no-debug-chip`  |
+| `compact-short.png`   | default single-line (short labels + `|`)              | `node bin/cli.js --no-debug-chip`                  |
 
 ## Re-capturing
 
