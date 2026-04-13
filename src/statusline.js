@@ -12,7 +12,16 @@
 // rate_limits for Pro/Max subscribers after the first assistant response.
 
 import { pickCat } from "./cats.js";
-import { bar, fmtCountdown, fmtCost, colorByPct, colors as C } from "./format.js";
+import { bar, fmtResetFor, fmtCost, colorByPct, colors as C } from "./format.js";
+
+// "resets in 3h 51m" for relative windows; "resets Fri 1:00 PM" for absolute.
+function fmtResetPhrase(key, resetsAtSec) {
+  const t = fmtResetFor(key, resetsAtSec);
+  if (!t) return null;
+  if (t === "ready") return "ready now";
+  if (key === "five_hour") return `resets in ${t}`;
+  return `resets ${t}`;
+}
 
 function readStdin() {
   return new Promise((resolve) => {
@@ -95,8 +104,8 @@ function renderCompact(d) {
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
-      const cd = fmtCountdown(w.resets_at);
-      const tail = cd ? ` ${C.dim}(${cd})${C.reset}` : "";
+      const phrase = fmtResetPhrase(w.key, w.resets_at);
+      const tail = phrase ? ` ${C.dim}· ${phrase}${C.reset}` : "";
       parts.push(`${C.dim}${w.label}${C.reset} ${bar(pct)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
     const cs = fmtCost(cost);
@@ -125,9 +134,9 @@ function renderFull(d) {
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
-      const cd = fmtCountdown(w.resets_at);
+      const phrase = fmtResetPhrase(w.key, w.resets_at);
       const label = w.label.padEnd(18);
-      const right = cd ? ` ${C.dim}reset ${cd}${C.reset}` : "";
+      const right = phrase ? ` ${C.dim}· ${phrase}${C.reset}` : "";
       lines.push(`  ${C.dim}${label}${C.reset}${bar(pct, 14)} ${colorByPct(pct)}${String(pct).padStart(3)}%${C.reset}${right}`);
     }
   }
