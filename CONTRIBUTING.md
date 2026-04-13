@@ -27,14 +27,19 @@ Rules:
 
 - Conventional Commits preferred: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`, `ci:`.
 - Korean or English — both fine. Keep the subject ≤ 72 chars.
-- **No AI attribution.** Do not add `Co-Authored-By: Claude / Anthropic / Copilot / ChatGPT`, the `🤖 Generated with [Claude Code]` footer, or `noreply@anthropic.com` co-author lines. A commit-msg hook blocks these automatically.
-- Author identity must match the committer (`thingineeer <dlaudwls1203@gmail.com>` for the maintainer). External contributors commit under their own identity.
+- **No AI-tool attribution lines.** Do not add AI co-author / generator footers to commit messages. A commit-msg hook rejects them automatically.
+- Commit under your own git identity. Use the GitHub no-reply address to avoid leaking your personal email.
 
-Enable the hook once after cloning:
+### One-time setup
+
+Copy the environment template and enable the hooks:
 
 ```bash
-git config core.hooksPath .githooks
+cp .env.example .env     # fill in GIT_USER_NAME / GIT_USER_EMAIL locally
+./scripts/setup.sh       # applies .env to local git config + hooks path
 ```
+
+`.env` is git-ignored — nothing you put there is ever pushed.
 
 ## Security
 
