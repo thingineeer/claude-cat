@@ -19,8 +19,13 @@ const LABELS = {
   resets_at:           (clock) => `Resets ${clock}`,
   resets_on:           (date, clock) => `Resets ${date}, ${clock}`,
   ready_now:           "ready now",
-  warming_up:          "warming up…",
-  api_only_hint:       "(rate limits appear after the first reply; API users only see cost)",
+  // Short status phrases shown beside the resting cat when we have no
+  // rate_limits to draw. Each must fit a typical terminal width without
+  // wrapping; keep them under ~40 columns.
+  warming_up:          "resting — waiting for first reply",
+  cost_only_mode:      "API mode — cost only",
+  cost_not_tracked:    "cost not tracked on this provider",
+  debug_tag:           "[Debug]",
 };
 
 const COUNTDOWN = {
