@@ -133,21 +133,25 @@ terminal worldwide — no locale switches, no wrong word order.
 
 Six moods — five driven by usage, one state-driven.
 
-> **Heads up**: the cat only appears in `--full` layouts. Default
-> `compact` and `--wide` are **cat-less by design** — they carry just
-> the data bars + `$` cost + `ctx %` tail. If you want the cat, pick
-> `--full` (compact 1-line cat) or `--full --kawaii` (3-row cat).
+> **The cat lives only in `--full` layout.** Default (`compact`
+> layout) and `--wide` are **single-line, cat-less** — just data
+> bars + `$` cost + `ctx %`. To see the cat, switch to `--full`
+> (1-line face inline with the header) or `--full --kawaii` (3-row
+> card to the left of the data).
 
-#### Summary
+#### Summary (`--full` layout only)
 
-| trigger                         | `--cat=compact` | `--kawaii` prop |
-| ------------------------------- | --------------- | --------------- |
-| no rate limits yet (*resting*)  | `/ᐠ -ᴥ- ᐟ\`    | 🚬 smoke        |
-| usage 0–30 %  (*chill*)          | `/ᐠ ^ᴥ^ ᐟ\`    | 🍣 sushi        |
-| usage 30–60 % (*curious*)        | `/ᐠ •ᴥ• ᐟ\`    | ⌨️ keyboard      |
-| usage 60–85 % (*alert*)          | `/ᐠ ◉ᴥ◉ ᐟ\`    | ☕ coffee        |
-| usage 85–95 % (*nervous*)        | `/ᐠ ⊙ᴥ⊙ ᐟ\`    | 💤 break         |
-| usage 95 %+   (*critical*)       | `/ᐠ ✖ᴥ✖ ᐟ\`    | 🛌 sleeping      |
+Both cat variants below are rendered by `--full`; the default is the
+1-line face, and `--kawaii` swaps it for the 3-row card with a prop.
+
+| trigger                         | `--full` (1-line face) | `--full --kawaii` prop |
+| ------------------------------- | ---------------------- | ---------------------- |
+| no rate limits yet (*resting*)  | `/ᐠ -ᴥ- ᐟ\`           | 🚬 smoke               |
+| usage 0–30 %  (*chill*)          | `/ᐠ ^ᴥ^ ᐟ\`           | 🍣 sushi               |
+| usage 30–60 % (*curious*)        | `/ᐠ •ᴥ• ᐟ\`           | ⌨️ keyboard             |
+| usage 60–85 % (*alert*)          | `/ᐠ ◉ᴥ◉ ᐟ\`           | ☕ coffee               |
+| usage 85–95 % (*nervous*)        | `/ᐠ ⊙ᴥ⊙ ᐟ\`           | 💤 break                |
+| usage 95 %+   (*critical*)       | `/ᐠ ✖ᴥ✖ ᐟ\`           | 🛌 sleeping             |
 
 #### Full 3-row `--kawaii` gallery
 
