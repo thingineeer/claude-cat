@@ -85,7 +85,19 @@ API 키 안 씁니다. OAuth 토큰 안 읽습니다. 외부 네트워크 호출
 
 ## 설치
 
-`~/.claude/settings.json` 에 추가:
+### 모드 고르기
+
+`~/.claude/settings.json` 의 `command` 필드만 바꾸면 모드 전환됩니다.
+
+| 모드 | 명령어 | 고양이 |
+| ---- | ------ | ------ |
+| **기본** — compact, 한 줄 | `npx -y claude-cat@latest` | 없음 |
+| `--wide` — 한 줄, 줄바꿈 안 함 | `npx -y claude-cat@latest --wide` | 없음 |
+| `--full` — 여러 줄, 1줄 face | `npx -y claude-cat@latest --full` | 1줄 face |
+| `--full --kawaii` — 3줄 카드 | `npx -y claude-cat@latest --full --kawaii` | 3줄 카드 |
+| `--full --no-cat` — 데이터만 | `npx -y claude-cat@latest --full --no-cat` | 없음 |
+
+### 기본 설정 예시
 
 ```json
 {
@@ -93,16 +105,14 @@ API 키 안 씁니다. OAuth 토큰 안 읽습니다. 외부 네트워크 호출
     "type": "command",
     "command": "npx -y claude-cat@latest",
     "padding": 1,
-    "refreshInterval": 30
+    "refreshInterval": 5
   }
 }
 ```
 
-풀(여러 줄) 모드:
-
-```json
-"command": "npx -y claude-cat@latest --full"
-```
+다른 모드를 원하면 `command` 의 뒤쪽 플래그만 바꿔 넣으세요 (위 표 참고).
+전체 플래그 목록은 영문 README 의 [Configuration 섹션](./README.md#configuration)
+을 확인하세요.
 
 ## 플랜별 호환
 

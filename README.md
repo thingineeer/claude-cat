@@ -14,18 +14,31 @@
   <em>3-row kawaii card — <code>--full --kawaii</code>, Korean locale</em>
 </p>
 
-## Modes at a glance
+## Pick your mode
 
-Every mode reads from the same stdin JSON Claude Code already pipes to
-statusLine scripts. Pick the one that fits your terminal.
+All modes read the same stdin JSON Claude Code pipes to statusLine
+scripts. Swap the `command` field in `~/.claude/settings.json`:
 
-### 1. Default — compact, single line (data-only)
+| mode                          | one-line command                                      | cat?       |
+| ----------------------------- | ----------------------------------------------------- | ---------- |
+| **default** — compact, 1 line | `npx -y claude-cat@latest`                            | no         |
+| `--wide` — 1 line, no wrap    | `npx -y claude-cat@latest --wide`                     | no         |
+| `--full` — multi-row          | `npx -y claude-cat@latest --full`                     | 1-line face |
+| `--full --kawaii` — 3-row     | `npx -y claude-cat@latest --full --kawaii`            | 3-row card  |
+| `--full --no-cat` — pure data | `npx -y claude-cat@latest --full --no-cat`            | no         |
 
-Terse, fits any terminal width. No flags needed. Short labels
-(`5h` / `week` / `sonnet`) render in **Claude Peach** (`#DE7356`);
-reset time rides inside parentheses next to each window. No cat, no
-dollar number — the cat lives in mode 2, and capacity scanning
-doesn't benefit from a `$` number mixed into the percentages.
+Each mode below shows a live sample plus the exact `settings.json`
+block — copy/paste the one you want.
+
+## Modes
+
+### 1. Default — compact, single line
+
+Terse one-liner, fits any terminal width. No flags needed. Short
+labels (`5h` / `week` / `sonnet`) in **Claude Peach** (`#DE7356`);
+reset time rides inside parentheses next to each window; the tail
+carries `$` cost and `ctx %`. No cat — it lives in `--full` / kawaii
+mode.
 
 <p align="left">
   <img src="assets/screenshots/compact-short.png" alt="compact status line" width="780" />
@@ -35,14 +48,13 @@ doesn't benefit from a `$` number mixed into the percentages.
 5h ▓▓▓▓▓▓▓░░░ 66% (1h 11m)  |  week ▓▓▓░░░░░░░ 25% (Fri 1pm)  |  sonnet ▓▓▓░░░░░░░ 11% (1h 11m)  |  $0.420  |  ctx 28%
 ```
 
-<details><summary>settings.json</summary>
+**Install** — add to `~/.claude/settings.json`:
 
 ```json
 { "statusLine": { "type": "command",
   "command": "npx -y claude-cat@latest",
   "padding": 1, "refreshInterval": 5 } }
 ```
-</details>
 
 #### Auto-wrap on narrow terminals
 
@@ -69,60 +81,80 @@ paths mean a terminal resize gets picked up on the next
 | `--stack=never` / `--no-stack`  | force one line, overflow be damned |
 | `--max-cols=<n>`                | override detected width for the threshold |
 
-### 2. Kawaii — 3-row card with ASCII cat
+### 2. `--full` — multi-row, 1-line cat inline
 
-For anyone who wants the cat more present. Each window lines up next to
-the cat's fixed-width left column.
+The 1-line cat face sits at the start of the header; data bars follow
+on subsequent rows.
+
+```
+/ᐠ ^ᴥ^ ᐟ\   ·  Opus 4.6  ·  $0.420  ·  ctx 28% used (72% left)
+  Current session            ▓▓▓▓░░░░░░░░░░  25% · 3h 38m
+  Current week (all models)  ▓▓▓░░░░░░░░░░░  20% · Resets Apr 17, 1pm
+```
+
+**Install**:
+
+```json
+{ "statusLine": { "type": "command",
+  "command": "npx -y claude-cat@latest --full",
+  "padding": 1, "refreshInterval": 5 } }
+```
+
+### 3. `--full --kawaii` — 3-row ASCII cat
+
+For anyone who wants the cat more present. Each window lines up next
+to the cat's fixed-width left column.
+
 ```
  /\_/\    Sonnet 4.6 (1M context)  ·  $0.123  ·  ctx 23% used (77% left)
-( ^ω^ )   Current session            ▓░░░░░░░░░░░░░  10% · 3h 15m
+( ^ω^ )   Current session            ▓░░░░░░░░░░░░░  10% · 3h 38m
  / >🍣    Current week (all models)  ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm
 ```
 
-<details><summary>settings.json</summary>
+**Install**:
 
 ```json
 { "statusLine": { "type": "command",
   "command": "npx -y claude-cat@latest --full --kawaii",
   "padding": 1, "refreshInterval": 5 } }
 ```
-</details>
 
-### 3. Wide — one horizontal line, forced
+### 4. `--wide` — one horizontal line, forced
 
 Cat-less like compact, but **never wraps**. Use it on very wide panes
 when you'd rather have the line get long than have it auto-stack.
 Carries the same `$ cost | ctx %` tail as compact.
+
 ```
 5h ▓▓░░ 25% (3h 38m)  |  week ▓▓░░ 20% (Fri 1pm)  |  sonnet ░░ 0% (Fri 1pm)  |  $0.420  |  ctx 28%
 ```
 
-<details><summary>settings.json</summary>
+**Install**:
 
 ```json
 { "statusLine": { "type": "command",
   "command": "npx -y claude-cat@latest --wide",
   "padding": 1, "refreshInterval": 5 } }
 ```
-</details>
 
-### 4. No cat — pure data
+### 5. `--full --no-cat` — pure data, multi-row
 
-Drops the cat glyph entirely.
+Drops the cat glyph entirely. Same header + data rows as `--full` but
+without the face.
+
 ```
 Sonnet 4.6  ·  $0.123  ·  ctx 23% used
-  Current session            ▓░░░░░░░░░░░░░  10% · 3h 15m
+  Current session            ▓░░░░░░░░░░░░░  10% · 3h 38m
   Current week (all models)  ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm
 ```
 
-<details><summary>settings.json</summary>
+**Install**:
 
 ```json
 { "statusLine": { "type": "command",
   "command": "npx -y claude-cat@latest --full --no-cat",
   "padding": 1, "refreshInterval": 5 } }
 ```
-</details>
 
 Same labels and reset phrasing as the `/usage` popup inside Claude Code.
 The session countdown uses a **universal `3h 38m` format** (Latin
