@@ -1,0 +1,21 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run sample (compact)
+        run: npm run test:sample
+      - name: Run sample (full)
+        run: npm run test:full
+      - name: Run sample (critical)
+        run: npm run test:critical
