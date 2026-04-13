@@ -9,11 +9,15 @@
 ![status: alpha](https://img.shields.io/badge/status-alpha-orange) ![license](https://img.shields.io/badge/license-MIT-blue) ![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
 
 ```
- /ᐠ - ˕ - ᐟ\  ·  Current session ▓░░░░░░░░░ 10% · 3h 15m  ·  Current week (all models) ▓▓░░░░░░░░ 18% · Resets Apr 17, 1pm (Asia/Seoul)  ·  $0.123
+ /ᐠ - ˕ - ᐟ\  ·  Sonnet 4.6 (1M context)  ·  $0.123  ·  ctx 23% used (77% left)
+   Current session            ▓░░░░░░░░░░░░░  10%  · 3h 15m
+   Current week (all models)  ▓▓▓░░░░░░░░░░░  18%  · Resets Apr 17, 1pm (Asia/Seoul)
+   Current week (Sonnet only) ░░░░░░░░░░░░░░   0%  · Resets Apr 15, 1pm (Asia/Seoul)
 ```
 
-Same labels as the `/usage` screen. Locale-aware too — set `LANG=ko_KR.UTF-8`
-and the line reads `현재 세션 … 3시간 15분 후 · 이번 주 (모든 모델) … 4월 17일 오후 1시에 재설정 (Asia/Seoul)`.
+Same labels and reset phrasing as the `/usage` popup inside Claude Code.
+The only locale-aware piece is the session countdown — in a Korean
+terminal the first row reads `3시간 15분 후` instead of `3h 15m`.
 
 When your usage climbs, the cat's face changes — so you notice the ceiling before you hit it.
 
@@ -67,8 +71,14 @@ git clone https://github.com/thingineeer/claude-cat.git ~/.local/share/claude-ca
 
 ### Language
 
-- Defaults to your `LANG` / `LC_ALL`. `ko_KR.*` gets Korean labels, everything else falls back to English.
-- Force it explicitly with `CLAUDE_CAT_LANG=ko` or `CLAUDE_CAT_LANG=en`.
+Labels and reset phrases are fixed English on purpose — they mirror the
+`/usage` popup one-to-one, so the terminal and the in-app UI read the
+same. The only localized piece is the session countdown word order:
+
+| locale | session reset |
+| --- | --- |
+| default (`en`) | `3h 15m` |
+| `ko` (detected from `LANG=ko_KR.*` or `CLAUDE_CAT_LANG=ko`) | `3시간 15분 후` |
 
 ## Plan compatibility
 

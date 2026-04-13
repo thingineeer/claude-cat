@@ -1,4 +1,6 @@
 // ANSI colors. Keep minimal — status lines render in many terminals.
+import { countdown } from "./i18n.js";
+
 const C = {
   reset: "\x1b[0m",
   dim:   "\x1b[2m",
@@ -27,9 +29,9 @@ export function bar(pct, width = 10) {
   return `${col}${"▓".repeat(filled)}${C.gray}${"░".repeat(empty)}${C.reset}`;
 }
 
-// Short relative countdown — best for short windows (session / 5h).
-// English uses compact units ("3h 51m"). Korean uses native words
-// ("3시간 51분 후"). In both we drop trailing zero units.
+// Short relative countdown for the session window. This is the only
+// locale-dependent string in claude-cat — the English copy is "3h 15m",
+// Korean is "3시간 15분 후".
 export function fmtCountdown(resetsAtSec, { locale = "en" } = {}) {
   if (!resetsAtSec) return null;
   const s = resetsAtSec - Math.floor(Date.now() / 1000);
@@ -37,32 +39,23 @@ export function fmtCountdown(resetsAtSec, { locale = "en" } = {}) {
   const d = Math.floor(s / 86400);
   const h = Math.floor((s % 86400) / 3600);
   const m = Math.floor((s % 3600) / 60);
-  if (locale === "ko") {
-    if (d > 0) return h > 0 ? `${d}일 ${h}시간 후` : `${d}일 후`;
-    if (h > 0) return m > 0 ? `${h}시간 ${m}분 후` : `${h}시간 후`;
-    return `${m}분 후`;
-  }
-  if (d > 0) return h > 0 ? `${d}d ${h}h` : `${d}d`;
-  if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
-  return `${m}m`;
+  if (d > 0) return countdown(locale, "days_hours", d, h);
+  if (h > 0) return countdown(locale, "hours_min", h, m);
+  return countdown(locale, "minutes", m);
 }
 
-// 12-hour clock in the same compact form as Claude's /usage screen:
-//   "7pm", "1:00 pm" (en) / "오후 7시", "오후 1시 30분" (ko)
-function fmtClock(date, locale) {
+// 12-hour clock in the exact form Claude's /usage screen uses:
+//   "7pm", "1:00 pm". Always English; this matches the in-app UI.
+function fmtClock(date) {
   const h24 = date.getHours();
   const h12 = h24 % 12 || 12;
   const m = date.getMinutes();
-  if (locale === "ko") {
-    const ampm = h24 < 12 ? "오전" : "오후";
-    return m === 0 ? `${ampm} ${h12}시` : `${ampm} ${h12}시 ${m}분`;
-  }
   const ampm = h24 < 12 ? "am" : "pm";
   return m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
-function fmtShortDate(date, locale) {
-  if (locale === "ko") return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+// "Apr 17" — English short date, to match the /usage screen.
+function fmtShortDate(date) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
@@ -75,20 +68,20 @@ export function tzName() {
   }
 }
 
-// Absolute reset phrase data for long windows (weekly / 7d), returned as
-// a struct so the renderer can compose the locale-specific sentence via
-// i18n instead of hard-coding word order. Shape:
+// Absolute reset phrase data for long windows (weekly, extra usage),
+// returned as a struct so the renderer composes the final sentence via
+// i18n.t(). Shape:
 //   { clock: "1pm", date: "Apr 17" | null, tz: "Asia/Seoul" | null }
-// If 'resets_at' is in the past, returns "ready".
-export function absoluteResetParts(resetsAtSec, { now = new Date(), locale = "en" } = {}) {
+// If resets_at is in the past, returns "ready".
+export function absoluteResetParts(resetsAtSec, { now = new Date() } = {}) {
   if (!resetsAtSec) return null;
   const target = new Date(resetsAtSec * 1000);
   if (target.getTime() - now.getTime() <= 0) return "ready";
   const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const sameDay = startOfDay(target) === startOfDay(now);
   return {
-    clock: fmtClock(target, locale),
-    date: sameDay ? null : fmtShortDate(target, locale),
+    clock: fmtClock(target),
+    date: sameDay ? null : fmtShortDate(target),
     tz: tzName(),
   };
 }
