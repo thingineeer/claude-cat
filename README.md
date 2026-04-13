@@ -212,24 +212,37 @@ No API keys. No OAuth reads. No network requests. Your credentials never leave C
 
 ## Install
 
-```bash
-# 1) make sure you have Node ≥ 18
-# 2) add this to ~/.claude/settings.json
+### Option 1 — ask Claude Code to install it for you
+
+Paste this into any Claude Code session:
+
+> Install claude-cat (https://github.com/thingineeer/claude-cat) into my
+> `~/.claude/settings.json` as the statusLine. Use the default compact
+> layout, refreshInterval 5, padding 1. Don't touch any other key. Show
+> me the diff first.
+
+Claude Code will add the single `statusLine` block below to your
+settings file, leave the rest untouched, and show you the diff before
+writing. Restart Claude Code and the line shows up on the next turn.
+
+### Option 2 — edit `~/.claude/settings.json` by hand
+
+```json
 {
   "statusLine": {
     "type": "command",
     "command": "npx -y claude-cat@latest",
     "padding": 1,
-    "refreshInterval": 30
+    "refreshInterval": 5
   }
 }
 ```
 
-Prefer a local clone?
+### Option 3 — local clone (for a maintainer / contributor)
 
 ```bash
-git clone https://github.com/thingineeer/claude-cat.git ~/.local/share/claude-cat
-# settings.json → "command": "node ~/.local/share/claude-cat/bin/cli.js"
+git clone https://github.com/thingineeer/claude-cat.git ~/code/claude-cat
+# settings.json → "command": "node /Users/<you>/code/claude-cat/bin/cli.js"
 ```
 
 ### Layouts
