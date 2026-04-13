@@ -105,10 +105,10 @@ cd ../claude-cat.<kind>-<topic>
 
 ## 5. Current state snapshot (update on each release)
 
-- Last merged PR on `dev`: **PR #20** — live tty width, n-row wrap,
-  role-based palette, data-only compact (no cat / no cost)
-- Last released tag: **v1.0.0** — currently **demoted to draft**,
-  `package.json` version is `0.2.0-dev` pending a proper 1.0.0 cut
+- Last merged PR on `dev`: **PR #21** — SESSION-RESUME playbook +
+  vault pointer + AI-install section
+- Last released tag: **v1.0.0** — cut on 2026-04-13,
+  `package.json` version is `1.0.0`
 - Open UX invariants (don't break in PRs without discussion):
   - `full` layout still mirrors `/usage` verbatim (English-fixed
     labels, `·` separator, dim palette)
