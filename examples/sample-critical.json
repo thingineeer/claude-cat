@@ -1,0 +1,10 @@
+{
+  "hook_event_name": "Status",
+  "session_id": "example-session",
+  "model": { "id": "claude-opus-4-6", "display_name": "Opus 4.6" },
+  "cost": { "total_cost_usd": 12.34 },
+  "rate_limits": {
+    "five_hour":  { "used_percentage": 97, "resets_at": 1776060000 },
+    "seven_day":  { "used_percentage": 88, "resets_at": 1776400000 }
+  }
+}
