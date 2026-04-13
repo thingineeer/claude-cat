@@ -21,8 +21,8 @@ import { padEndDisplay } from "./width.js";
 // Build the reset phrase for a given window.
 // - session (five_hour): relative, the only locale-dependent string we emit
 //   ('3h 15m' / '3시간 15분 후')
-// - every other window: absolute, English-fixed to match /usage verbatim
-//   ('Resets 7pm (Asia/Seoul)' / 'Resets Apr 17, 1pm (Asia/Seoul)')
+// - every other window: absolute, English-fixed, no timezone
+//   ('Resets 7pm' / 'Resets Apr 17, 1pm')
 function fmtResetPhrase(key, resetsAtSec, locale) {
   if (!resetsAtSec) return null;
   if (key === "five_hour") {
@@ -34,8 +34,8 @@ function fmtResetPhrase(key, resetsAtSec, locale) {
   if (!parts) return null;
   if (parts === "ready") return t("ready_now");
   return parts.date
-    ? t("resets_on", parts.date, parts.clock, parts.tz)
-    : t("resets_at", parts.clock, parts.tz);
+    ? t("resets_on", parts.date, parts.clock)
+    : t("resets_at", parts.clock);
 }
 
 function readStdin() {

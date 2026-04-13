@@ -13,11 +13,11 @@ const LABELS = {
   current_week_all:    "Current week (all models)",
   current_week_scope:  (model) => `Current week (${model} only)`,
   extra_usage:         "Extra usage",
-  // Reset phrase mirrors the /usage screen:
-  //   'Resets 7pm (Asia/Seoul)'          — same-day windows
-  //   'Resets Apr 17, 1pm (Asia/Seoul)'  — different-day windows
-  resets_at:           (clock, tz) => `Resets ${clock}${tz ? ` (${tz})` : ""}`,
-  resets_on:           (date, clock, tz) => `Resets ${date}, ${clock}${tz ? ` (${tz})` : ""}`,
+  // Reset phrase — concise, no timezone (always local time).
+  //   'Resets 7pm'          — same-day windows
+  //   'Resets Apr 17, 1pm'  — different-day windows
+  resets_at:           (clock) => `Resets ${clock}`,
+  resets_on:           (date, clock) => `Resets ${date}, ${clock}`,
   ready_now:           "ready now",
   warming_up:          "warming up…",
   api_only_hint:       "(rate limits appear after the first reply; API users only see cost)",
