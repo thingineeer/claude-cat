@@ -8,14 +8,18 @@ keep shaping the layout (Extra usage, wide layout, official CLI
 labels) before a proper public launch.
 
 ### Recently landed
-- official `/usage` labels: "Current session", "Current week (all models)",
-  "Current week (<Model> only)" (e.g. Sonnet only)
-- locale-aware reset phrasing: `3h 15m` / `Resets Apr 17, 1pm (Asia/Seoul)`
-  in English, `3시간 15분 후` / `4월 17일 오후 1시에 재설정 (Asia/Seoul)`
-  in Korean (honors `LANG` / `LC_ALL`; overrideable via `CLAUDE_CAT_LANG`)
-- `context_window.used_percentage` now surfaces as a quiet `Context ▓░░░ 23%`
-  bar in full mode
-- new `--layout=wide` (alias `--wide`) keeps everything on a single line so
+- labels and reset phrases now mirror the `/usage` popup **verbatim**
+  (English only): "Current session", "Current week (all models)",
+  "Current week (Sonnet only)", "Resets 7pm (Asia/Seoul)",
+  "Resets Apr 17, 1pm (Asia/Seoul)"
+- session countdown is the only localized string — Korean terminals see
+  `3시간 15분 후` instead of `3h 15m`
+- context window now surfaces as a compact header chip
+  `ctx 23% used (77% left)` (English-fixed), not a separate line; applies
+  to compact / full / wide layouts
+- EAW-aware label padding (src/width.js) so any future localized label
+  stays column-aligned
+- `--layout=wide` (alias `--wide`) keeps everything on a single line so
   the chat area never grows taller as more windows appear
 - `CLAUDE_CAT_DEBUG=1` still available for dumping stdin JSON locally
 
