@@ -2,12 +2,30 @@
 
 ## Unreleased
 
-_Nothing yet — see `## [1.0.0]` below._
+_Nothing yet — see `## [1.0.1]` below._
 
-### Still planned (post-1.0.0)
+### Still planned (post-1.0.1)
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
   it; daemon proxying `/api/oauth/usage` is the leading candidate)
 - cross-terminal realtime sync via a small background cache
+
+## [1.0.1] - 2026-04-14
+
+Documentation-only patch — keeps the npm tarball's `README.md` /
+`README.ko.md` in sync with what's on GitHub. No runtime behavior
+changes.
+
+### Docs
+- README slimmed to ~40% of its previous length: dropped the
+  Configuration tables, six-fixture scenario gallery, and full
+  3-row ASCII kawaii gallery (the last one folded into a `<details>`).
+- Per-mode install blocks now follow a tight "what you get →
+  preview → prompt" pattern; "Pick your mode" + duplicate Modes /
+  Configuration sections collapsed into one top-level **Install**
+  section with two main choices (compact default, kawaii) plus a
+  collapsible block for `--full` / `--wide` / `--full --no-cat`.
+- Korean README rewritten to mirror the same shape (no longer drifts
+  from the English one).
 
 ## [1.0.0] - 2026-04-13
 
