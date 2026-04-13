@@ -7,6 +7,13 @@ tag/release cut on 2026-04-13 has been demoted to a draft so we can
 keep shaping the layout (Extra usage, wide layout, official CLI
 labels) before a proper public launch.
 
+### Recently landed (side-by-side batch)
+- kawaii cat now renders in a fixed-width **left column** next to the
+  data block instead of stacked above it, so the status line reads as
+  one compact 3-row card even when extra rows (Sonnet, context) show up
+- refactored `renderFull` to build the data block separately, so cat
+  placement (inline / above / left) becomes a local decision per theme
+
 ### Recently landed (cat themes batch)
 - `--cat=compact|kawaii|none` (aliases `--kawaii`, `--no-cat`) picks
   the art style. Compact (default) keeps the 1-line cat; kawaii uses

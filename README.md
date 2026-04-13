@@ -16,15 +16,17 @@
    Current week (Sonnet only) ░░░░░░░░░░░░░░   0% · Resets Apr 15, 1pm
 ```
 
-### Kawaii cat (`--kawaii`)
+### Kawaii cat (`--kawaii`) — side-by-side
 ```
- /\_/\
-( ^ω^ )
- / >🍣
-Sonnet 4.6 (1M context)  ·  $0.123  ·  ctx 23% used (77% left)
-  Current session            ▓░░░░░░░░░░░░░  10% · 3h 15m
-  Current week (all models)  ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm
+ /\_/\    Sonnet 4.6 (1M context)  ·  $0.123  ·  ctx 23% used (77% left)
+( ^ω^ )   Current session            ▓░░░░░░░░░░░░░  10% · 3h 15m
+ / >🍣    Current week (all models)  ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm
 ```
+
+The cat sits in a fixed-width left column so the whole line reads as a
+single 3-row card. If you have more windows (e.g. a Sonnet-only bar),
+extra data rows drop into the right column with the cat column blank —
+bars stay vertically aligned no matter how many rows you have.
 
 Same labels and reset phrasing as the `/usage` popup inside Claude Code.
 The only locale-aware piece is the session countdown — in a Korean
