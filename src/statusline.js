@@ -241,36 +241,47 @@ function detectTerminalColumns() {
   );
 }
 
-// Join `parts` with `sep`. If the single-line width exceeds `cap`, split
-// into two lines by treating `head` as locked to line 1, then greedily
-// filling line 1 with `body` items until the next one would overflow —
-// everything after that, plus `tail`, flows onto line 2.
+// Greedy multi-line pack. `head` is locked to the first line (it's
+// usually the cat). `body` items fill line 1 until the next one would
+// overflow; the overflow starts line 2, which fills the same way; and
+// so on. `tail` items (cost / ctx / debug) attach to the last line
+// when they fit, otherwise they open one more line. Continuation
+// lines get a small indent so the block reads as one entry, not a
+// list of siblings.
 function joinWithWrap({ head, body, tail, sep, lineSep, cap }) {
   const sepWidth = displayWidth(sep);
   const full = [...head, ...body, ...tail].join(sep);
   if (displayWidth(full) <= cap) return full;
 
-  // Start line 1 with the locked head.
-  const line1 = [...head];
-  let w = line1.length ? displayWidth(line1.join(sep)) : 0;
-
-  const leftover = [];
-  let wrapped = false;
-  for (const p of body) {
-    const add = (line1.length ? sepWidth : 0) + displayWidth(p);
-    if (!wrapped && w + add <= cap) {
-      line1.push(p);
-      w += add;
-    } else {
-      wrapped = true;
-      leftover.push(p);
-    }
-  }
-  const line2 = [...leftover, ...tail];
-  // Line 2 gets a small indent so it reads as a continuation, not a
-  // new entry in a list.
   const indent = "  ";
-  return line1.join(sep) + lineSep + indent + line2.join(sep);
+  const indentW = indent.length;
+
+  // Start with the locked head on line 1 (no indent).
+  const lines = [[...head]];
+  const widthOf = (line, isContinuation) =>
+    (isContinuation ? indentW : 0) +
+    (line.length === 0 ? 0 : displayWidth(line.join(sep)));
+
+  const pushItem = (item) => {
+    const last = lines[lines.length - 1];
+    const isCont = lines.length > 1;
+    const candidate = [...last, item];
+    if (widthOf(candidate, isCont) <= cap) {
+      last.push(item);
+    } else if (last.length === 0) {
+      // Single item wider than cap — accept it as-is rather than drop.
+      last.push(item);
+    } else {
+      lines.push([item]);
+    }
+  };
+
+  for (const p of body) pushItem(p);
+  for (const p of tail) pushItem(p);
+
+  return lines
+    .map((line, i) => (i === 0 ? line.join(sep) : indent + line.join(sep)))
+    .join(lineSep);
 }
 
 function renderCompact(d, {
