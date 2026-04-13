@@ -87,15 +87,25 @@ API 키 안 씁니다. OAuth 토큰 안 읽습니다. 외부 네트워크 호출
 
 ### 모드 고르기
 
-`~/.claude/settings.json` 의 `command` 필드만 바꾸면 모드 전환됩니다.
+여기부터 시작하세요. 대부분 **기본 모드**로 충분합니다 — 한 줄, 좁은
+터미널에선 자동 줄바꿈, 다른 statusLine 스크립트와도 잘 어울림. 고양이가
+보고 싶으면 `--full --kawaii`로 가세요.
 
-| 모드 | 명령어 | 고양이 |
-| ---- | ------ | ------ |
-| **기본** — compact, 한 줄 | `npx -y claude-cat@latest` | 없음 |
-| `--wide` — 한 줄, 줄바꿈 안 함 | `npx -y claude-cat@latest --wide` | 없음 |
-| `--full` — 여러 줄, 1줄 face | `npx -y claude-cat@latest --full` | 1줄 face |
-| `--full --kawaii` — 3줄 카드 | `npx -y claude-cat@latest --full --kawaii` | 3줄 카드 |
-| `--full --no-cat` — 데이터만 | `npx -y claude-cat@latest --full --no-cat` | 없음 |
+| 모드 | 명령어 | 언제 쓰나 |
+| ---- | ------ | --------- |
+| ⭐ **기본** — compact, 자동 줄바꿈 | `npx -y claude-cat@latest` | **그냥 이걸 쓰세요** — 한 줄이 좁으면 알아서 접힘 |
+| `--full` — 여러 줄, 1줄 face | `npx -y claude-cat@latest --full` | 각 데이터가 한 줄씩 + 작은 고양이 |
+| `--full --kawaii` — 3줄 ASCII 고양이 | `npx -y claude-cat@latest --full --kawaii` | 고양이를 크게 보고 싶을 때 |
+
+<details>
+<summary>엣지 케이스 모드 (자주 필요 없음)</summary>
+
+| 모드 | 명령어 | 언제 쓰나 |
+| ---- | ------ | --------- |
+| `--wide` — 한 줄, 줄바꿈 안 함 | `npx -y claude-cat@latest --wide` | 매우 넓은 패널에서 줄바꿈 대신 길게 뻗길 원할 때 |
+| `--full --no-cat` — 데이터만, 여러 줄 | `npx -y claude-cat@latest --full --no-cat` | `--full` 레이아웃이 좋은데 고양이는 빼고 싶을 때 |
+
+</details>
 
 ### 기본 설정 예시
 

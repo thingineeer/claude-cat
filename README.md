@@ -16,29 +16,38 @@
 
 ## Pick your mode
 
-All modes read the same stdin JSON Claude Code pipes to statusLine
-scripts. Swap the `command` field in `~/.claude/settings.json`:
+Start here. Most users run the default — it's one line, auto-wraps on
+narrow panes, and fits under every other statusLine. If you want the
+cat visible, jump to `--full --kawaii`.
 
-| mode                          | one-line command                                      | cat?       |
-| ----------------------------- | ----------------------------------------------------- | ---------- |
-| **default** — compact, 1 line | `npx -y claude-cat@latest`                            | no         |
-| `--wide` — 1 line, no wrap    | `npx -y claude-cat@latest --wide`                     | no         |
-| `--full` — multi-row          | `npx -y claude-cat@latest --full`                     | 1-line face |
-| `--full --kawaii` — 3-row     | `npx -y claude-cat@latest --full --kawaii`            | 3-row card  |
-| `--full --no-cat` — pure data | `npx -y claude-cat@latest --full --no-cat`            | no         |
+| mode | command | when to use |
+| ---- | ------- | ----------- |
+| ⭐ **default** — compact, auto-wrap | `npx -y claude-cat@latest` | **the safe pick for everyone** — one line, wraps only when it must |
+| `--full` — multi-row, 1-line cat | `npx -y claude-cat@latest --full` | you want the data on its own rows + a little cat |
+| `--full --kawaii` — 3-row ASCII cat | `npx -y claude-cat@latest --full --kawaii` | you want the cat front and center |
+
+<details>
+<summary>Edge-case modes (rarely needed)</summary>
+
+| mode | command | when to use |
+| ---- | ------- | ----------- |
+| `--wide` — single line, no wrap | `npx -y claude-cat@latest --wide` | very wide pane where you'd rather the line get long than wrap |
+| `--full --no-cat` — data only, multi-row | `npx -y claude-cat@latest --full --no-cat` | you want multi-row bars but no cat glyph at all |
+
+</details>
 
 Each mode below shows a live sample plus the exact `settings.json`
 block — copy/paste the one you want.
 
 ## Modes
 
-### 1. Default — compact, single line
+### 1. ⭐ Default — compact, auto-wrap *(recommended)*
 
-Terse one-liner, fits any terminal width. No flags needed. Short
-labels (`5h` / `week` / `sonnet`) in **Claude Peach** (`#DE7356`);
+Terse one-liner, fits any terminal width, wraps only when it has to.
+Short labels (`5h` / `week` / `sonnet`) in **Claude Peach** (`#DE7356`);
 reset time rides inside parentheses next to each window; the tail
-carries `$` cost and `ctx %`. No cat — it lives in `--full` / kawaii
-mode.
+carries `$` cost and `ctx %`. No cat — the cat lives in `--full`
+modes below.
 
 <p align="left">
   <img src="assets/screenshots/compact-short.png" alt="compact status line" width="780" />
@@ -119,11 +128,14 @@ to the cat's fixed-width left column.
   "padding": 1, "refreshInterval": 5 } }
 ```
 
-### 4. `--wide` — one horizontal line, forced
+<details>
+<summary>Edge-case modes — expand if you need them</summary>
 
-Cat-less like compact, but **never wraps**. Use it on very wide panes
-when you'd rather have the line get long than have it auto-stack.
-Carries the same `$ cost | ctx %` tail as compact.
+### `--wide` — single line, never wraps
+
+Cat-less like the default, but **never wraps**. Use only on very wide
+panes where you'd rather the line stretch out than auto-stack.
+Carries the same `$ cost | ctx %` tail.
 
 ```
 5h ▓▓░░ 25% (3h 38m)  |  week ▓▓░░ 20% (Fri 1pm)  |  sonnet ░░ 0% (Fri 1pm)  |  $0.420  |  ctx 28%
@@ -137,10 +149,9 @@ Carries the same `$ cost | ctx %` tail as compact.
   "padding": 1, "refreshInterval": 5 } }
 ```
 
-### 5. `--full --no-cat` — pure data, multi-row
+### `--full --no-cat` — data only, multi-row
 
-Drops the cat glyph entirely. Same header + data rows as `--full` but
-without the face.
+Same header + data rows as `--full` but drops the cat glyph.
 
 ```
 Sonnet 4.6  ·  $0.123  ·  ctx 23% used
@@ -155,6 +166,8 @@ Sonnet 4.6  ·  $0.123  ·  ctx 23% used
   "command": "npx -y claude-cat@latest --full --no-cat",
   "padding": 1, "refreshInterval": 5 } }
 ```
+
+</details>
 
 Same labels and reset phrasing as the `/usage` popup inside Claude Code.
 The session countdown uses a **universal `3h 38m` format** (Latin
