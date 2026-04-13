@@ -75,10 +75,16 @@ function labelFor(key, { variant = "long" } = {}) {
   if (variant === "short") {
     // Single-line layouts (compact / wide) pack a lot of info onto one
     // line; trim labels so the status line still fits an 80-col pane.
+    //
+    //   five_hour       → '5h'
+    //   seven_day       → 'week'
+    //   seven_day_<m>   → '<m>' (lower-cased), e.g. 'sonnet', 'opus'.
+    //     We drop the 'week·' prefix: the model name alone already
+    //     reads as "the weekly bucket for that model" in context.
     if (key === "five_hour") return "5h";
     if (key === "seven_day") return "week";
     if (key.startsWith("seven_day_")) {
-      return `week·${modelPretty(key.slice("seven_day_".length))}`;
+      return key.slice("seven_day_".length).toLowerCase();
     }
     return key;
   }
@@ -169,14 +175,16 @@ function debugChip({ showDebugChip = true } = {}) {
   return debugEnabled() ? t("debug_tag") : null;
 }
 
-// Compact context-window chip for the header. Matches the phrasing of
-// thingineeer's prior shell status line so the switch to claude-cat
-// feels invisible: 'ctx 23% used (77% left)'. Label is fixed English —
-// terminal real estate beats literal translation for a six-word chip.
-function renderContextChip(d) {
+// Context-window chip.
+//   variant='long'  → 'ctx 23% used (77% left)' (full-layout header)
+//   variant='short' → 'ctx 23%'                 (compact/wide tail)
+// Label is fixed English — terminal real estate beats literal
+// translation for a chip this small.
+function renderContextChip(d, { variant = "long" } = {}) {
   const ctx = d?.context_window;
   if (!ctx || typeof ctx.used_percentage !== "number") return null;
   const used = Math.round(ctx.used_percentage);
+  if (variant === "short") return `ctx ${used}%`;
   const left = typeof ctx.remaining_percentage === "number"
     ? Math.round(ctx.remaining_percentage)
     : Math.max(0, 100 - used);
@@ -287,23 +295,21 @@ function joinWithWrap({ head, body, tail, sep, lineSep, cap }) {
 function renderCompact(d, {
   iconMode = "none",
   locale = "en",
-  catTheme = "compact",
   showDebugChip = true,
   stack = "auto",
   cols,
 } = {}) {
   const windows = collectWindows(d, { variant: "short" });
   const state = inferState(d, windows);
-  const cost = d?.cost?.total_cost_usd;
-  const ctx = renderContextChip(d);
-  const face = inlineCatGlyph({ windows, state: state === "normal" ? null : "resting" }, catTheme);
+  const ctx = renderContextChip(d, { variant: "short" });
 
-  // The status line is modelled as three groups so auto-stack can pick
-  // a meaningful split: cat stays with the windows it reports on, and
-  // extras (cost / ctx / debug) flow to line 2 when the terminal gets
-  // narrow.
+  // Compact is data-only: no cat, no cost. The cat lives in --full
+  // --kawaii, which is the layout people pick precisely to make room
+  // for it. The $ cost line gets dropped because users scanning the
+  // single line want to see 'how much capacity do I have left?' —
+  // the dollar number is noise here and is still one keystroke away
+  // in /cost.
   const head = [];
-  if (face) head.push(`${C.cat}${face}${C.reset}`);
 
   const body = [];
   if (state !== "normal") {
@@ -324,8 +330,6 @@ function renderCompact(d, {
   }
 
   const tailGroup = [];
-  const cs = fmtCost(cost);
-  if (cs)  tailGroup.push(`${C.cost}${cs}${C.reset}`);
   if (ctx) tailGroup.push(`${C.ctx}${ctx}${C.reset}`);
   const dbg = debugChip({ showDebugChip });
   if (dbg) tailGroup.push(`${C.debug}${dbg}${C.reset}`);
@@ -428,30 +432,20 @@ function renderFull(d, { iconMode = "none", locale = "en", catTheme = "compact",
   return out.join("\n");
 }
 
-// Wide layout: everything on a single line separated by middle-dots.
-// Useful for heavy users who don't want the status line growing taller
-// as more windows appear.
-function renderWide(d, { iconMode = "none", locale = "en", catTheme = "compact", showDebugChip = true } = {}) {
+// Wide layout: every window on a single horizontal line. No cat, no
+// cost — same data-only ethos as compact, just forced onto one row.
+// Wide is for heavy users who don't want the line to ever wrap.
+function renderWide(d, { iconMode = "none", locale = "en", showDebugChip = true } = {}) {
   const windows = collectWindows(d, { variant: "short" });
   const state = inferState(d, windows);
-  const cost = d?.cost?.total_cost_usd;
-  const model = d?.model?.display_name;
-  const ctx = renderContextChip(d);
-  const face = inlineCatGlyph(
-    state === "normal" ? { windows } : { state: "resting" },
-    catTheme,
-  );
+  const ctx = renderContextChip(d, { variant: "short" });
 
   const parts = [];
-  if (face) parts.push(`${C.cat}${face}${C.reset}`);
-  if (model) parts.push(`${C.dim}${model}${C.reset}`);
 
   if (state !== "normal") {
-    const cs = fmtCost(cost);
-    if (cs)  parts.push(`${C.cost}${cs}${C.reset}`);
-    if (ctx) parts.push(`${C.ctx}${ctx}${C.reset}`);
     const hint = stateHint(state);
     if (hint) parts.push(`${C.dim}${hint}${C.reset}`);
+    if (ctx)  parts.push(`${C.ctx}${ctx}${C.reset}`);
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
@@ -460,8 +454,6 @@ function renderWide(d, { iconMode = "none", locale = "en", catTheme = "compact",
       const icon = iconFor(iconMode, w.key);
       parts.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct, 8)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
-    const cs = fmtCost(cost);
-    if (cs)  parts.push(`${C.cost}${cs}${C.reset}`);
     if (ctx) parts.push(`${C.ctx}${ctx}${C.reset}`);
   }
 
