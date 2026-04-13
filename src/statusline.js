@@ -16,7 +16,7 @@ import { bar, fmtCountdown, absoluteResetParts, fmtCost, colorByPct, colors as C
 import { parseIconMode, iconFor } from "./icons.js";
 import { maybeDumpStdin, debugEnabled } from "./debug.js";
 import { detectLocale, t } from "./i18n.js";
-import { padEndDisplay } from "./width.js";
+import { padEndDisplay, displayWidth } from "./width.js";
 
 // Build the reset phrase for a given window.
 // - session (five_hour): relative, the only locale-dependent string we emit
@@ -217,11 +217,23 @@ function renderFull(d, { iconMode = "none", locale = "en", catTheme = "compact" 
     return out.join("\n");
   }
 
-  // Multi-line cat (kawaii): stacked above the data block, each data line
-  // indented by 2 spaces so the bars line up under the header.
+  // Multi-line cat (kawaii): sit to the left of the data block so the
+  // whole status line reads as a single 3-ish-row card instead of a
+  // tall stack. Row count is max(art, data); the shorter side gets
+  // blank rows on the appropriate column.
+  const artWidth = Math.max(...art.lines.map((l) => displayWidth(l)));
+  const artCols = artWidth + 1;   // one trailing space inside the cat column
+  const gutter = "  ";            // two spaces between cat and data
+
+  const rows = Math.max(art.lines.length, data.length);
   const out = [];
-  for (const line of art.lines) out.push(`${C.cyan}${line}${C.reset}`);
-  for (let i = 0; i < data.length; i++) out.push(i === 0 ? data[i] : `  ${data[i]}`);
+  for (let i = 0; i < rows; i++) {
+    const rawCat = art.lines[i] ?? "";
+    const paddedCat = padEndDisplay(rawCat, artCols);
+    const catCell = rawCat ? `${C.cyan}${paddedCat}${C.reset}` : " ".repeat(artCols);
+    const right = data[i] ?? "";
+    out.push(`${catCell}${gutter}${right}`);
+  }
   return out.join("\n");
 }
 
