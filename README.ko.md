@@ -16,7 +16,21 @@ claude-cat 은 Claude Code 가 statusLine 스크립트에 이미 넘겨주는 JS
 
 ## 설치
 
-모드 골라서 아래 프롬프트를 Claude Code 에 붙여넣으면 끝. Claude 가 `~/.claude/settings.json` 을 수정해주며, 다른 키는 안 건드리고 diff 를 먼저 보여줍니다. Claude Code 재시작하면 다음 턴부터 보입니다.
+### 빠른 설정 (추천)
+
+인터랙티브 wizard 를 실행하세요 — 레이아웃, 고양이 테마, 리프레시 주기,
+플랜을 30초 안에 설정합니다:
+
+```bash
+npx -y claude-cat@latest configure
+```
+
+`~/.claude/settings.json` 을 자동으로 수정해주며 (diff 미리보기 후 확인),
+다른 키는 건드리지 않습니다. Claude Code 재시작하면 다음 턴부터 보입니다.
+
+### 수동 설정 (프롬프트 붙여넣기)
+
+모드 골라서 아래 프롬프트를 Claude Code 에 붙여넣으면 됩니다.
 
 ### A) ⭐ 기본 — compact, 한 줄 *(추천)*
 
@@ -103,6 +117,8 @@ week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</p
 </table>
 
 전체 플래그/환경변수: 영문 README 참조.
+`CLAUDE_CAT_PLAN=pro|max|auto` — Pro 사용자는 `pro` 설정하면 주간 bar
+자동 숨김 (wizard가 자동 설정).
 
 </details>
 
