@@ -118,8 +118,13 @@ function orderKey(k) {
 
 function collectWindows(d, { variant = "long" } = {}) {
   const rl = d.rate_limits || {};
+  const plan = process.env.CLAUDE_CAT_PLAN;
   return Object.entries(rl)
-    .filter(([, v]) => isWindowEntry(v))
+    .filter(([k, v]) => {
+      if (!isWindowEntry(v)) return false;
+      if (plan === "pro" && k.startsWith("seven_day")) return false;
+      return true;
+    })
     .sort(([a], [b]) => {
       const [oa, ka] = orderKey(a);
       const [ob, kb] = orderKey(b);

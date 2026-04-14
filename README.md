@@ -19,10 +19,23 @@ statusLine scripts. No API keys, no OAuth, no network. Just a cat.
 
 ## Install
 
+### Quick setup (recommended)
+
+Run the interactive wizard — it walks you through layout, cat theme,
+refresh interval, and plan in 30 seconds:
+
+```bash
+npx -y claude-cat@latest configure
+```
+
+It writes `~/.claude/settings.json` for you (with a diff preview
+first, leaving every other setting untouched). Restart Claude Code
+and the line shows up on the next turn.
+
+### Manual setup (paste a prompt)
+
 Pick a mode, paste the prompt into Claude Code, and it edits
-`~/.claude/settings.json` for you (with a diff first, leaving every
-other setting untouched). Restart Claude Code and the line shows up
-on the next turn.
+`~/.claude/settings.json` for you.
 
 ### A) ⭐ Default — compact, one line *(recommended)*
 
@@ -112,7 +125,9 @@ week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</p
 
 Power-user flags: `--stack=auto|always|never`, `--max-cols=<n>`,
 `--no-debug-chip`, `--icons=none|emoji|nerd`. Env vars:
-`CLAUDE_CAT_COLUMNS`, `CLAUDE_CAT_DEBUG=1`.
+`CLAUDE_CAT_COLUMNS`, `CLAUDE_CAT_DEBUG=1`,
+`CLAUDE_CAT_PLAN=pro|max|auto` (Pro users: set `pro` to hide weekly
+bars — the wizard sets this automatically).
 
 </details>
 
