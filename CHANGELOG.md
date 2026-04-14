@@ -9,6 +9,12 @@ _Nothing yet._
   it; daemon proxying `/api/oauth/usage` is the leading candidate)
 - Light-theme aware palette (currently tuned for dark terminals)
 
+## [1.2.2] - 2026-04-14
+
+### Fixed (#44)
+- Wizard now exits cleanly after writing settings — previously Ink
+  held stdin open and the terminal appeared frozen
+
 ## [1.2.1] - 2026-04-14
 
 Bug-fix patch for the configure wizard.

@@ -10,7 +10,7 @@ function getResolvedSteps(answers) {
   return STEPS.filter((s) => !s.skip || !s.skip(answers));
 }
 
-function Wizard() {
+function Wizard({ onDone }) {
   const [stepIdx, setStepIdx] = useState(0);
   const [answers, setAnswers] = useState({});
   const [phase, setPhase] = useState("asking");
@@ -37,6 +37,7 @@ function Wizard() {
   const resolvedSteps = getResolvedSteps(answers);
 
   if (phase === "done") {
+    setTimeout(() => onDone(), 100);
     return h(Box, { flexDirection: "column", paddingLeft: 1 },
       h(Text, { color: "green" }, "\u2713 Settings written."),
       h(Text, { dimColor: true }, "  Restart Claude Code to apply."),
@@ -109,5 +110,8 @@ function Wizard() {
 }
 
 export function run() {
-  render(h(Wizard));
+  const { unmount, waitUntilExit } = render(h(Wizard, {
+    onDone: () => unmount(),
+  }));
+  waitUntilExit().then(() => process.exit(0));
 }
