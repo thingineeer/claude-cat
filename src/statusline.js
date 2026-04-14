@@ -539,10 +539,15 @@ async function main() {
   //   Active session  → write rate_limits to shared cache file.
   //   Idle session    → stdin has no rate_limits; read from cache instead
   //                     so all terminals show the same current usage.
+  //
+  // Skip cache on brand-new sessions (no cost yet) to avoid showing
+  // stale numbers before the first real rate_limits arrive. The user
+  // sees a clean resting cat instead of a jarring percentage jump.
   const hasLimits = d.rate_limits && Object.keys(d.rate_limits).length > 0;
+  const hasCost = d?.cost?.total_cost_usd > 0;
   if (hasLimits) {
     writeCacheIfActive(d);
-  } else {
+  } else if (hasCost) {
     const cached = readCacheForIdle();
     if (cached) {
       d = { ...d, ...cached };
