@@ -71,33 +71,33 @@ Don't touch any other key. Show me the diff first.
 <tr>
 <td><strong>⭐ (기본값)</strong></td>
 <td><code>npx -y claude-cat@latest</code></td>
-<td><pre>5h ▓░░░░░░░░░ 10% (ready now)  |  week ▓▓░░░░░░░░ 18% (Fri 1pm)  |  $0.123</pre></td>
+<td><pre>5h ▓░░░░░░░░░ 10% (3h 21m)  |  week ▓▓░░░░░░░░ 18% (Fri 1pm)  |  $0.123</pre></td>
 </tr>
 <tr>
 <td><code>--full --kawaii</code></td>
 <td><code>npx -y claude-cat@latest --full --kawaii</code></td>
-<td><pre> /\_/\    Opus 4.6  ·  $0.123
-( ^ω^ )   Current session           ▓░░░░░░░░░░░░░  10% · ready now
- / >🍣    Current week (all models) ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm</pre></td>
+<td><pre> /\_/\   Opus 4.6 · $0.123
+( ^ω^ )  session  ▓░░░░░░░░░░░░░ 10% · 3h 21m
+ / >🍣   week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</pre></td>
 </tr>
 <tr>
 <td><code>--full</code></td>
 <td><code>npx -y claude-cat@latest --full</code></td>
-<td><pre>/ᐠ ^ᴥ^ ᐟ\   ·  Opus 4.6  ·  $0.123
-  Current session           ▓░░░░░░░░░░░░░  10% · ready now
-  Current week (all models) ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm</pre></td>
+<td><pre>/ᐠ ^ᴥ^ ᐟ\  Opus 4.6 · $0.123
+  session  ▓░░░░░░░░░░░░░ 10% · 3h 21m
+  week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</pre></td>
 </tr>
 <tr>
 <td><code>--wide</code></td>
 <td><code>npx -y claude-cat@latest --wide</code></td>
-<td><pre>5h ▓░░░░░░░ 10% (ready now)  |  week ▓░░░░░░░ 18% (Fri 1pm)  |  $0.123</pre></td>
+<td><pre>5h ▓░░░░░░░ 10% (3h 21m)  |  week ▓░░░░░░░ 18% (Fri 1pm)  |  $0.123</pre></td>
 </tr>
 <tr>
 <td><code>--full --no-cat</code></td>
 <td><code>npx -y claude-cat@latest --full --no-cat</code></td>
-<td><pre>Opus 4.6  ·  $0.123
-  Current session           ▓░░░░░░░░░░░░░  10% · ready now
-  Current week (all models) ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm</pre></td>
+<td><pre>Opus 4.6 · $0.123
+  session  ▓░░░░░░░░░░░░░ 10% · 3h 21m
+  week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</pre></td>
 </tr>
 </tbody>
 </table>
