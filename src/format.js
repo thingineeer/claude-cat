@@ -47,6 +47,10 @@ const C = {
   // Claude Peach (#DE7356) — short window labels '5h' / 'week'
   brand:     "\x1b[38;2;222;115;86m",
 
+  // reset-time value (countdown / absolute clock) — plain white so the
+  // time reads clearly while surrounding labels/parens stay dim
+  time:      "\x1b[37m",
+
   // Back-compat aliases so older call sites keep compiling.
   gray:      "\x1b[90m",
   cyan:      "\x1b[36m",
