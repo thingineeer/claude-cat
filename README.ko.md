@@ -59,15 +59,48 @@ Don't touch any other key. Show me the diff first.
 ```
 
 <details>
-<summary>다른 모드 — <code>--full</code>, <code>--wide</code>, <code>--full --no-cat</code></summary>
+<summary>전체 모드 한눈에 보기</summary>
 
 설치 방식은 같고 `command` 값만 바꾸면 됩니다.
 
-| 모드 | 명령어 | 깔리는 것 |
-| ---- | ------ | --------- |
-| `--full` | `npx -y claude-cat@latest --full` | 여러 줄 + 헤더 옆 1줄 face 고양이 |
-| `--wide` | `npx -y claude-cat@latest --wide` | 한 줄, 줄바꿈 안 함 (매우 넓은 패널용) |
-| `--full --no-cat` | `npx -y claude-cat@latest --full --no-cat` | 여러 줄, 고양이 없음 |
+<table>
+<thead>
+<tr><th>플래그</th><th>명령어</th><th>미리보기</th></tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>⭐ (기본값)</strong></td>
+<td><code>npx -y claude-cat@latest</code></td>
+<td><pre>5h ▓░░░░░░░░░ 10% (ready now)  |  week ▓▓░░░░░░░░ 18% (Fri 1pm)  |  $0.123</pre></td>
+</tr>
+<tr>
+<td><code>--full --kawaii</code></td>
+<td><code>npx -y claude-cat@latest --full --kawaii</code></td>
+<td><pre> /\_/\    Opus 4.6  ·  $0.123
+( ^ω^ )   Current session           ▓░░░░░░░░░░░░░  10% · ready now
+ / >🍣    Current week (all models) ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm</pre></td>
+</tr>
+<tr>
+<td><code>--full</code></td>
+<td><code>npx -y claude-cat@latest --full</code></td>
+<td><pre>/ᐠ ^ᴥ^ ᐟ\   ·  Opus 4.6  ·  $0.123
+  Current session           ▓░░░░░░░░░░░░░  10% · ready now
+  Current week (all models) ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm</pre></td>
+</tr>
+<tr>
+<td><code>--wide</code></td>
+<td><code>npx -y claude-cat@latest --wide</code></td>
+<td><pre>5h ▓░░░░░░░ 10% (ready now)  |  week ▓░░░░░░░ 18% (Fri 1pm)  |  $0.123</pre></td>
+</tr>
+<tr>
+<td><code>--full --no-cat</code></td>
+<td><code>npx -y claude-cat@latest --full --no-cat</code></td>
+<td><pre>Opus 4.6  ·  $0.123
+  Current session           ▓░░░░░░░░░░░░░  10% · ready now
+  Current week (all models) ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm</pre></td>
+</tr>
+</tbody>
+</table>
 
 전체 플래그/환경변수: 영문 README 참조.
 

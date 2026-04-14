@@ -67,18 +67,51 @@ Don't touch any other key. Show me the diff first.
 ```
 
 <details>
-<summary>Other modes — <code>--full</code>, <code>--wide</code>, <code>--full --no-cat</code></summary>
+<summary>All modes at a glance</summary>
 
-Same install pattern, just swap the `command` value:
+Same install pattern — just swap the `command` value.
 
-| mode | command | what you get |
-| ---- | ------- | ------------ |
-| `--full` | `npx -y claude-cat@latest --full` | multi-row + 1-line cat face inline with the header |
-| `--wide` | `npx -y claude-cat@latest --wide` | one line, never wraps (for very wide panes) |
-| `--full --no-cat` | `npx -y claude-cat@latest --full --no-cat` | multi-row, no cat at all |
+<table>
+<thead>
+<tr><th>flag</th><th>command</th><th>preview</th></tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>⭐ (default)</strong></td>
+<td><code>npx -y claude-cat@latest</code></td>
+<td><pre>5h ▓░░░░░░░░░ 10% (ready now)  |  week ▓▓░░░░░░░░ 18% (Fri 1pm)  |  $0.123</pre></td>
+</tr>
+<tr>
+<td><code>--full --kawaii</code></td>
+<td><code>npx -y claude-cat@latest --full --kawaii</code></td>
+<td><pre> /\_/\    Opus 4.6  ·  $0.123
+( ^ω^ )   Current session           ▓░░░░░░░░░░░░░  10% · ready now
+ / >🍣    Current week (all models) ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm</pre></td>
+</tr>
+<tr>
+<td><code>--full</code></td>
+<td><code>npx -y claude-cat@latest --full</code></td>
+<td><pre>/ᐠ ^ᴥ^ ᐟ\   ·  Opus 4.6  ·  $0.123
+  Current session           ▓░░░░░░░░░░░░░  10% · ready now
+  Current week (all models) ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm</pre></td>
+</tr>
+<tr>
+<td><code>--wide</code></td>
+<td><code>npx -y claude-cat@latest --wide</code></td>
+<td><pre>5h ▓░░░░░░░ 10% (ready now)  |  week ▓░░░░░░░ 18% (Fri 1pm)  |  $0.123</pre></td>
+</tr>
+<tr>
+<td><code>--full --no-cat</code></td>
+<td><code>npx -y claude-cat@latest --full --no-cat</code></td>
+<td><pre>Opus 4.6  ·  $0.123
+  Current session           ▓░░░░░░░░░░░░░  10% · ready now
+  Current week (all models) ▓▓▓░░░░░░░░░░░  18% · Resets Apr 17, 1pm</pre></td>
+</tr>
+</tbody>
+</table>
 
-Power-user flags: `--stack=auto\|always\|never`, `--max-cols=<n>`,
-`--no-debug-chip`, `--icons=none\|emoji\|nerd`. Env vars:
+Power-user flags: `--stack=auto|always|never`, `--max-cols=<n>`,
+`--no-debug-chip`, `--icons=none|emoji|nerd`. Env vars:
 `CLAUDE_CAT_COLUMNS`, `CLAUDE_CAT_DEBUG=1`.
 
 </details>
