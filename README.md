@@ -92,8 +92,8 @@ Same install pattern — just swap the `command` value.
 <td><code>--full</code></td>
 <td><code>npx -y claude-cat@latest --full</code></td>
 <td><pre>/ᐠ ^ᴥ^ ᐟ\  Opus 4.6 · $0.123
-  session  ▓░░░░░░░░░░░░░ 10% · 3h 21m
-  week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</pre></td>
+session  ▓░░░░░░░░░░░░░ 10% · 3h 21m
+week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</pre></td>
 </tr>
 <tr>
 <td><code>--wide</code></td>
@@ -104,8 +104,8 @@ Same install pattern — just swap the `command` value.
 <td><code>--full --no-cat</code></td>
 <td><code>npx -y claude-cat@latest --full --no-cat</code></td>
 <td><pre>Opus 4.6 · $0.123
-  session  ▓░░░░░░░░░░░░░ 10% · 3h 21m
-  week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</pre></td>
+session  ▓░░░░░░░░░░░░░ 10% · 3h 21m
+week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</pre></td>
 </tr>
 </tbody>
 </table>
