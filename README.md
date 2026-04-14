@@ -50,6 +50,7 @@ on narrow terminals.
 Install claude-cat (https://github.com/thingineeer/claude-cat) into my
 ~/.claude/settings.json as the statusLine.
 
+- type: "command"
 - command: "npx -y claude-cat@latest"
 - padding: 1
 - refreshInterval: 300
@@ -72,6 +73,7 @@ The cat's face and prop change with your usage.
 Install claude-cat (https://github.com/thingineeer/claude-cat) into my
 ~/.claude/settings.json as the statusLine.
 
+- type: "command"
 - command: "npx -y claude-cat@latest --full --kawaii"
 - padding: 1
 - refreshInterval: 300
