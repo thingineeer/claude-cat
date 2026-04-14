@@ -9,6 +9,16 @@ _Nothing yet._
   it; daemon proxying `/api/oauth/usage` is the leading candidate)
 - Light-theme aware palette (currently tuned for dark terminals)
 
+## [1.2.1] - 2026-04-14
+
+Bug-fix patch for the configure wizard.
+
+### Fixed (#42)
+- Wizard now writes `"type": "command"` to settings.json — without it
+  Claude Code silently ignored the statusLine entry
+- Wizard ← back navigation: press left arrow to go back to the
+  previous question (also works from the confirm screen)
+
 ## [1.2.0] - 2026-04-14
 
 Interactive setup wizard and plan-aware filtering land. Run

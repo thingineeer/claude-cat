@@ -1,19 +1,40 @@
 import React, { useState } from "react";
-import { render, Box, Text } from "ink";
+import { render, Box, Text, useInput } from "ink";
 import SelectInput from "ink-select-input";
 import { STEPS } from "./steps.js";
 import { buildDiff, applySettings } from "./writer.js";
 
 const h = React.createElement;
 
+function getResolvedSteps(answers) {
+  return STEPS.filter((s) => !s.skip || !s.skip(answers));
+}
+
 function Wizard() {
   const [stepIdx, setStepIdx] = useState(0);
   const [answers, setAnswers] = useState({});
   const [phase, setPhase] = useState("asking");
 
-  const resolvedSteps = STEPS.filter(
-    (s) => !s.skip || !s.skip(answers),
-  );
+  useInput((_input, key) => {
+    if (!key.leftArrow) return;
+    if (phase === "confirm") {
+      setPhase("asking");
+      const resolved = getResolvedSteps(answers);
+      setStepIdx(resolved.length - 1);
+      return;
+    }
+    if (phase === "asking" && stepIdx > 0) {
+      const prev = getResolvedSteps(answers)[stepIdx - 1];
+      if (prev) {
+        const reverted = { ...answers };
+        delete reverted[prev.id];
+        setAnswers(reverted);
+      }
+      setStepIdx(stepIdx - 1);
+    }
+  });
+
+  const resolvedSteps = getResolvedSteps(answers);
 
   if (phase === "done") {
     return h(Box, { flexDirection: "column", paddingLeft: 1 },
@@ -36,6 +57,7 @@ function Wizard() {
       h(Text, { color: "green" }, "  " + JSON.stringify(after)),
       h(Text, null, ""),
       h(Text, { bold: true }, "Apply?"),
+      h(Text, { dimColor: true }, "  \u2190 back"),
       h(SelectInput, {
         items: [
           { label: "Yes \u2014 write to ~/.claude/settings.json", value: "yes" },
@@ -60,12 +82,14 @@ function Wizard() {
   }
 
   const progress = `(${stepIdx + 1}/${resolvedSteps.length})`;
+  const backHint = stepIdx > 0 ? "  \u2190 back" : "";
 
   return h(Box, { flexDirection: "column", paddingLeft: 1 },
     h(Text, { bold: true, color: "cyan" }, "\uD83D\uDC3E claude-cat configure"),
     h(Text, null, ""),
     h(Text, { bold: true }, `${progress} ${currentStep.label}`),
     h(Text, { dimColor: true }, "  " + currentStep.description),
+    backHint && h(Text, { dimColor: true }, backHint),
     h(Text, null, ""),
     h(SelectInput, {
       items: currentStep.items,
@@ -73,9 +97,7 @@ function Wizard() {
         const next = { ...answers, [currentStep.id]: item.value };
         setAnswers(next);
 
-        const remaining = STEPS.filter(
-          (s) => !s.skip || !s.skip(next),
-        );
+        const remaining = getResolvedSteps(next);
         if (stepIdx + 1 >= remaining.length) {
           setPhase("confirm");
         } else {
