@@ -45,7 +45,8 @@
     "test:warming": "cat examples/sample-warming-up.json | node bin/cli.js --full --kawaii",
     "test:saturated": "cat examples/sample-weekly-saturated.json | node bin/cli.js --full --kawaii",
     "test:apicost": "cat examples/sample-api-cost-only.json | node bin/cli.js --full --kawaii",
-    "test:pro": "cat examples/sample-stdin.json | CLAUDE_CAT_PLAN=pro node bin/cli.js"
+    "test:pro": "cat examples/sample-stdin.json | CLAUDE_CAT_PLAN=pro node bin/cli.js",
+    "test": "node --test 'tests/*.test.js'"
   },
   "dependencies": {
     "ink": "^5.2.1",
