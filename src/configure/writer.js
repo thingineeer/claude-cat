@@ -26,6 +26,7 @@ export function buildSettings(answers) {
   }
 
   const statusLine = {
+    type: "command",
     command: buildCommand(answers),
     padding: 1,
     refreshInterval: answers.refresh,
