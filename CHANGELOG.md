@@ -2,9 +2,20 @@
 
 ## Unreleased
 
-_Nothing yet — see `## [1.1.0]` below._
+### Interactive `configure` wizard
+- `npx claude-cat configure` launches an Ink-based TUI that walks you
+  through 6 questions (layout, cat theme, cost chip, context chip,
+  refresh interval, plan) and writes `~/.claude/settings.json` for you
+- Lazy-imported: the statusline hot path never loads Ink/React, so
+  cold-start time is unchanged
 
-### Still planned (post-1.1.0)
+### Plan-aware window filter
+- `CLAUDE_CAT_PLAN=pro` hides weekly bars (Pro users have generous
+  weekly limits and don't need to see them)
+- `CLAUDE_CAT_PLAN=max` shows all bars (default behavior)
+- The wizard sets this env var automatically via `statusLine.env`
+
+### Still planned
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
   it; daemon proxying `/api/oauth/usage` is the leading candidate)
 - Light-theme aware palette (currently tuned for dark terminals)
