@@ -28,3 +28,5 @@ jobs:
         run: npm run test:saturated
       - name: Run sample (api cost-only)
         run: npm run test:apicost
+      - name: Run sample (pro plan filter)
+        run: npm run test:pro
