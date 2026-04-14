@@ -421,9 +421,33 @@ function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip 
   // whole status line reads as a single 3-ish-row card instead of a
   // tall stack. Row count is max(art, data); the shorter side gets
   // blank rows on the appropriate column.
+  //
+  // Narrow terminal guard: if the terminal can't fit the side-by-side
+  // layout, fall back to compact cat (single-line face on the header)
+  // so the output never wraps and overlaps Claude Code's UI elements.
   const artWidth = Math.max(...art.lines.map((l) => displayWidth(l)));
   const artCols = artWidth + 1;   // one trailing space inside the cat column
   const gutter = "  ";            // two spaces between cat and data
+  const minDataWidth = 72;        // label(26) + bar(14) + pct(4) + reset(~28)
+  const minSideBySide = artCols + gutter.length + minDataWidth;
+  const cols = detectTerminalColumns();
+
+  if (cols < minSideBySide) {
+    // Too narrow for kawaii side-by-side — fall back to compact cat
+    const compactArt = catArt(
+      state === "normal" ? { windows } : { state: "resting" },
+      "compact",
+    );
+    const out = [];
+    if (compactArt) {
+      const head = data[0] ? ` ${C.gray}·${C.reset}  ${data[0]}` : "";
+      out.push(`${C.cyan}${compactArt.lines[0]}${C.reset}${head ? "  " + head : ""}`);
+      for (let i = 1; i < data.length; i++) out.push(`  ${data[i]}`);
+    } else {
+      for (let i = 0; i < data.length; i++) out.push(i === 0 ? data[i] : `  ${data[i]}`);
+    }
+    return out.join("\n");
+  }
 
   const rows = Math.max(art.lines.length, data.length);
   const out = [];
