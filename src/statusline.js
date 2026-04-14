@@ -15,6 +15,7 @@ import { pickCat, catArt, THEME_NAMES } from "./cats.js";
 import { bar, fmtCountdown, absoluteResetParts, fmtCost, colorByPct, colors as C } from "./format.js";
 import { parseIconMode, iconFor } from "./icons.js";
 import { maybeDumpStdin, debugEnabled } from "./debug.js";
+import { writeCacheIfActive, readCacheForIdle } from "./cache.js";
 import { t } from "./i18n.js";
 import { padEndDisplay, displayWidth } from "./width.js";
 
@@ -522,12 +523,26 @@ async function main() {
   const cols = parseMaxCols(args);
   const showDebugChip = !args.includes("--no-debug-chip");
   const raw = await readStdin();
-  const d = safeParse(raw);
+  let d = safeParse(raw);
 
   // Opt-in: dump the payload we just received so we can confirm which
   // rate_limits.* keys (and any extra-usage fields) the server actually
   // sends on this machine/plan. No-op unless CLAUDE_CAT_DEBUG=1.
   maybeDumpStdin(raw, d);
+
+  // Cross-terminal sync:
+  //   Active session  → write rate_limits to shared cache file.
+  //   Idle session    → stdin has no rate_limits; read from cache instead
+  //                     so all terminals show the same current usage.
+  const hasLimits = d.rate_limits && Object.keys(d.rate_limits).length > 0;
+  if (hasLimits) {
+    writeCacheIfActive(d);
+  } else {
+    const cached = readCacheForIdle();
+    if (cached) {
+      d = { ...d, ...cached };
+    }
+  }
 
   const opts = { iconMode, catTheme, showDebugChip, stack, cols };
   let out;

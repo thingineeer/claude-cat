@@ -2,12 +2,53 @@
 
 ## Unreleased
 
-_Nothing yet — see `## [1.0.0]` below._
+_Nothing yet — see `## [1.1.0]` below._
 
-### Still planned (post-1.0.0)
+### Still planned (post-1.1.0)
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
   it; daemon proxying `/api/oauth/usage` is the leading candidate)
-- cross-terminal realtime sync via a small background cache
+- Light-theme aware palette (currently tuned for dark terminals)
+
+## [1.1.0] - 2026-04-14
+
+Cross-terminal sync lands. Idle terminals no longer show stale
+numbers — they pick up the latest usage from a shared cache file
+written by whichever session is active. Paired with a more
+battery-friendly idle refresh cadence and a README polish pass.
+
+### Cross-terminal rate-limits sync (#30)
+- **active session** writes `rate_limits` + `model` to
+  `~/.claude/claude-cat/rate-limits-cache.json` on every run (atomic
+  tmp → rename)
+- **idle session** (stdin has no `rate_limits`) reads the cache so
+  every terminal shows the same current usage instead of whatever it
+  had on startup
+- cache older than `MAX_AGE_SEC` (600s / 10 min) is ignored — the
+  idle terminal falls back to the resting cat rather than display
+  stale numbers
+- failures in read/write never break the status line (all IO wrapped)
+
+### Idle refresh cadence (#29, #37)
+- `refreshInterval` guidance **5 → 300** seconds in install prompts
+  (started at 600, tightened to 300 so idle terminals re-read the
+  cache before it expires at 600s)
+- Claude Code re-runs the status line every N seconds **in addition**
+  to event-driven updates, so conversations still feel instant while
+  idle terminals stop burning CPU every 5 s
+
+### README rework (#31, #33, #34)
+- mode table rewritten as an HTML `<table>` with `<pre>` preview
+  cells — 'what you get' text descriptions replaced by the actual
+  rendered output for each of the 5 modes
+- preview label padding trimmed (`Current session` → `session`) and
+  leading indent removed from `--full` / `--full --no-cat` rows so
+  the sample lines up inside the cell
+- `ready now` → `3h 21m` example — reads as a real countdown
+
+### Reverted in this release
+- a short-lived white-on-time-value experiment (#35) was reverted in
+  #36: dark/light terminal detection isn't reliable enough to risk
+  highlighting the countdown differently. Dim stays the default.
 
 ## [1.0.0] - 2026-04-13
 
