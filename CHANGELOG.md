@@ -2,23 +2,35 @@
 
 ## Unreleased
 
-### Interactive `configure` wizard
+_Nothing yet._
+
+### Still planned
+- Extra usage bar (needs a live source — the stdin JSON doesn't expose
+  it; daemon proxying `/api/oauth/usage` is the leading candidate)
+- Light-theme aware palette (currently tuned for dark terminals)
+
+## [1.2.0] - 2026-04-14
+
+Interactive setup wizard and plan-aware filtering land. Run
+`npx claude-cat configure` to walk through 6 questions and auto-write
+your `~/.claude/settings.json`. Pro users can hide weekly bars.
+
+### Interactive `configure` wizard (#39)
 - `npx claude-cat configure` launches an Ink-based TUI that walks you
   through 6 questions (layout, cat theme, cost chip, context chip,
   refresh interval, plan) and writes `~/.claude/settings.json` for you
 - Lazy-imported: the statusline hot path never loads Ink/React, so
   cold-start time is unchanged
 
-### Plan-aware window filter
+### Plan-aware window filter (#39)
 - `CLAUDE_CAT_PLAN=pro` hides weekly bars (Pro users have generous
   weekly limits and don't need to see them)
 - `CLAUDE_CAT_PLAN=max` shows all bars (default behavior)
 - The wizard sets this env var automatically via `statusLine.env`
 
-### Still planned
-- Extra usage bar (needs a live source — the stdin JSON doesn't expose
-  it; daemon proxying `/api/oauth/usage` is the leading candidate)
-- Light-theme aware palette (currently tuned for dark terminals)
+### README update (#40)
+- "Quick setup" section added with wizard install path
+- `CLAUDE_CAT_PLAN` env var documented in Power-user flags
 
 ## [1.1.0] - 2026-04-14
 
