@@ -18,6 +18,7 @@ import { maybeDumpStdin, debugEnabled } from "./debug.js";
 import { writeCacheIfActive, readCacheForIdle } from "./cache.js";
 import { t } from "./i18n.js";
 import { padEndDisplay, displayWidth } from "./width.js";
+import { detectWidth } from "./layout/detect-width.js";
 
 // Build the reset phrase for a given window.
 // - session (five_hour): relative, universal format (`3h 34m`, `15m`,
@@ -199,60 +200,13 @@ function renderContextChip(d, { variant = "long" } = {}) {
 
 // How wide is the actual terminal (columns)?
 //
-// Claude Code spawns statusLine scripts with stdin/stdout/stderr as
-// pipes, so process.stdout.columns is undefined and $COLUMNS reflects
-// the *parent shell* at launch time, not the current terminal. To get
-// the live width we have to ask the controlling terminal directly via
-// /dev/tty — that file descriptor still points at the real terminal
-// even when stdout is a pipe.
-//
-// Priority:
-//   1. CLAUDE_CAT_COLUMNS env — explicit override
-//   2. stty size </dev/tty — live, updates on resize
-//   3. tput cols </dev/tty — same idea, different tool
-//   4. COLUMNS env — only correct if the shell exports live updates
-//   5. process.stdout.columns — rare (when stdout happens to be a TTY)
-//   6. fallback 200 — high default so an unknown width doesn't wrap
-//      prematurely; users on narrow panes can still force it with
-//      --stack=always or --max-cols.
-import { execSync } from "node:child_process";
-
-function parsePositiveInt(v) {
-  const n = parseInt(v, 10);
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
-
-function ttyColumnsViaStty() {
-  try {
-    // stty size prints "<rows> <cols>"; read cols.
-    const out = execSync("stty size </dev/tty", {
-      stdio: ["ignore", "pipe", "ignore"],
-      timeout: 200,
-    }).toString().trim();
-    const m = out.match(/\d+\s+(\d+)/);
-    return m ? parsePositiveInt(m[1]) : null;
-  } catch { return null; }
-}
-
-function ttyColumnsViaTput() {
-  try {
-    const out = execSync("tput cols </dev/tty", {
-      stdio: ["ignore", "pipe", "ignore"],
-      timeout: 200,
-    }).toString().trim();
-    return parsePositiveInt(out);
-  } catch { return null; }
-}
-
+// Strategy chain + dependency injection live in `./layout/detect-width.js`.
+// This function is a thin wrapper that threads stdin JSON (for the
+// future `d.columns` signal) into the detector. Kept as a local
+// function so call sites elsewhere in this file stay unchanged.
+let __stdinJsonForWidth = null;
 function detectTerminalColumns() {
-  return (
-    parsePositiveInt(process.env.CLAUDE_CAT_COLUMNS) ||
-    ttyColumnsViaStty() ||
-    ttyColumnsViaTput() ||
-    parsePositiveInt(process.env.COLUMNS) ||
-    (process.stdout && process.stdout.columns) ||
-    200
-  );
+  return detectWidth({ stdinJson: __stdinJsonForWidth });
 }
 
 // Greedy multi-line pack. `head` is locked to the first line (it's
@@ -553,6 +507,10 @@ async function main() {
   const showDebugChip = !args.includes("--no-debug-chip");
   const raw = await readStdin();
   let d = safeParse(raw);
+
+  // Thread stdin JSON into the width detector so it can pick up
+  // d.columns if/when Claude Code starts sending it.
+  __stdinJsonForWidth = d;
 
   // Opt-in: dump the payload we just received so we can confirm which
   // rate_limits.* keys (and any extra-usage fields) the server actually
