@@ -39,7 +39,7 @@ Install claude-cat (https://github.com/thingineeer/claude-cat) into my
 
 - command: "npx -y claude-cat@latest"
 - padding: 1
-- refreshInterval: 600
+- refreshInterval: 300
 
 Don't touch any other key. Show me the diff first.
 ```
@@ -61,7 +61,7 @@ Install claude-cat (https://github.com/thingineeer/claude-cat) into my
 
 - command: "npx -y claude-cat@latest --full --kawaii"
 - padding: 1
-- refreshInterval: 600
+- refreshInterval: 300
 
 Don't touch any other key. Show me the diff first.
 ```
