@@ -28,6 +28,10 @@ refresh interval, and plan in 30 seconds:
 npx -y claude-cat@latest configure
 ```
 
+<p align="center">
+  <img src="assets/screenshots/configure-wizard.gif" alt="configure wizard demo" width="720" />
+</p>
+
 It writes `~/.claude/settings.json` for you (with a diff preview
 first, leaving every other setting untouched). Restart Claude Code
 and the line shows up on the next turn.
