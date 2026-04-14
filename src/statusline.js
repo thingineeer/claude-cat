@@ -25,27 +25,34 @@ import { padEndDisplay, displayWidth } from "./width.js";
 // - every other window: absolute, English-fixed, no timezone
 //     variant='long'  → 'Resets 7pm'           / 'Resets Apr 17, 1pm'
 //     variant='short' → '7pm'                  / 'Fri 1pm'
+//
+// Color: time values are wrapped in C.time (white) so they stand out
+// against the surrounding dim label/parens. Labels stay dim.
 function fmtResetPhrase(key, resetsAtSec, { variant = "long" } = {}) {
   if (!resetsAtSec) return null;
   if (key === "five_hour") {
     const v = fmtCountdown(resetsAtSec);
-    if (v === "ready") return t("ready_now");
-    return v;
+    if (v === "ready") return `${C.dim}${t("ready_now")}${C.reset}`;
+    return `${C.time}${v}${C.reset}`;
   }
   const parts = absoluteResetParts(resetsAtSec);
   if (!parts) return null;
-  if (parts === "ready") return t("ready_now");
+  if (parts === "ready") return `${C.dim}${t("ready_now")}${C.reset}`;
   if (variant === "short") {
     // Same-day → just the clock ('7pm'). Other day → weekday + clock
     // ('Fri 1pm'). Drops the 'Resets' prefix entirely — the parentheses
     // that wrap the phrase in compact/wide already imply "resets at".
     const wd = new Date(resetsAtSec * 1000)
       .toLocaleDateString("en-US", { weekday: "short" });
-    return parts.date ? `${wd} ${parts.clock}` : parts.clock;
+    // weekday (dim) + clock (white)
+    const clockStr = `${C.time}${parts.clock}${C.reset}`;
+    return parts.date ? `${C.dim}${wd}${C.reset} ${clockStr}` : clockStr;
   }
-  return parts.date
-    ? t("resets_on", parts.date, parts.clock)
-    : t("resets_at", parts.clock);
+  // long variant: "Resets Apr 17, 1pm" — "Resets" dim, date+clock white
+  const timeStr = parts.date
+    ? `${C.time}${parts.date}, ${parts.clock}${C.reset}`
+    : `${C.time}${parts.clock}${C.reset}`;
+  return `${C.dim}Resets ${C.reset}${timeStr}`;
 }
 
 function readStdin() {
@@ -322,7 +329,13 @@ function renderCompact(d, {
       // the maintainer's previous shell status line:
       //    5h ▓▓░░░░░░░░ 10% (4h43m)
       //    week ▓▓░░░░░░░░ 18% (Fri 13:00)
-      const tail = phrase ? ` ${C.dim}(${phrase})${C.reset}` : "";
+      // Wrap time in parens; "ready now" skips parens — it's a state
+      // label, not a countdown.
+      const tail = phrase
+        ? (w.resets_at && fmtCountdown(w.resets_at) !== "ready"
+            ? ` ${C.dim}(${C.reset}${phrase}${C.dim})${C.reset}`
+            : ` ${phrase}`)
+        : "";
       const icon = iconFor(iconMode, w.key);
       body.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
@@ -383,7 +396,7 @@ function buildDataBlock(d, { iconMode, state, showDebugChip = true }) {
     const phrase = fmtResetPhrase(w.key, w.resets_at);
     const icon = iconFor(iconMode, w.key);
     const label = padEndDisplay(icon + w.label, labelCols);
-    const right = phrase ? ` ${C.dim}· ${phrase}${C.reset}` : "";
+    const right = phrase ? ` ${C.dim}·${C.reset} ${phrase}` : "";
     lines.push(`${C.dim}${label}${C.reset}${bar(pct, 14)} ${colorByPct(pct)}${String(pct).padStart(3)}%${C.reset}${right}`);
   }
   return lines;
@@ -453,7 +466,11 @@ function renderWide(d, { iconMode = "none", showDebugChip = true } = {}) {
     for (const w of windows) {
       const pct = Math.round(w.pct);
       const phrase = fmtResetPhrase(w.key, w.resets_at, { variant: "short" });
-      const tail = phrase ? ` ${C.dim}(${phrase})${C.reset}` : "";
+      const tail = phrase
+        ? (w.resets_at && fmtCountdown(w.resets_at) !== "ready"
+            ? ` ${C.dim}(${C.reset}${phrase}${C.dim})${C.reset}`
+            : ` ${phrase}`)
+        : "";
       const icon = iconFor(iconMode, w.key);
       parts.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct, 8)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
