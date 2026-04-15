@@ -9,6 +9,39 @@ _Nothing yet._
   it; daemon proxying `/api/oauth/usage` is the leading candidate)
 - Light-theme aware palette (currently tuned for dark terminals)
 
+## [1.2.3] - 2026-04-15
+
+Reliability and performance patch — tightens timing consistency,
+validates server payloads more strictly, and skips unnecessary
+subprocess calls.
+
+### Fixed
+- **Expired windows no longer fool the cat** (#48) — `inferState()`
+  now filters out windows whose `resets_at` has passed before deciding
+  the render mode. Previously stale-but-present windows kept the cat
+  in "normal" instead of falling back to "resting", contradicting the
+  mood invariant documented in CLAUDE.md.
+- **Partial rate-limit entries are dropped** (#50) — `isWindowEntry()`
+  now requires **both** `used_percentage` and `resets_at` (was OR).
+  A half-populated entry previously rendered as a 0% bar with no
+  reset phrase — indistinguishable from "all clear".
+
+### Performance
+- **Terminal-width detection skips subprocess calls when possible**
+  (#49) — `detectTerminalColumns()` now checks `COLUMNS` env and
+  `process.stdout.columns` before falling back to `stty`/`tput`.
+  Result is memoized per-process (the script renders once and exits).
+- **Timezone resolved once at module load** (#52) — `tzName()` cached
+  `Intl.DateTimeFormat().resolvedOptions().timeZone` instead of
+  creating a new instance per window per render.
+
+### Improved
+- **Frozen "now" timestamp per render** (#51) — all time-dependent
+  functions (`fmtCountdown`, `absoluteResetParts`, `moodFromWindows`,
+  `inferState`) now share a single `setRenderNow()` / `getRenderNowSec()`
+  value frozen at the start of `main()`. Eliminates ms-level drift
+  between windows at reset boundaries.
+
 ## [1.2.2] - 2026-04-14
 
 ### Fixed (#44)

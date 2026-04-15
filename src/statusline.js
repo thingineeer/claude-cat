@@ -12,7 +12,7 @@
 // rate_limits for Pro/Max subscribers after the first assistant response.
 
 import { pickCat, catArt, THEME_NAMES } from "./cats.js";
-import { bar, fmtCountdown, absoluteResetParts, fmtCost, colorByPct, colors as C } from "./format.js";
+import { bar, fmtCountdown, absoluteResetParts, fmtCost, colorByPct, colors as C, setRenderNow, getRenderNowSec } from "./format.js";
 import { parseIconMode, iconFor } from "./icons.js";
 import { maybeDumpStdin, debugEnabled } from "./debug.js";
 import { writeCacheIfActive, readCacheForIdle } from "./cache.js";
@@ -102,9 +102,14 @@ function labelFor(key, { variant = "long" } = {}) {
 // that looks like { used_percentage, resets_at, ... }. This lets
 // model-scoped weekly buckets (e.g. Sonnet-only) appear automatically,
 // regardless of the exact key Claude Code chooses.
+//
+// Both fields are required. A partial entry (e.g. resets_at without
+// used_percentage) would render 0% and read as a live "all clear"
+// window — hiding malformed data behind a happy-looking bar.
 function isWindowEntry(v) {
   return v && typeof v === "object" && !Array.isArray(v)
-    && (typeof v.used_percentage === "number" || typeof v.resets_at === "number");
+    && typeof v.used_percentage === "number"
+    && typeof v.resets_at === "number";
 }
 
 // Ordering: five_hour first, then seven_day, then every other weekly-style
@@ -159,8 +164,15 @@ function inlineCatGlyph({ windows, state }, theme) {
 //   - cost === 0 and no windows and ctx exists → 'warming_up'
 //     (Pro/Max session before the first reply, most common)
 //   - nothing at all                           → 'warming_up' (conservative)
+//
+// Windows whose resets_at has already passed are ignored — they're stale
+// bookkeeping, not live state. Matches the CLAUDE.md mood invariant.
 function inferState(d, windows) {
-  if (windows.length > 0) return "normal";
+  const now = getRenderNowSec();
+  const live = (windows || []).filter(
+    (w) => !(w.resets_at && w.resets_at <= now),
+  );
+  if (live.length > 0) return "normal";
   const cost = d?.cost?.total_cost_usd;
   if (typeof cost === "number" && cost > 0) return "cost_only";
   return "warming_up";
@@ -215,6 +227,9 @@ function renderContextChip(d, { variant = "long" } = {}) {
 //   6. fallback 200 — high default so an unknown width doesn't wrap
 //      prematurely; users on narrow panes can still force it with
 //      --stack=always or --max-cols.
+//
+// Result is memoized per-process — the script exits after one render,
+// so a TTL isn't needed.
 import { execSync } from "node:child_process";
 
 function parsePositiveInt(v) {
@@ -244,15 +259,18 @@ function ttyColumnsViaTput() {
   } catch { return null; }
 }
 
+let _cachedCols = null;
 function detectTerminalColumns() {
-  return (
+  if (_cachedCols !== null) return _cachedCols;
+  const n =
     parsePositiveInt(process.env.CLAUDE_CAT_COLUMNS) ||
     ttyColumnsViaStty() ||
     ttyColumnsViaTput() ||
     parsePositiveInt(process.env.COLUMNS) ||
     (process.stdout && process.stdout.columns) ||
-    200
-  );
+    200;
+  _cachedCols = n;
+  return n;
 }
 
 // Greedy multi-line pack. `head` is locked to the first line (it's
@@ -520,6 +538,11 @@ function parseMaxCols(args) {
 }
 
 async function main() {
+  // Freeze "now" once per render so every window measures against the
+  // same cutoff — otherwise two windows that reset milliseconds apart
+  // can disagree on whether they've expired yet.
+  setRenderNow(Date.now());
+
   const args = process.argv.slice(2);
   const layout = parseLayout(args);
   const iconMode = parseIconMode(args);
