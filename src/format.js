@@ -31,15 +31,16 @@ const C = {
   // cat glyph
   cat:       "\x1b[36m",              // cyan
 
-  // section separator ('|') — bold white so it pops between sections
-  sep:       "\x1b[1m\x1b[37m",       // bold + white
+  // section separator ('|') — bold default fg so it pops on both
+  // dark and light backgrounds (bold white is invisible on light)
+  sep:       "\x1b[1m",               // bold, inherits terminal fg
 
-  // cost is the single 'money' number — use bright white, no dim
-  cost:      "\x1b[1m\x1b[37m",       // bold white
+  // cost — dim, secondary info alongside ctx and reset phrases
+  cost:      "\x1b[2m",
 
-  // ctx chip — soft cyan to pair with the cat, dim so it sits behind
-  // the window bars in scanning order
-  ctx:       "\x1b[2m\x1b[36m",
+  // ctx chip — dim, same weight as reset phrases so it reads as
+  // secondary info rather than competing with the window bars
+  ctx:       "\x1b[2m",
 
   // debug chip — magenta so "debug on" is impossible to miss
   debug:     "\x1b[35m",
