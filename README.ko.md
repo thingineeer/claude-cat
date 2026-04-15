@@ -42,7 +42,7 @@ npx -y claude-cat@latest configure
 깔리는 것: 한 줄에 사용량 바 + `$` 비용 + `ctx %`. 고양이 없음. 좁은 터미널에선 자동 줄바꿈.
 
 ```
-5h ▓▓▓▓░░░░░░ 47% (1h 19m)  |  week ▓▓▓░░░░░░░ 31% (Fri 1pm)  |  $37.37  |  ctx 20%
+5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
 ```
 
 ```text
@@ -51,7 +51,7 @@ Install claude-cat (https://github.com/thingineeer/claude-cat) into my
 
 - type: "command"
 - command: "npx -y claude-cat@latest"
-- padding: 1
+- padding: 0
 - refreshInterval: 300
 
 Don't touch any other key. Show me the diff first.
@@ -73,7 +73,7 @@ Install claude-cat (https://github.com/thingineeer/claude-cat) into my
 
 - type: "command"
 - command: "npx -y claude-cat@latest --full --kawaii"
-- padding: 1
+- padding: 0
 - refreshInterval: 300
 
 Don't touch any other key. Show me the diff first.
@@ -92,7 +92,7 @@ Don't touch any other key. Show me the diff first.
 <tr>
 <td><strong>⭐ (기본값)</strong></td>
 <td><code>npx -y claude-cat@latest</code></td>
-<td><pre>5h ▓░░░░░░░░░ 10% (3h 21m)  |  week ▓▓░░░░░░░░ 18% (Fri 1pm)  |  $0.123</pre></td>
+<td><pre>5h ▓░░░░░░░░░ 10% (3h 21m) | week ▓▓░░░░░░░░ 18% (Fri 1pm) | $0.123</pre></td>
 </tr>
 <tr>
 <td><code>--full --kawaii</code></td>
@@ -111,7 +111,7 @@ week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</p
 <tr>
 <td><code>--wide</code></td>
 <td><code>npx -y claude-cat@latest --wide</code></td>
-<td><pre>5h ▓░░░░░░░ 10% (3h 21m)  |  week ▓░░░░░░░ 18% (Fri 1pm)  |  $0.123</pre></td>
+<td><pre>5h ▓░░░░░░░ 10% (3h 21m) | week ▓░░░░░░░ 18% (Fri 1pm) | $0.123</pre></td>
 </tr>
 <tr>
 <td><code>--full --no-cat</code></td>
@@ -132,7 +132,7 @@ week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</p
 ## 출력 읽는 법
 
 ```
-5h ▓▓▓▓░░░░░░ 47% (1h 19m)  |  week ▓▓▓░░░░░░░ 31% (Fri 1pm)  |  $37.37  |  ctx 20%
+5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
 ```
 
 | 칩 | 의미 |

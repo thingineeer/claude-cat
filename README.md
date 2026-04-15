@@ -52,7 +52,7 @@ You get a single line: usage bars + `$` cost + `ctx %`. No cat. Wraps
 on narrow terminals.
 
 ```
-5h ▓▓▓▓░░░░░░ 47% (1h 19m)  |  week ▓▓▓░░░░░░░ 31% (Fri 1pm)  |  $37.37  |  ctx 20%
+5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
 ```
 
 ```text
@@ -61,7 +61,7 @@ Install claude-cat (https://github.com/thingineeer/claude-cat) into my
 
 - type: "command"
 - command: "npx -y claude-cat@latest"
-- padding: 1
+- padding: 0
 - refreshInterval: 300
 
 Don't touch any other key. Show me the diff first.
@@ -84,7 +84,7 @@ Install claude-cat (https://github.com/thingineeer/claude-cat) into my
 
 - type: "command"
 - command: "npx -y claude-cat@latest --full --kawaii"
-- padding: 1
+- padding: 0
 - refreshInterval: 300
 
 Don't touch any other key. Show me the diff first.
@@ -103,7 +103,7 @@ Same install pattern — just swap the `command` value.
 <tr>
 <td><strong>⭐ (default)</strong></td>
 <td><code>npx -y claude-cat@latest</code></td>
-<td><pre>5h ▓░░░░░░░░░ 10% (3h 21m)  |  week ▓▓░░░░░░░░ 18% (Fri 1pm)  |  $0.123</pre></td>
+<td><pre>5h ▓░░░░░░░░░ 10% (3h 21m) | week ▓▓░░░░░░░░ 18% (Fri 1pm) | $0.123</pre></td>
 </tr>
 <tr>
 <td><code>--full --kawaii</code></td>
@@ -122,7 +122,7 @@ week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</p
 <tr>
 <td><code>--wide</code></td>
 <td><code>npx -y claude-cat@latest --wide</code></td>
-<td><pre>5h ▓░░░░░░░ 10% (3h 21m)  |  week ▓░░░░░░░ 18% (Fri 1pm)  |  $0.123</pre></td>
+<td><pre>5h ▓░░░░░░░ 10% (3h 21m) | week ▓░░░░░░░ 18% (Fri 1pm) | $0.123</pre></td>
 </tr>
 <tr>
 <td><code>--full --no-cat</code></td>
@@ -145,7 +145,7 @@ bars — the wizard sets this automatically).
 ## Reading the output
 
 ```
-5h ▓▓▓▓░░░░░░ 47% (1h 19m)  |  week ▓▓▓░░░░░░░ 31% (Fri 1pm)  |  $37.37  |  ctx 20%
+5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
 ```
 
 | chip | meaning |
