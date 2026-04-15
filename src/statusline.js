@@ -159,8 +159,15 @@ function inlineCatGlyph({ windows, state }, theme) {
 //   - cost === 0 and no windows and ctx exists → 'warming_up'
 //     (Pro/Max session before the first reply, most common)
 //   - nothing at all                           → 'warming_up' (conservative)
+//
+// Windows whose resets_at has already passed are ignored — they're stale
+// bookkeeping, not live state. Matches the CLAUDE.md mood invariant.
 function inferState(d, windows) {
-  if (windows.length > 0) return "normal";
+  const now = Math.floor(Date.now() / 1000);
+  const live = (windows || []).filter(
+    (w) => !(w.resets_at && w.resets_at <= now),
+  );
+  if (live.length > 0) return "normal";
   const cost = d?.cost?.total_cost_usd;
   if (typeof cost === "number" && cost > 0) return "cost_only";
   return "warming_up";
