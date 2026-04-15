@@ -9,6 +9,24 @@ _Nothing yet._
   it; daemon proxying `/api/oauth/usage` is the leading candidate)
 - Light-theme aware palette (currently tuned for dark terminals)
 
+## [1.2.4] - 2026-04-15
+
+Visual polish — tighter layout and a refined color palette that reads
+well on dark terminals without breaking on light ones.
+
+### Changed
+- **Tighter separator** (#54) — compact/wide separator shrunk from
+  `··|··` (5 chars) to `·|·` (3 chars), saving 4-6 columns per line.
+  Helpful on narrow terminals where Claude Code truncates the status.
+- **Refined color palette** (#56) — three changes based on WCAG
+  contrast research:
+  - **separator**: bold white → bold default fg (inherits terminal
+    foreground — visible on both dark and light backgrounds)
+  - **cost chip**: bold white → dim (secondary info, same visual
+    weight as reset phrases)
+  - **ctx chip**: dim cyan → dim (drops the cyan tint, consistent
+    with cost and reset phrase styling)
+
 ## [1.2.3] - 2026-04-15
 
 Reliability and performance patch — tightens timing consistency,
