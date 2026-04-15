@@ -68,6 +68,21 @@ export function bar(pct, width = 10) {
   return `${col}${"▓".repeat(filled)}${C.gray}${"░".repeat(empty)}${C.reset}`;
 }
 
+// Per-render "now" lock. main() freezes a single timestamp before any
+// rendering happens; every window then sees the same cutoff, so a
+// session window that just flipped and a weekly one read millis apart
+// can't disagree on "is this reset yet?".
+let _renderNowMs = null;
+export function setRenderNow(ms) {
+  _renderNowMs = typeof ms === "number" && Number.isFinite(ms) ? ms : null;
+}
+function nowMs() {
+  return _renderNowMs ?? Date.now();
+}
+export function getRenderNowSec() {
+  return Math.floor(nowMs() / 1000);
+}
+
 // Short relative countdown for the session window. Always English-
 // Latin (`3h 34m` / `2d 4h` / `15m`): `h`/`m`/`d` are universally
 // recognized unit abbreviations in developer-facing tooling, so the
@@ -75,7 +90,7 @@ export function bar(pct, width = 10) {
 // dispatch, no wrong-word-order edge cases.
 export function fmtCountdown(resetsAtSec) {
   if (!resetsAtSec) return null;
-  const s = resetsAtSec - Math.floor(Date.now() / 1000);
+  const s = resetsAtSec - Math.floor(nowMs() / 1000);
   if (s <= 0) return "ready";
   const d = Math.floor(s / 86400);
   const h = Math.floor((s % 86400) / 3600);
@@ -116,7 +131,7 @@ export function tzName() {
 // i18n.t(). Shape:
 //   { clock: "1pm", date: "Apr 17" | null, tz: "Asia/Seoul" | null }
 // If resets_at is in the past, returns "ready".
-export function absoluteResetParts(resetsAtSec, { now = new Date() } = {}) {
+export function absoluteResetParts(resetsAtSec, { now = new Date(nowMs()) } = {}) {
   if (!resetsAtSec) return null;
   const target = new Date(resetsAtSec * 1000);
   if (target.getTime() - now.getTime() <= 0) return "ready";

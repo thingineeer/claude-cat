@@ -12,7 +12,7 @@
 // rate_limits for Pro/Max subscribers after the first assistant response.
 
 import { pickCat, catArt, THEME_NAMES } from "./cats.js";
-import { bar, fmtCountdown, absoluteResetParts, fmtCost, colorByPct, colors as C } from "./format.js";
+import { bar, fmtCountdown, absoluteResetParts, fmtCost, colorByPct, colors as C, setRenderNow, getRenderNowSec } from "./format.js";
 import { parseIconMode, iconFor } from "./icons.js";
 import { maybeDumpStdin, debugEnabled } from "./debug.js";
 import { writeCacheIfActive, readCacheForIdle } from "./cache.js";
@@ -168,7 +168,7 @@ function inlineCatGlyph({ windows, state }, theme) {
 // Windows whose resets_at has already passed are ignored — they're stale
 // bookkeeping, not live state. Matches the CLAUDE.md mood invariant.
 function inferState(d, windows) {
-  const now = Math.floor(Date.now() / 1000);
+  const now = getRenderNowSec();
   const live = (windows || []).filter(
     (w) => !(w.resets_at && w.resets_at <= now),
   );
@@ -540,6 +540,11 @@ function parseMaxCols(args) {
 }
 
 async function main() {
+  // Freeze "now" once per render so every window measures against the
+  // same cutoff — otherwise two windows that reset milliseconds apart
+  // can disagree on whether they've expired yet.
+  setRenderNow(Date.now());
+
   const args = process.argv.slice(2);
   const layout = parseLayout(args);
   const iconMode = parseIconMode(args);

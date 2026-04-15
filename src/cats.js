@@ -14,6 +14,8 @@
 //   resting            — no windows yet (warming up, api-only, etc.)
 //                        dozing pose, independent of usage percent
 
+import { getRenderNowSec } from "./format.js";
+
 const THRESHOLDS = [
   { max: 30,  mood: "chill"    },
   { max: 60,  mood: "curious"  },
@@ -71,7 +73,7 @@ export function moodFor(percent) {
 // The rationale: the 5-hour bar resets fast and is forgiving; the 7-day
 // bar is the one that actually constrains your week. So weekly
 // saturation is weighted earlier (60%) than session saturation (75%).
-export function moodFromWindows(windows, { now = Math.floor(Date.now() / 1000) } = {}) {
+export function moodFromWindows(windows, { now = getRenderNowSec() } = {}) {
   const live = (windows || []).filter((w) => !(w.resets_at && w.resets_at <= now));
   if (live.length === 0) return "chill";
 
