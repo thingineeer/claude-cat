@@ -132,7 +132,7 @@ CI runs the same `test:*` scripts on every PR targeting `dev` or `main`.
 1. Bump `package.json` version and update `CHANGELOG.md` on a
    `release/x.y.z` branch cut from `dev`.
 2. Open PR: `release/x.y.z → main`. Wait for CI, self-review.
-3. Squash-merge into `main`. Tag the merge commit `vx.y.z`. Push tag.
+3. Merge into `main` (`gh pr merge --merge`). Tag the merge commit `vx.y.z`. Push tag.
 4. Create a GitHub Release from the tag (paste CHANGELOG entry).
 5. Fast-forward `dev` onto `main` so the two stay in sync.
 
