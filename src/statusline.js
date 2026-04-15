@@ -12,7 +12,7 @@
 // rate_limits for Pro/Max subscribers after the first assistant response.
 
 import { pickCat, catArt, THEME_NAMES } from "./cats.js";
-import { bar, fmtCountdown, absoluteResetParts, fmtCost, colorByPct, colors as C } from "./format.js";
+import { bar, fmtCountdown, absoluteResetParts, fmtCost, colorByPct, colors as C, setRenderNow } from "./format.js";
 import { parseIconMode, iconFor } from "./icons.js";
 import { maybeDumpStdin, debugEnabled } from "./debug.js";
 import { writeCacheIfActive, readCacheForIdle } from "./cache.js";
@@ -540,6 +540,11 @@ function parseMaxCols(args) {
 }
 
 async function main() {
+  // Freeze "now" once per render so every window measures against the
+  // same cutoff — otherwise two windows that reset milliseconds apart
+  // can disagree on whether they've expired yet.
+  setRenderNow(Date.now());
+
   const args = process.argv.slice(2);
   const layout = parseLayout(args);
   const iconMode = parseIconMode(args);
