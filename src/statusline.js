@@ -102,9 +102,14 @@ function labelFor(key, { variant = "long" } = {}) {
 // that looks like { used_percentage, resets_at, ... }. This lets
 // model-scoped weekly buckets (e.g. Sonnet-only) appear automatically,
 // regardless of the exact key Claude Code chooses.
+//
+// Both fields are required. A partial entry (e.g. resets_at without
+// used_percentage) would render 0% and read as a live "all clear"
+// window — hiding malformed data behind a happy-looking bar.
 function isWindowEntry(v) {
   return v && typeof v === "object" && !Array.isArray(v)
-    && (typeof v.used_percentage === "number" || typeof v.resets_at === "number");
+    && typeof v.used_percentage === "number"
+    && typeof v.resets_at === "number";
 }
 
 // Ordering: five_hour first, then seven_day, then every other weekly-style
