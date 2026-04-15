@@ -214,14 +214,19 @@ function renderContextChip(d, { variant = "long" } = {}) {
 // even when stdout is a pipe.
 //
 // Priority:
-//   1. CLAUDE_CAT_COLUMNS env — explicit override
-//   2. stty size </dev/tty — live, updates on resize
-//   3. tput cols </dev/tty — same idea, different tool
-//   4. COLUMNS env — only correct if the shell exports live updates
-//   5. process.stdout.columns — rare (when stdout happens to be a TTY)
+//   1. CLAUDE_CAT_COLUMNS env — explicit override, fast path
+//   2. COLUMNS env — fast path when the shell exports live updates
+//      (zsh/bash with `shopt -s checkwinsize`)
+//   3. process.stdout.columns — rare (when stdout happens to be a TTY)
+//   4. stty size </dev/tty — subprocess, live on resize
+//   5. tput cols </dev/tty — same idea, different tool
 //   6. fallback 200 — high default so an unknown width doesn't wrap
 //      prematurely; users on narrow panes can still force it with
 //      --stack=always or --max-cols.
+//
+// Env / stdout.columns are checked before any subprocess so typical
+// runs skip execSync entirely. Result is memoized per-process — the
+// script exits after one render, so a TTL isn't needed.
 import { execSync } from "node:child_process";
 
 function parsePositiveInt(v) {
@@ -251,15 +256,18 @@ function ttyColumnsViaTput() {
   } catch { return null; }
 }
 
+let _cachedCols = null;
 function detectTerminalColumns() {
-  return (
+  if (_cachedCols !== null) return _cachedCols;
+  const n =
     parsePositiveInt(process.env.CLAUDE_CAT_COLUMNS) ||
-    ttyColumnsViaStty() ||
-    ttyColumnsViaTput() ||
     parsePositiveInt(process.env.COLUMNS) ||
     (process.stdout && process.stdout.columns) ||
-    200
-  );
+    ttyColumnsViaStty() ||
+    ttyColumnsViaTput() ||
+    200;
+  _cachedCols = n;
+  return n;
 }
 
 // Greedy multi-line pack. `head` is locked to the first line (it's
