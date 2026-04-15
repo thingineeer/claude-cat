@@ -352,8 +352,8 @@ function renderCompact(d, {
   }
 
   const tailGroup = [];
-  if (cs)  tailGroup.push(`${C.cost}${cs}${C.reset}`);
-  if (ctx) tailGroup.push(`${C.ctx}${ctx}${C.reset}`);
+  if (cs)  tailGroup.push(`${C.brand}${cs}${C.reset}`);
+  if (ctx) tailGroup.push(`${C.brand}${ctx}${C.reset}`);
   const dbg = debugChip({ showDebugChip });
   if (dbg) tailGroup.push(`${C.debug}${dbg}${C.reset}`);
 
@@ -470,8 +470,8 @@ function renderWide(d, { iconMode = "none", showDebugChip = true } = {}) {
   if (state !== "normal") {
     const hint = stateHint(state);
     if (hint) parts.push(`${C.dim}${hint}${C.reset}`);
-    if (cs)   parts.push(`${C.cost}${cs}${C.reset}`);
-    if (ctx)  parts.push(`${C.ctx}${ctx}${C.reset}`);
+    if (cs)   parts.push(`${C.brand}${cs}${C.reset}`);
+    if (ctx)  parts.push(`${C.brand}${ctx}${C.reset}`);
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
@@ -480,8 +480,8 @@ function renderWide(d, { iconMode = "none", showDebugChip = true } = {}) {
       const icon = iconFor(iconMode, w.key);
       parts.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct, 8)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
-    if (cs)  parts.push(`${C.cost}${cs}${C.reset}`);
-    if (ctx) parts.push(`${C.ctx}${ctx}${C.reset}`);
+    if (cs)  parts.push(`${C.brand}${cs}${C.reset}`);
+    if (ctx) parts.push(`${C.brand}${ctx}${C.reset}`);
   }
 
   const dbg = debugChip({ showDebugChip });
