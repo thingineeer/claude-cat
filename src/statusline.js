@@ -357,7 +357,7 @@ function renderCompact(d, {
   const dbg = debugChip({ showDebugChip });
   if (dbg) tailGroup.push(`${C.debug}${dbg}${C.reset}`);
 
-  const sep = `  ${C.sep}|${C.reset}  `;
+  const sep = ` ${C.sep}|${C.reset} `;
   const lineSep = "\n";
   const allParts = [...head, ...body, ...tailGroup];
 
@@ -487,7 +487,7 @@ function renderWide(d, { iconMode = "none", showDebugChip = true } = {}) {
   const dbg = debugChip({ showDebugChip });
   if (dbg) parts.push(`${C.debug}${dbg}${C.reset}`);
 
-  return parts.join(`  ${C.sep}|${C.reset}  `);
+  return parts.join(` ${C.sep}|${C.reset} `);
 }
 
 function parseLayout(args) {

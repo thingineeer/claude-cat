@@ -31,8 +31,8 @@ const C = {
   // cat glyph
   cat:       "\x1b[36m",              // cyan
 
-  // section separator ('|') — brighter than dim so sections read apart
-  sep:       "\x1b[37m\x1b[2m",       // white + dim = visible gray
+  // section separator ('|') — bold white so it pops between sections
+  sep:       "\x1b[1m\x1b[37m",       // bold + white
 
   // cost is the single 'money' number — use bright white, no dim
   cost:      "\x1b[1m\x1b[37m",       // bold white
