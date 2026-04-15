@@ -103,12 +103,16 @@ function fmtShortDate(date) {
 }
 
 // IANA timezone (e.g. "Asia/Seoul"); null when the runtime can't resolve it.
-export function tzName() {
+// Resolved once at module load — the timezone can't change mid-process.
+const _tzName = (() => {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
   } catch {
     return null;
   }
+})();
+export function tzName() {
+  return _tzName;
 }
 
 // Absolute reset phrase data for long windows (weekly, extra usage),
