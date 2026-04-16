@@ -51,6 +51,6 @@
   "dependencies": {
     "ink": "^5.2.1",
     "ink-select-input": "^6.2.0",
-    "react": "^18.3.1"
+    "react": "^19.2.5"
   }
 }
