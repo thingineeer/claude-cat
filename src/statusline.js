@@ -220,9 +220,15 @@ function renderContextChip(d, { variant = "long" } = {}) {
 // context_window.total_input_tokens / total_output_tokens — these
 // are cumulative across the conversation, not just the last turn.
 // We render input+output together (cache read/write tokens are
-// implementation detail that users don't pay per-token for anyway):
-//   variant='short' → 'tok 1.2k'
-//   variant='long'  → '1.2k tokens'
+// implementation detail that users don't pay per-token for anyway).
+//
+// When context_window_size is known, we emit X/Y so the user sees
+// both what they've consumed and what they have left:
+//   variant='short' → 'tok 42k/1M'
+//   variant='long'  → '42k / 1M tokens'
+// Otherwise we fall back to just the used count:
+//   variant='short' → 'tok 42k'
+//   variant='long'  → '42k tokens'
 // Returns null when the field isn't populated (brand-new sessions,
 // API-key users on providers that don't report it).
 function renderTokensChip(d, { variant = "long" } = {}) {
@@ -232,9 +238,17 @@ function renderTokensChip(d, { variant = "long" } = {}) {
   const outTok = typeof ctx.total_output_tokens === "number" ? ctx.total_output_tokens : 0;
   const total = inTok + outTok;
   if (total <= 0) return null;
-  const s = fmtTokens(total);
-  if (!s) return null;
-  return variant === "short" ? `tok ${s}` : `${s} tokens`;
+  const used = fmtTokens(total);
+  if (!used) return null;
+
+  const size = typeof ctx.context_window_size === "number" && ctx.context_window_size > 0
+    ? fmtTokens(ctx.context_window_size)
+    : null;
+
+  if (variant === "short") {
+    return size ? `tok ${used}/${size}` : `tok ${used}`;
+  }
+  return size ? `${used} / ${size} tokens` : `${used} tokens`;
 }
 
 // How wide is the actual terminal (columns)?
