@@ -50,11 +50,13 @@ function hasRateLimits(d) {
 // clean so idle sessions reading it don't get compromised.
 function cleanForCache(d) {
   const cleanRL = {};
-  for (const [k, v] of Object.entries(d.rate_limits || {})) {
+  // Optional chaining is the house style for every `rate_limits.*`
+  // access — stay consistent even when we just pre-`|| {}`-ed it.
+  for (const [k, v] of Object.entries(d?.rate_limits || {})) {
     if (!isSafeWindowKey(k)) continue;
     if (!v || typeof v !== "object") continue;
     cleanRL[k] = {
-      used_percentage: clampPct(v.used_percentage),
+      used_percentage: clampPct(v?.used_percentage),
       // Number.isFinite rejects NaN and Infinity in addition to
       // non-numbers, so downstream countdown math can't blow up on
       // a poisoned cache (`new Date(NaN * 1000)` → Invalid Date).
@@ -62,9 +64,9 @@ function cleanForCache(d) {
     };
   }
   const out = { rate_limits: cleanRL };
-  if (d.model && typeof d.model === "object") {
-    const dn = sanitizeText(d.model.display_name);
-    const id = sanitizeText(d.model.id);
+  if (d?.model && typeof d.model === "object") {
+    const dn = sanitizeText(d.model?.display_name);
+    const id = sanitizeText(d.model?.id);
     if (dn || id) {
       out.model = {};
       if (dn) out.model.display_name = dn;

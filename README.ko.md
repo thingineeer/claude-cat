@@ -80,7 +80,7 @@ npx -y claude-cat@latest configure
 
 깔리는 것: 한 줄에 사용량 바 + `$` 비용 + `ctx %`. 고양이 없음. 좁은 터미널에선 자동 줄바꿈.
 
-```
+```text
 5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
 ```
 
@@ -100,7 +100,7 @@ Don't touch any other key. Show me the diff first.
 
 깔리는 것: 3줄 카드 — 왼쪽엔 ASCII 고양이, 오른쪽엔 데이터 행. 사용량에 따라 얼굴과 소품이 바뀝니다.
 
-```
+```text
  /\_/\    Opus 4.6  ·  $38.52  ·  ctx 23% used (77% left)
 ( ^ω^ )   Current session            ▓▓▓▓▓▓░░░░░░░  51% · 1h 15m
  / >🍣    Current week (all models)  ▓▓▓░░░░░░░░░░  31% · Resets Apr 17, 1pm
@@ -170,7 +170,7 @@ week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</p
 
 ## 출력 읽는 법
 
-```
+```text
 5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
 ```
 

@@ -90,7 +90,7 @@ Pick a mode, paste the prompt into Claude Code, and it edits
 You get a single line: usage bars + `$` cost + `ctx %`. No cat. Wraps
 on narrow terminals.
 
-```
+```text
 5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
 ```
 
@@ -111,7 +111,7 @@ Don't touch any other key. Show me the diff first.
 You get a 3-row card: ASCII cat on the left, data rows on the right.
 The cat's face and prop change with your usage.
 
-```
+```text
  /\_/\    Opus 4.6  ·  $38.52  ·  ctx 23% used (77% left)
 ( ^ω^ )   Current session            ▓▓▓▓▓▓░░░░░░░  51% · 1h 15m
  / >🍣    Current week (all models)  ▓▓▓░░░░░░░░░░  31% · Resets Apr 17, 1pm
@@ -183,7 +183,7 @@ bars — the wizard sets this automatically).
 
 ## Reading the output
 
-```
+```text
 5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
 ```
 

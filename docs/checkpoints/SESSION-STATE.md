@@ -1,5 +1,10 @@
 # Session State — claude-cat
 
+> **Historical snapshot** — captured right after the v1.2.4 release.
+> Kept as-is for context; the next maintainer session (v1.2.5 and
+> onward) will write a fresh snapshot. Don't treat the numbers below
+> as "current".
+
 ## Date
 2026-04-15
 
