@@ -28,7 +28,10 @@ export function buildSettings(answers) {
   const statusLine = {
     type: "command",
     command: buildCommand(answers),
-    padding: 1,
+    // Match the recommended value in README's manual-setup prompts —
+    // padding: 0 hands the full terminal width to the status line so
+    // long bars and chips don't wrap prematurely on narrower panes.
+    padding: 0,
     refreshInterval: answers.refresh,
   };
 

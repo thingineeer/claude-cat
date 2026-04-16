@@ -9,6 +9,64 @@ _Nothing yet._
   it; daemon proxying `/api/oauth/usage` is the leading candidate)
 - Light-theme aware palette (currently tuned for dark terminals)
 
+## [1.2.5] - 2026-04-16
+
+Security hardening release. Adds input sanitization against ANSI
+escape injection (discovered via a local penetration test), documents
+the project's security posture, and wires in supply-chain guardrails.
+No user-visible output changes — the statusLine renders identically
+to 1.2.4 for all legitimate payloads.
+
+### Security
+- **ANSI escape injection defence** (#59) — every string field read
+  from stdin JSON or the cross-terminal cache (`model.display_name`,
+  rate-limit keys) now has C0 control characters (`\x00`–`\x1f`,
+  `\x7f`) stripped before rendering. Previously a malicious payload
+  could retitle the terminal window (`OSC 0`), clear the screen
+  (`\x1b[2J\x1b[H`), or inject fake clickable hyperlinks (`OSC 8`).
+- **Window key whitelist** — `rate_limits.*` keys are now validated
+  against `/^[a-z][a-z0-9_]*$/`, rejecting UI-spoofing attempts via
+  crafted keys like `$(rm -rf /)` or `../../../etc/passwd`.
+- **Percentage clamp** — `used_percentage` is clamped into `[0, 100]`
+  before rendering so a runaway `999999999%` can't distort the line.
+- **Cache poisoning defence** — the cross-terminal cache file
+  (`~/.claude/claude-cat/rate-limits-cache.json`) is now scrubbed on
+  both write and read, so a local process with write access can't
+  inject ANSI payloads that replay in idle sessions.
+
+### Docs
+- **New `SECURITY.md`** — vulnerability reporting policy (private
+  advisory only), project invariants (no network, no keychain, no
+  writes outside `~/.claude/claude-cat/`), supported-version policy.
+- **README (en/ko)** gains a **Security** section: npm supply-chain
+  considerations, version-pinning guidance
+  (`npx -y claude-cat@1.2.5`), package-audit recipe, local-install
+  alternative, vulnerability-report link.
+- **README hero re-framed around "zero network / zero credentials"**
+  (en/ko) — new `Why claude-cat` section with explicit threat
+  model, badges (`network: 0 calls`, `credentials: never read`),
+  and a comparison table against ccstatusline / claude-dashboard /
+  ccusage so users can pick by safety posture, not just feature
+  count.
+- **CONTRIBUTING.md** — release flow corrected: "squash-merge" →
+  "merge commit (`gh pr merge --merge`)" (matches the repo policy).
+- Removed outdated `assets/README.md` (stale face ASCII table) and
+  unused `examples/sample-api-only.json` fixture.
+
+### Infra / tooling
+- **`.gitignore` hardened** — `.npmrc`, `.npmrc.*`, `*.token`,
+  `*.bak`, `*.backup`, `*.orig`, `*.rej` added.
+- **`prepublishOnly` hook** — `package.json` now runs `test:sample`
+  + `test:full` + `npm pack --dry-run` automatically before any
+  `npm publish`, preventing accidentally shipping broken tarballs.
+- **Dependabot configured** (`.github/dependabot.yml`) — weekly npm
+  + github-actions updates, PRs target `dev`.
+
+### Compatibility
+- No flag or CLI changes. Existing `~/.claude/settings.json` entries
+  keep working; output for legitimate payloads is byte-for-byte
+  identical to 1.2.4.
+
 ## [1.2.4] - 2026-04-15
 
 Visual polish — tighter layout and a refined color palette that reads

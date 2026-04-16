@@ -18,6 +18,7 @@ import { maybeDumpStdin, debugEnabled } from "./debug.js";
 import { writeCacheIfActive, readCacheForIdle } from "./cache.js";
 import { t } from "./i18n.js";
 import { padEndDisplay, displayWidth } from "./width.js";
+import { sanitizeText, isSafeWindowKey, clampPct } from "./sanitize.js";
 
 // Build the reset phrase for a given window.
 // - session (five_hour): relative, universal format (`3h 34m`, `15m`,
@@ -126,6 +127,10 @@ function collectWindows(d, { variant = "long" } = {}) {
   const plan = process.env.CLAUDE_CAT_PLAN;
   return Object.entries(rl)
     .filter(([k, v]) => {
+      // Reject keys that don't match the expected `five_hour` /
+      // `seven_day[_suffix]` shape. Stops UI spoofing via crafted keys
+      // like "$(rm -rf /)" or "../../../etc/passwd".
+      if (!isSafeWindowKey(k)) return false;
       if (!isWindowEntry(v)) return false;
       if (plan === "pro" && k.startsWith("seven_day")) return false;
       return true;
@@ -138,7 +143,9 @@ function collectWindows(d, { variant = "long" } = {}) {
     .map(([k, v]) => ({
       key: k,
       label: labelFor(k, { variant }),
-      pct: v.used_percentage ?? 0,
+      // Clamp server-provided percentages into [0, 100] so a runaway
+      // 999999999% can't explode the line or shift later columns.
+      pct: clampPct(v.used_percentage ?? 0),
       resets_at: v.resets_at,
     }));
 }
@@ -381,7 +388,11 @@ function renderCompact(d, {
 function buildDataBlock(d, { iconMode, state, showDebugChip = true }) {
   const windows = collectWindows(d);
   const cost = d?.cost?.total_cost_usd;
-  const model = d?.model?.display_name;
+  // Strip C0 control chars before rendering — model.display_name comes
+  // from the server (or a poisoned cache) and could otherwise carry
+  // ANSI escapes that retitle the terminal, clear the screen, or
+  // inject fake hyperlinks.
+  const model = sanitizeText(d?.model?.display_name);
   const ctx = renderContextChip(d);
   const dbg = debugChip({ showDebugChip });
 

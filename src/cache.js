@@ -27,6 +27,7 @@ import { readFileSync, writeFileSync, mkdirSync, renameSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
+import { sanitizeText, isSafeWindowKey, clampPct } from "./sanitize.js";
 
 const CACHE_DIR  = join(homedir(), ".claude", "claude-cat");
 const CACHE_FILE = join(CACHE_DIR, "rate-limits-cache.json");
@@ -43,14 +44,46 @@ function hasRateLimits(d) {
 
 // Write current stdin's rate_limits to the shared cache file.
 // Called only when stdin actually has rate_limits (active session).
+// Scrub an incoming payload to only the fields we cache, rejecting
+// unsafe keys and stripping control chars from model.display_name.
+// Defense-in-depth: even if the server sends junk, the cache stays
+// clean so idle sessions reading it don't get compromised.
+function cleanForCache(d) {
+  const cleanRL = {};
+  // Optional chaining is the house style for every `rate_limits.*`
+  // access — stay consistent even when we just pre-`|| {}`-ed it.
+  for (const [k, v] of Object.entries(d?.rate_limits || {})) {
+    if (!isSafeWindowKey(k)) continue;
+    if (!v || typeof v !== "object") continue;
+    cleanRL[k] = {
+      used_percentage: clampPct(v?.used_percentage),
+      // Number.isFinite rejects NaN and Infinity in addition to
+      // non-numbers, so downstream countdown math can't blow up on
+      // a poisoned cache (`new Date(NaN * 1000)` → Invalid Date).
+      resets_at: Number.isFinite(v?.resets_at) ? v.resets_at : null,
+    };
+  }
+  const out = { rate_limits: cleanRL };
+  if (d?.model && typeof d.model === "object") {
+    const dn = sanitizeText(d.model?.display_name);
+    const id = sanitizeText(d.model?.id);
+    if (dn || id) {
+      out.model = {};
+      if (dn) out.model.display_name = dn;
+      if (id) out.model.id = id;
+    }
+  }
+  return out;
+}
+
 export function writeCacheIfActive(d) {
   if (!hasRateLimits(d)) return;
   try {
     mkdirSync(CACHE_DIR, { recursive: true });
+    const clean = cleanForCache(d);
     const payload = JSON.stringify({
       written_at: Math.floor(Date.now() / 1000),
-      rate_limits: d.rate_limits,
-      ...(d.model ? { model: d.model } : {}),
+      ...clean,
     });
     // Atomic write: tmp → rename so concurrent readers never see partial data.
     const tmp = join(CACHE_DIR, `.ratelimits-tmp-${randomBytes(4).toString("hex")}.json`);
@@ -75,11 +108,17 @@ export function readCacheForIdle() {
 
     if (!hasRateLimits(obj)) return null;
 
+    // Defense-in-depth: rescrub on read too. If an attacker with
+    // local write access poisoned the cache file directly (bypassing
+    // writeCacheIfActive), the idle session that reads it still sees
+    // clean data.
+    const clean = cleanForCache(obj);
+    if (!hasRateLimits(clean)) return null;
+
     return {
       _fromCache: true,
       _cacheAge: age,
-      rate_limits: obj.rate_limits,
-      ...(obj.model ? { model: obj.model } : {}),
+      ...clean,
     };
   } catch {
     return null;
