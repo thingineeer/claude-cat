@@ -12,7 +12,7 @@
 // rate_limits for Pro/Max subscribers after the first assistant response.
 
 import { pickCat, catArt, THEME_NAMES } from "./cats.js";
-import { bar, fmtCountdown, absoluteResetParts, fmtCost, colorByPct, colors as C, setRenderNow, getRenderNowSec } from "./format.js";
+import { bar, fmtCountdown, absoluteResetParts, fmtCost, fmtTokens, colorByPct, colors as C, setRenderNow, getRenderNowSec } from "./format.js";
 import { parseIconMode, iconFor } from "./icons.js";
 import { maybeDumpStdin, debugEnabled } from "./debug.js";
 import { writeCacheIfActive, readCacheForIdle } from "./cache.js";
@@ -216,6 +216,27 @@ function renderContextChip(d, { variant = "long" } = {}) {
   return `ctx ${used}% used (${left}% left)`;
 }
 
+// Session-wide token tally. Claude Code puts running totals in
+// context_window.total_input_tokens / total_output_tokens — these
+// are cumulative across the conversation, not just the last turn.
+// We render input+output together (cache read/write tokens are
+// implementation detail that users don't pay per-token for anyway):
+//   variant='short' → 'tok 1.2k'
+//   variant='long'  → '1.2k tokens'
+// Returns null when the field isn't populated (brand-new sessions,
+// API-key users on providers that don't report it).
+function renderTokensChip(d, { variant = "long" } = {}) {
+  const ctx = d?.context_window;
+  if (!ctx) return null;
+  const inTok = typeof ctx.total_input_tokens === "number" ? ctx.total_input_tokens : 0;
+  const outTok = typeof ctx.total_output_tokens === "number" ? ctx.total_output_tokens : 0;
+  const total = inTok + outTok;
+  if (total <= 0) return null;
+  const s = fmtTokens(total);
+  if (!s) return null;
+  return variant === "short" ? `tok ${s}` : `${s} tokens`;
+}
+
 // How wide is the actual terminal (columns)?
 //
 // Claude Code spawns statusLine scripts with stdin/stdout/stderr as
@@ -323,16 +344,40 @@ function joinWithWrap({ head, body, tail, sep, lineSep, cap }) {
     .join(lineSep);
 }
 
+// Decide whether to show cost / tokens chips, combining explicit
+// flags (--cost=, --tokens=) with CLAUDE_CAT_PLAN as the tie-breaker.
+//
+// Logic:
+//   'show' → always render if data present
+//   'hide' → never render
+//   'auto' → plan-aware:
+//     • Pro / Max plans hide $ (flat-rate, the number is informational);
+//       tokens stay shown (actual usage signal).
+//     • API-key / unknown plan shows both.
+function shouldShow(flag, kind, plan) {
+  if (flag === "show") return true;
+  if (flag === "hide") return false;
+  // auto
+  if (kind === "cost" && (plan === "pro" || plan === "max")) return false;
+  return true;
+}
+
 function renderCompact(d, {
   iconMode = "none",
   showDebugChip = true,
   stack = "auto",
   cols,
+  costFlag = "auto",
+  tokensFlag = "auto",
 } = {}) {
   const windows = collectWindows(d, { variant: "short" });
   const state = inferState(d, windows);
   const ctx = renderContextChip(d, { variant: "short" });
-  const cs = fmtCost(d?.cost?.total_cost_usd);
+  const plan = process.env.CLAUDE_CAT_PLAN;
+  const showTok = shouldShow(tokensFlag, "tokens", plan);
+  const showCost = shouldShow(costFlag, "cost", plan);
+  const tok = showTok ? renderTokensChip(d, { variant: "short" }) : null;
+  const cs = showCost ? fmtCost(d?.cost?.total_cost_usd) : null;
 
   // Compact stays cat-less — the cat lives in --full --kawaii — but
   // cost now rides alongside ctx in the tail group. Max-plan users
@@ -361,6 +406,9 @@ function renderCompact(d, {
   const tailGroup = [];
   if (cs)  tailGroup.push(`${C.cost}${cs}${C.reset}`);
   if (ctx) tailGroup.push(`${C.ctx}${ctx}${C.reset}`);
+  // tokens sits right next to ctx so the two context-usage chips
+  // read as a pair (ctx % + cumulative tokens).
+  if (tok) tailGroup.push(`${C.ctx}${tok}${C.reset}`);
   const dbg = debugChip({ showDebugChip });
   if (dbg) tailGroup.push(`${C.debug}${dbg}${C.reset}`);
 
@@ -385,7 +433,13 @@ function renderCompact(d, {
 //   line 1+  — one per window, OR a single short status hint
 // No indentation here; callers add padding if they place the block
 // next to cat art.
-function buildDataBlock(d, { iconMode, state, showDebugChip = true }) {
+function buildDataBlock(d, {
+  iconMode,
+  state,
+  showDebugChip = true,
+  costFlag = "auto",
+  tokensFlag = "auto",
+}) {
   const windows = collectWindows(d);
   const cost = d?.cost?.total_cost_usd;
   // Strip C0 control chars before rendering — model.display_name comes
@@ -394,14 +448,19 @@ function buildDataBlock(d, { iconMode, state, showDebugChip = true }) {
   // inject fake hyperlinks.
   const model = sanitizeText(d?.model?.display_name);
   const ctx = renderContextChip(d);
+  const plan = process.env.CLAUDE_CAT_PLAN;
+  const showTok = shouldShow(tokensFlag, "tokens", plan);
+  const showCost = shouldShow(costFlag, "cost", plan);
+  const tok = showTok ? renderTokensChip(d, { variant: "long" }) : null;
+  const cs = showCost ? fmtCost(cost) : null;
   const dbg = debugChip({ showDebugChip });
 
   const lines = [];
   const header = [];
   if (model) header.push(`${C.dim}${model}${C.reset}`);
-  const cs = fmtCost(cost);
   if (cs)  header.push(`${C.dim}${cs}${C.reset}`);
   if (ctx) header.push(`${C.dim}${ctx}${C.reset}`);
+  if (tok) header.push(`${C.dim}${tok}${C.reset}`);
   if (dbg) header.push(`${C.dim}${dbg}${C.reset}`);
   if (header.length) lines.push(header.join(`  ${C.gray}·${C.reset}  `));
 
@@ -423,14 +482,20 @@ function buildDataBlock(d, { iconMode, state, showDebugChip = true }) {
   return lines;
 }
 
-function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip = true } = {}) {
+function renderFull(d, {
+  iconMode = "none",
+  catTheme = "compact",
+  showDebugChip = true,
+  costFlag = "auto",
+  tokensFlag = "auto",
+} = {}) {
   const windows = collectWindows(d);
   const state = inferState(d, windows);
   const art = catArt(
     state === "normal" ? { windows } : { state: "resting" },
     catTheme,
   );
-  const data = buildDataBlock(d, { iconMode, state, showDebugChip });
+  const data = buildDataBlock(d, { iconMode, state, showDebugChip, costFlag, tokensFlag });
 
   // Compact-cat full: inline the 1-line face into the header and indent
   // every data line with 2 spaces, matching the previous look.
@@ -470,11 +535,20 @@ function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip 
 // like compact, but now carries the cost chip alongside ctx so Max-
 // plan users can eyeball spend without leaving the row.
 // Wide is for heavy users who don't want the line to ever wrap.
-function renderWide(d, { iconMode = "none", showDebugChip = true } = {}) {
+function renderWide(d, {
+  iconMode = "none",
+  showDebugChip = true,
+  costFlag = "auto",
+  tokensFlag = "auto",
+} = {}) {
   const windows = collectWindows(d, { variant: "short" });
   const state = inferState(d, windows);
   const ctx = renderContextChip(d, { variant: "short" });
-  const cs = fmtCost(d?.cost?.total_cost_usd);
+  const plan = process.env.CLAUDE_CAT_PLAN;
+  const showTok = shouldShow(tokensFlag, "tokens", plan);
+  const showCost = shouldShow(costFlag, "cost", plan);
+  const tok = showTok ? renderTokensChip(d, { variant: "short" }) : null;
+  const cs = showCost ? fmtCost(d?.cost?.total_cost_usd) : null;
 
   const parts = [];
 
@@ -483,6 +557,7 @@ function renderWide(d, { iconMode = "none", showDebugChip = true } = {}) {
     if (hint) parts.push(`${C.dim}${hint}${C.reset}`);
     if (cs)   parts.push(`${C.cost}${cs}${C.reset}`);
     if (ctx)  parts.push(`${C.ctx}${ctx}${C.reset}`);
+    if (tok)  parts.push(`${C.ctx}${tok}${C.reset}`);
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
@@ -493,6 +568,7 @@ function renderWide(d, { iconMode = "none", showDebugChip = true } = {}) {
     }
     if (cs)  parts.push(`${C.cost}${cs}${C.reset}`);
     if (ctx) parts.push(`${C.ctx}${ctx}${C.reset}`);
+    if (tok) parts.push(`${C.ctx}${tok}${C.reset}`);
   }
 
   const dbg = debugChip({ showDebugChip });
@@ -548,6 +624,21 @@ function parseMaxCols(args) {
   return undefined;
 }
 
+// --cost=show|hide|auto and --tokens=show|hide|auto. Also honors
+// bare --no-cost / --no-tokens. 'auto' lets CLAUDE_CAT_PLAN pick
+// (pro/max hide $, others show both).
+function parseShowFlag(args, name) {
+  if (args.includes(`--no-${name}`) || args.includes(`--${name}=hide`)) return "hide";
+  if (args.includes(`--${name}=show`)) return "show";
+  for (const a of args) {
+    if (a.startsWith(`--${name}=`)) {
+      const v = a.slice(`--${name}=`.length);
+      if (["show", "hide", "auto"].includes(v)) return v;
+    }
+  }
+  return "auto";
+}
+
 async function main() {
   // Freeze "now" once per render so every window measures against the
   // same cutoff — otherwise two windows that reset milliseconds apart
@@ -560,6 +651,8 @@ async function main() {
   const catTheme = parseCatTheme(args);
   const stack = parseStackMode(args);
   const cols = parseMaxCols(args);
+  const costFlag = parseShowFlag(args, "cost");
+  const tokensFlag = parseShowFlag(args, "tokens");
   const showDebugChip = !args.includes("--no-debug-chip");
   const raw = await readStdin();
   let d = safeParse(raw);
@@ -583,7 +676,7 @@ async function main() {
     }
   }
 
-  const opts = { iconMode, catTheme, showDebugChip, stack, cols };
+  const opts = { iconMode, catTheme, showDebugChip, stack, cols, costFlag, tokensFlag };
   let out;
   if (layout === "wide") out = renderWide(d, opts);
   else if (layout === "full") out = renderFull(d, opts);

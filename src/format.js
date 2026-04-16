@@ -156,4 +156,21 @@ export function fmtCost(usd) {
   return `$${usd.toFixed(2)}`;
 }
 
+// Short token count — always 3 chars of number + unit, so the chip
+// stays at a predictable width across sessions:
+//   853      →  '853'
+//   1,234    →  '1.2k'
+//   42,500   →  '42k'
+//   2,100,000→  '2.1M'
+// Sub-thousand values keep the raw count so brand-new sessions read
+// as "just a few tokens" rather than rounding to 0k.
+export function fmtTokens(n) {
+  if (typeof n !== "number" || !isFinite(n) || n < 0) return null;
+  if (n < 1000) return String(Math.round(n));
+  if (n < 10_000) return `${(n / 1000).toFixed(1)}k`;
+  if (n < 1_000_000) return `${Math.round(n / 1000)}k`;
+  if (n < 10_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  return `${Math.round(n / 1_000_000)}M`;
+}
+
 export const colors = C;

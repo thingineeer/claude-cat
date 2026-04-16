@@ -16,6 +16,14 @@ export function buildCommand(answers) {
     else if (answers.catTheme === "none") flags.push("--no-cat");
   }
 
+  // Cost / tokens: only emit a flag when the user explicitly picked
+  // show/hide. 'auto' is the default so we stay off the command line.
+  if (answers.cost === "show") flags.push("--cost=show");
+  else if (answers.cost === "hide") flags.push("--no-cost");
+
+  if (answers.tokens === "show") flags.push("--tokens=show");
+  else if (answers.tokens === "hide") flags.push("--no-tokens");
+
   return `npx -y claude-cat@latest${flags.length ? " " + flags.join(" ") : ""}`;
 }
 
