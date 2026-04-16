@@ -2,7 +2,7 @@
 
 <p align="left"><img src="assets/logo.svg" width="96" alt="claude-cat" /></p>
 
-> A cute cat lives on your Claude Code status line and tells you how much usage you have left — at a glance.
+> **The offline-only Claude Code status line.** A cute cat tells you how much usage is left — without touching a single network endpoint.
 
 [한국어 README →](./README.ko.md)
 
@@ -11,6 +11,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
 [![install size](https://packagephobia.com/badge?p=claude-cat)](https://packagephobia.com/result?p=claude-cat)
+[![zero network](https://img.shields.io/badge/network-0%20calls-brightgreen)](#-why-claude-cat)
+[![zero credentials](https://img.shields.io/badge/credentials-never%20read-brightgreen)](#-why-claude-cat)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/thingineeer/claude-cat/graphs/commit-activity)
 
 <p align="center">
@@ -19,8 +21,44 @@
   <em>3-row kawaii card — <code>--full --kawaii</code></em>
 </p>
 
-claude-cat is a renderer for the JSON Claude Code already pipes to
-statusLine scripts. No API keys, no OAuth, no network. Just a cat.
+## 🛡️ Why claude-cat
+
+claude-cat only renders the JSON that Claude Code **already pipes to
+statusLine scripts via stdin**. Nothing else. That's the whole
+design — and the whole safety story:
+
+- **🚫 Zero network calls.** No `api.anthropic.com`. No
+  `claude.ai`. No `/api/oauth/usage`. Run it behind a firewall; it
+  works the same. `tcpdump` stays empty.
+- **🚫 Zero credential reads.** Never touches
+  `~/.claude/.credentials.json`, the macOS Keychain, or any OAuth
+  token. If your npm account is ever compromised, the worst case
+  is a funny-looking status line — not a leaked Anthropic account.
+- **🚫 Zero outbound writes.** Only writes to
+  `~/.claude/claude-cat/` (a local sync cache + optional debug
+  dumps). Nothing leaves your machine.
+- **✅ Stdin-only**, by policy. Documented in
+  [`SECURITY.md`](./SECURITY.md) and enforced by the project's
+  threat model — not a side effect.
+
+### Compared to other Claude Code status-line / usage tools
+
+| Feature | **claude-cat** | ccstatusline | claude-dashboard | ccusage |
+| --- | :---: | :---: | :---: | :---: |
+| Runs on every statusLine render | ✅ | ✅ | ✅ | ❌ (CLI) |
+| **No network calls** | **✅** | ❌ (Anthropic API) | ❌ (Anthropic API) | 🟡 (pricing fetch, `--offline` ok) |
+| **No OAuth / credential reads** | **✅** | ❌ | ❌ | ✅ |
+| Kawaii cat moods 😺 | ✅ | ❌ | ❌ | ❌ |
+| Cross-terminal sync | ✅ | ❌ | ❌ | n/a |
+| Historical / cost reports | ❌ | 🟡 | ✅ | ✅ |
+
+**Pick claude-cat when** you want a friendly always-on status line
+and you care that your toolchain isn't quietly talking to Anthropic
+behind your back. **Pair with [`ccusage`](https://github.com/ryoppippi/ccusage)**
+if you also want on-demand cost reports — the two are complementary
+(claude-cat for live render, ccusage for analysis).
+
+> "Just a cat" isn't a cute tagline — it's the threat model.
 
 ## Install
 

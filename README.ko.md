@@ -1,6 +1,6 @@
 # 🐾 claude-cat
 
-> Claude Code 상태 표시줄에 귀여운 고양이가 살며 남은 크레딧을 한눈에 알려줍니다.
+> **오프라인 전용 Claude Code 상태 표시줄.** 네트워크 한 번 안 타고 남은 사용량을 고양이가 알려줍니다.
 
 [English README →](./README.md)
 
@@ -9,6 +9,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
 [![install size](https://packagephobia.com/badge?p=claude-cat)](https://packagephobia.com/result?p=claude-cat)
+[![zero network](https://img.shields.io/badge/network-0%20calls-brightgreen)](#%EF%B8%8F-왜-claude-cat)
+[![zero credentials](https://img.shields.io/badge/credentials-never%20read-brightgreen)](#%EF%B8%8F-왜-claude-cat)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/thingineeer/claude-cat/graphs/commit-activity)
 
 <p align="center">
@@ -17,7 +19,43 @@
   <em>3줄 kawaii 카드 — <code>--full --kawaii</code></em>
 </p>
 
-claude-cat 은 Claude Code 가 statusLine 스크립트에 이미 넘겨주는 JSON 을 예쁘게 렌더링합니다. API 키도, OAuth 토큰도, 외부 네트워크도 안 씁니다. 그냥 고양이.
+## 🛡️ 왜 claude-cat
+
+claude-cat 은 Claude Code 가 statusLine 스크립트에 **이미 stdin 으로 넘겨주는
+JSON** 만 읽어 렌더링합니다. 그 이상은 아무것도 안 합니다 — 이게 전체 설계
+이자 전체 안전 서사입니다:
+
+- **🚫 네트워크 호출 0회.** `api.anthropic.com` 안 부름.
+  `claude.ai` 안 부름. `/api/oauth/usage` 안 부름. 방화벽 뒤에서도
+  그대로 작동. `tcpdump` 찍어도 아무것도 안 나옴.
+- **🚫 크레덴셜 읽기 0회.** `~/.claude/.credentials.json`, macOS
+  Keychain, OAuth 토큰 **절대** 안 건드림. npm 계정이 털려도
+  최악의 시나리오가 "상태 표시줄이 이상하게 나옴" — Anthropic
+  계정 탈취는 불가.
+- **🚫 외부로 쓰기 0회.** `~/.claude/claude-cat/` (로컬 sync 캐시 +
+  디버그 덤프)만 씀. 컴퓨터 밖으로 나가는 바이트 없음.
+- **✅ stdin-only 정책.** [`SECURITY.md`](./SECURITY.md) 에 명시되어
+  있고 프로젝트의 threat model 로 못박힘. 부수 효과가 아닌 설계
+  의도.
+
+### 다른 Claude Code statusLine / 사용량 도구들과 비교
+
+| 항목 | **claude-cat** | ccstatusline | claude-dashboard | ccusage |
+| --- | :---: | :---: | :---: | :---: |
+| statusLine 실시간 렌더링 | ✅ | ✅ | ✅ | ❌ (CLI) |
+| **네트워크 호출 없음** | **✅** | ❌ (Anthropic API) | ❌ (Anthropic API) | 🟡 (pricing fetch, `--offline` 가능) |
+| **OAuth / 크레덴셜 읽기 없음** | **✅** | ❌ | ❌ | ✅ |
+| kawaii 고양이 mood 😺 | ✅ | ❌ | ❌ | ❌ |
+| 여러 터미널 간 sync | ✅ | ❌ | ❌ | n/a |
+| 과거 / 비용 리포트 | ❌ | 🟡 | ✅ | ✅ |
+
+**언제 claude-cat 을 고르나**: 친근한 항상-켜진 상태줄 원하고,
+툴체인이 뒤에서 Anthropic 과 몰래 통신하지 않길 바라는 경우.
+**[`ccusage`](https://github.com/ryoppippi/ccusage) 와 병행 추천**
+— 두 툴은 겹치지 않음 (claude-cat = 실시간 렌더, ccusage = 비용
+분석).
+
+> "그냥 고양이" 는 귀여운 태그라인이 아니라 threat model 입니다.
 
 ## 설치
 

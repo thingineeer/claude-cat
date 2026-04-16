@@ -42,6 +42,12 @@ to 1.2.4 for all legitimate payloads.
   considerations, version-pinning guidance
   (`npx -y claude-cat@1.2.5`), package-audit recipe, local-install
   alternative, vulnerability-report link.
+- **README hero re-framed around "zero network / zero credentials"**
+  (en/ko) — new `Why claude-cat` section with explicit threat
+  model, badges (`network: 0 calls`, `credentials: never read`),
+  and a comparison table against ccstatusline / claude-dashboard /
+  ccusage so users can pick by safety posture, not just feature
+  count.
 - **CONTRIBUTING.md** — release flow corrected: "squash-merge" →
   "merge commit (`gh pr merge --merge`)" (matches the repo policy).
 - Removed outdated `assets/README.md` (stale face ASCII table) and
