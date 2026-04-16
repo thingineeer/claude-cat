@@ -11,8 +11,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
 [![install size](https://packagephobia.com/badge?p=claude-cat)](https://packagephobia.com/result?p=claude-cat)
-[![zero network](https://img.shields.io/badge/network-0%20calls-brightgreen)](#-why-claude-cat)
-[![zero credentials](https://img.shields.io/badge/credentials-never%20read-brightgreen)](#-why-claude-cat)
+[![zero network](https://img.shields.io/badge/network-0%20calls-brightgreen)](#why-claude-cat)
+[![zero credentials](https://img.shields.io/badge/credentials-never%20read-brightgreen)](#why-claude-cat)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/thingineeer/claude-cat/graphs/commit-activity)
 
 <p align="center">
@@ -21,6 +21,7 @@
   <em>3-row kawaii card — <code>--full --kawaii</code></em>
 </p>
 
+<a id="why-claude-cat"></a>
 ## 🛡️ Why claude-cat
 
 claude-cat only renders the JSON that Claude Code **already pipes to
@@ -311,7 +312,7 @@ invariants are listed in [SECURITY.md](./SECURITY.md).
 `npx -y claude-cat@latest` downloads and runs the latest published
 version every time. This is standard for npm but worth knowing:
 
-- **Pin if you want reproducibility** — `npx -y claude-cat@1.2.4`
+- **Pin if you want reproducibility** — `npx -y claude-cat@1.2.5`
   instead of `@latest`. Upgrade when an advisory is published.
 - **Review the package** — the published tarball only ships `bin/`,
   `src/`, `examples/`, and README/LICENSE (`files` in `package.json`).

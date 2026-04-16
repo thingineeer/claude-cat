@@ -9,8 +9,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
 [![install size](https://packagephobia.com/badge?p=claude-cat)](https://packagephobia.com/result?p=claude-cat)
-[![zero network](https://img.shields.io/badge/network-0%20calls-brightgreen)](#%EF%B8%8F-왜-claude-cat)
-[![zero credentials](https://img.shields.io/badge/credentials-never%20read-brightgreen)](#%EF%B8%8F-왜-claude-cat)
+[![zero network](https://img.shields.io/badge/network-0%20calls-brightgreen)](#why-claude-cat)
+[![zero credentials](https://img.shields.io/badge/credentials-never%20read-brightgreen)](#why-claude-cat)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/thingineeer/claude-cat/graphs/commit-activity)
 
 <p align="center">
@@ -19,6 +19,7 @@
   <em>3줄 kawaii 카드 — <code>--full --kawaii</code></em>
 </p>
 
+<a id="why-claude-cat"></a>
 ## 🛡️ 왜 claude-cat
 
 claude-cat 은 Claude Code 가 statusLine 스크립트에 **이미 stdin 으로 넘겨주는
@@ -228,7 +229,7 @@ claude-cat 은 의도적으로 작고 네트워크를 타지 않습니다 — Cl
 `npx -y claude-cat@latest` 는 최신 버전을 매번 다운받아 실행합니다. npm 에선
 표준이지만 알아두면 좋은 점:
 
-- **재현성이 필요하면 버전 고정** — `@latest` 대신 `npx -y claude-cat@1.2.4`.
+- **재현성이 필요하면 버전 고정** — `@latest` 대신 `npx -y claude-cat@1.2.5`.
   보안 어드바이저리 뜨면 업그레이드.
 - **패키지 감사** — 배포된 tarball 엔 `bin/`, `src/`, `examples/`, README/LICENSE
   만 들어갑니다 (`package.json` 의 `files` 필드). 설치 전 검증 가능:

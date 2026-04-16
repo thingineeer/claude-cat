@@ -33,7 +33,11 @@ export function sanitizeText(v) {
 // traversal, shell metachars, ANSI) is rejected and the renderer
 // falls back to displaying the raw key as `?` so the UI isn't
 // spoofable via window names.
-const SAFE_KEY = /^[a-z][a-z0-9_]*$/i;
+// Lowercase-only — Claude Code's documented keys (`five_hour`,
+// `seven_day`, `seven_day_opus_4x`) are all snake_case. Dropping the
+// case-insensitive flag keeps the whitelist tight and matches the
+// release policy ("alphanum + underscore, starting with a letter").
+const SAFE_KEY = /^[a-z][a-z0-9_]*$/;
 export function isSafeWindowKey(k) {
   return typeof k === "string" && k.length <= 64 && SAFE_KEY.test(k);
 }

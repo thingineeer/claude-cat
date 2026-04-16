@@ -55,7 +55,10 @@ function cleanForCache(d) {
     if (!v || typeof v !== "object") continue;
     cleanRL[k] = {
       used_percentage: clampPct(v.used_percentage),
-      resets_at: typeof v.resets_at === "number" ? v.resets_at : null,
+      // Number.isFinite rejects NaN and Infinity in addition to
+      // non-numbers, so downstream countdown math can't blow up on
+      // a poisoned cache (`new Date(NaN * 1000)` → Invalid Date).
+      resets_at: Number.isFinite(v?.resets_at) ? v.resets_at : null,
     };
   }
   const out = { rate_limits: cleanRL };

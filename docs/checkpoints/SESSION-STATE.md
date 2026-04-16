@@ -16,7 +16,7 @@
   - PR #51 `refactor/now-consistency` — render 사이클 frozen now (setRenderNow/getRenderNowSec)
   - PR #52 `perf/tz-cache` — Intl.DateTimeFormat 모듈 로드 시 1회 resolve
 - [x] **v1.2.4 published to npm** — Visual polish
-  - PR #54 `feat/compact-sep` — separator `  |  ` → ` | ` (3칸, 4-6 cols 절약)
+  - PR #54 `feat/compact-sep` — separator의 파이프(`|`) 양옆 공백을 2칸에서 1칸으로 축소 (3칸, 4-6 cols 절약)
   - PR #56 `feat/color-polish-v2` — color palette 정리:
     - separator: bold white → bold default fg (라이트모드 호환)
     - cost: bold white → dim (보조 정보)
