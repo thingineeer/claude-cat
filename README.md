@@ -256,6 +256,40 @@ statusLine scripts, so claude-cat can't render them today:
 A future opt-in daemon could proxy that endpoint locally and cache
 values. Tracked in [issues](https://github.com/thingineeer/claude-cat/issues).
 
+## Security
+
+claude-cat is deliberately small and network-free so it fits
+Claude Code's per-message hot path safely.
+
+**What it does** — reads the stdin JSON Claude Code already pipes to
+statusLine scripts, prints a colored line.
+
+**What it doesn't do** — no network requests, no credential reads, no
+keychain access, no writes outside `~/.claude/claude-cat/`. The
+invariants are listed in [SECURITY.md](./SECURITY.md).
+
+### npm supply-chain considerations
+
+`npx -y claude-cat@latest` downloads and runs the latest published
+version every time. This is standard for npm but worth knowing:
+
+- **Pin if you want reproducibility** — `npx -y claude-cat@1.2.4`
+  instead of `@latest`. Upgrade when an advisory is published.
+- **Review the package** — the published tarball only ships `bin/`,
+  `src/`, `examples/`, and README/LICENSE (`files` in `package.json`).
+  You can audit it before install: `npm pack claude-cat && tar -tf
+  claude-cat-*.tgz`.
+- **Local install alternative** — clone the repo and point your
+  statusLine at `node /path/to/claude-cat/bin/cli.js`. No npm fetch
+  at all.
+
+### Reporting a vulnerability
+
+Private advisory only:
+**https://github.com/thingineeer/claude-cat/security/advisories/new**
+
+Don't open a public issue. See [SECURITY.md](./SECURITY.md).
+
 ## Development
 
 ```bash

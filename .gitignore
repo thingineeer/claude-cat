@@ -20,8 +20,17 @@ build/
 .credentials.json
 credentials.json
 .claude/.credentials.json
+.npmrc
+.npmrc.*
+*.token
 **/secrets/
 **/.secrets
+
+# Misc backup / temp
+*.bak
+*.backup
+*.orig
+*.rej
 
 # OS
 .DS_Store

@@ -1,0 +1,29 @@
+# Dependabot keeps npm deps and GitHub Actions current so supply-chain
+# advisories land as PRs against `dev`, not silently on main. Weekly
+# cadence — the package is small and has few transitive deps.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    target-branch: dev
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore(deps)
+      include: scope
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    target-branch: dev
+    labels:
+      - dependencies
+      - ci
+    commit-message:
+      prefix: chore(ci)
+      include: scope

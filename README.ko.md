@@ -174,6 +174,37 @@ week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</p
 | Anthropic API 키 | 세션 비용 + 고양이 | rate_limits 없음 |
 | Bedrock / Vertex | 비용 `$0.00` 고정 | 상위 제약 |
 
+## 보안
+
+claude-cat 은 의도적으로 작고 네트워크를 타지 않습니다 — Claude Code 가
+매 메시지마다 실행하는 경로니까 가볍고 안전해야 하기 때문입니다.
+
+**하는 것** — Claude Code 가 statusLine 스크립트에 이미 흘려보내는 stdin JSON
+을 읽어서 컬러 한 줄을 출력.
+
+**안 하는 것** — 네트워크 요청 없음, 크레덴셜 읽기 없음, Keychain 접근 없음,
+`~/.claude/claude-cat/` 밖으로 쓰기 없음. 불변 규칙은 [SECURITY.md](./SECURITY.md) 에.
+
+### npm 공급망(supply chain) 관련
+
+`npx -y claude-cat@latest` 는 최신 버전을 매번 다운받아 실행합니다. npm 에선
+표준이지만 알아두면 좋은 점:
+
+- **재현성이 필요하면 버전 고정** — `@latest` 대신 `npx -y claude-cat@1.2.4`.
+  보안 어드바이저리 뜨면 업그레이드.
+- **패키지 감사** — 배포된 tarball 엔 `bin/`, `src/`, `examples/`, README/LICENSE
+  만 들어갑니다 (`package.json` 의 `files` 필드). 설치 전 검증 가능:
+  `npm pack claude-cat && tar -tf claude-cat-*.tgz`.
+- **로컬 설치 대안** — repo 를 clone 해서 statusLine 을
+  `node /path/to/claude-cat/bin/cli.js` 로 연결. npm 경유 없음.
+
+### 취약점 리포트
+
+Private advisory 로만:
+**https://github.com/thingineeer/claude-cat/security/advisories/new**
+
+public issue 열지 말아주세요. [SECURITY.md](./SECURITY.md) 참조.
+
 ## 개발·기여
 
 ```bash

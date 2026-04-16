@@ -2,7 +2,18 @@
 
 ## Unreleased
 
-_Nothing yet._
+### Security / docs
+- Added `SECURITY.md` with vulnerability reporting policy and
+  project invariants (no network, no keychain, no writes outside
+  `~/.claude/claude-cat/`)
+- README (en/ko) gains a **Security** section covering npm
+  supply-chain considerations, version-pinning guidance, and local
+  install alternative
+- `.gitignore` hardened: `.npmrc`, `*.token`, `*.bak/*.backup` added
+- `prepublishOnly` hook added to `package.json` — runs tests and
+  `npm pack --dry-run` before any `npm publish`
+- Dependabot configured for weekly npm + github-actions updates
+  (PRs target `dev`)
 
 ### Still planned
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
