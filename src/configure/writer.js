@@ -16,6 +16,9 @@ export function buildCommand(answers) {
     else if (answers.catTheme === "none") flags.push("--no-cat");
   }
 
+  if (answers.cost === "hide") flags.push("--no-cost");
+  if (answers.context === "hide") flags.push("--no-ctx");
+
   return `npx -y claude-cat@latest${flags.length ? " " + flags.join(" ") : ""}`;
 }
 

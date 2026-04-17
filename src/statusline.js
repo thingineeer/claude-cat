@@ -326,6 +326,8 @@ function joinWithWrap({ head, body, tail, sep, lineSep, cap }) {
 function renderCompact(d, {
   iconMode = "none",
   showDebugChip = true,
+  showCost = true,
+  showCtx = true,
   stack = "auto",
   cols,
 } = {}) {
@@ -359,8 +361,8 @@ function renderCompact(d, {
   }
 
   const tailGroup = [];
-  if (cs)  tailGroup.push(`${C.cost}${cs}${C.reset}`);
-  if (ctx) tailGroup.push(`${C.ctx}${ctx}${C.reset}`);
+  if (showCost && cs)  tailGroup.push(`${C.cost}${cs}${C.reset}`);
+  if (showCtx  && ctx) tailGroup.push(`${C.ctx}${ctx}${C.reset}`);
   const dbg = debugChip({ showDebugChip });
   if (dbg) tailGroup.push(`${C.debug}${dbg}${C.reset}`);
 
@@ -385,7 +387,7 @@ function renderCompact(d, {
 //   line 1+  — one per window, OR a single short status hint
 // No indentation here; callers add padding if they place the block
 // next to cat art.
-function buildDataBlock(d, { iconMode, state, showDebugChip = true }) {
+function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = true, showCtx = true }) {
   const windows = collectWindows(d);
   const cost = d?.cost?.total_cost_usd;
   // Strip C0 control chars before rendering — model.display_name comes
@@ -400,8 +402,8 @@ function buildDataBlock(d, { iconMode, state, showDebugChip = true }) {
   const header = [];
   if (model) header.push(`${C.dim}${model}${C.reset}`);
   const cs = fmtCost(cost);
-  if (cs)  header.push(`${C.dim}${cs}${C.reset}`);
-  if (ctx) header.push(`${C.dim}${ctx}${C.reset}`);
+  if (showCost && cs)  header.push(`${C.dim}${cs}${C.reset}`);
+  if (showCtx  && ctx) header.push(`${C.dim}${ctx}${C.reset}`);
   if (dbg) header.push(`${C.dim}${dbg}${C.reset}`);
   if (header.length) lines.push(header.join(`  ${C.gray}·${C.reset}  `));
 
@@ -423,14 +425,14 @@ function buildDataBlock(d, { iconMode, state, showDebugChip = true }) {
   return lines;
 }
 
-function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip = true } = {}) {
+function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip = true, showCost = true, showCtx = true } = {}) {
   const windows = collectWindows(d);
   const state = inferState(d, windows);
   const art = catArt(
     state === "normal" ? { windows } : { state: "resting" },
     catTheme,
   );
-  const data = buildDataBlock(d, { iconMode, state, showDebugChip });
+  const data = buildDataBlock(d, { iconMode, state, showDebugChip, showCost, showCtx });
 
   // Compact-cat full: inline the 1-line face into the header and indent
   // every data line with 2 spaces, matching the previous look.
@@ -470,7 +472,7 @@ function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip 
 // like compact, but now carries the cost chip alongside ctx so Max-
 // plan users can eyeball spend without leaving the row.
 // Wide is for heavy users who don't want the line to ever wrap.
-function renderWide(d, { iconMode = "none", showDebugChip = true } = {}) {
+function renderWide(d, { iconMode = "none", showDebugChip = true, showCost = true, showCtx = true } = {}) {
   const windows = collectWindows(d, { variant: "short" });
   const state = inferState(d, windows);
   const ctx = renderContextChip(d, { variant: "short" });
@@ -481,8 +483,8 @@ function renderWide(d, { iconMode = "none", showDebugChip = true } = {}) {
   if (state !== "normal") {
     const hint = stateHint(state);
     if (hint) parts.push(`${C.dim}${hint}${C.reset}`);
-    if (cs)   parts.push(`${C.cost}${cs}${C.reset}`);
-    if (ctx)  parts.push(`${C.ctx}${ctx}${C.reset}`);
+    if (showCost && cs)  parts.push(`${C.cost}${cs}${C.reset}`);
+    if (showCtx  && ctx) parts.push(`${C.ctx}${ctx}${C.reset}`);
   } else {
     for (const w of windows) {
       const pct = Math.round(w.pct);
@@ -491,8 +493,8 @@ function renderWide(d, { iconMode = "none", showDebugChip = true } = {}) {
       const icon = iconFor(iconMode, w.key);
       parts.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct, 8)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
     }
-    if (cs)  parts.push(`${C.cost}${cs}${C.reset}`);
-    if (ctx) parts.push(`${C.ctx}${ctx}${C.reset}`);
+    if (showCost && cs)  parts.push(`${C.cost}${cs}${C.reset}`);
+    if (showCtx  && ctx) parts.push(`${C.ctx}${ctx}${C.reset}`);
   }
 
   const dbg = debugChip({ showDebugChip });
@@ -561,6 +563,8 @@ async function main() {
   const stack = parseStackMode(args);
   const cols = parseMaxCols(args);
   const showDebugChip = !args.includes("--no-debug-chip");
+  const showCost = !args.includes("--no-cost");
+  const showCtx = !args.includes("--no-ctx");
   const raw = await readStdin();
   let d = safeParse(raw);
 
@@ -583,7 +587,7 @@ async function main() {
     }
   }
 
-  const opts = { iconMode, catTheme, showDebugChip, stack, cols };
+  const opts = { iconMode, catTheme, showDebugChip, showCost, showCtx, stack, cols };
   let out;
   if (layout === "wide") out = renderWide(d, opts);
   else if (layout === "full") out = renderFull(d, opts);
