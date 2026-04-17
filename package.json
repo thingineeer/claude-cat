@@ -46,6 +46,8 @@
     "test:saturated": "cat examples/sample-weekly-saturated.json | node bin/cli.js --full --kawaii",
     "test:apicost": "cat examples/sample-api-cost-only.json | node bin/cli.js --full --kawaii",
     "test:pro": "cat examples/sample-stdin.json | CLAUDE_CAT_PLAN=pro node bin/cli.js",
+    "test:no-cost": "cat examples/sample-with-sonnet.json | node bin/cli.js --full --no-cost",
+    "test:no-ctx": "cat examples/sample-with-sonnet.json | node bin/cli.js --full --no-ctx",
     "prepublishOnly": "npm run test:sample && npm run test:full && npm pack --dry-run"
   },
   "dependencies": {
