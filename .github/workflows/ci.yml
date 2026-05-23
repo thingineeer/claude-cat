@@ -30,3 +30,15 @@ jobs:
         run: npm run test:apicost
       - name: Run sample (pro plan filter)
         run: npm run test:pro
+      - name: Run sample (--no-cost chip toggle, full)
+        run: npm run test:no-cost
+      - name: Run sample (--no-cost chip toggle, compact)
+        run: npm run test:no-cost:compact
+      - name: Run sample (--no-cost chip toggle, wide)
+        run: npm run test:no-cost:wide
+      - name: Run sample (--no-ctx chip toggle, full)
+        run: npm run test:no-ctx
+      - name: Run sample (--no-ctx chip toggle, compact)
+        run: npm run test:no-ctx:compact
+      - name: Run sample (--no-ctx chip toggle, wide)
+        run: npm run test:no-ctx:wide

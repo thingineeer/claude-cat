@@ -2,7 +2,15 @@
 
 ## Unreleased
 
-_Nothing yet._
+### Fixed
+- **Wizard answers now reach the command** — `npx claude-cat
+  configure`'s "Show session cost ($)?" and "Show context-window
+  usage (ctx %)?" answers were silently dropped because
+  `buildCommand()` never read them and no `--no-cost` / `--no-ctx`
+  flags existed. Both flags are now parsed by `statusline.js` and
+  gated in every layout (compact / full / wide); the wizard emits
+  them when the user picks "hide". `test:no-cost` and `test:no-ctx`
+  smoke scripts added to CI so future regressions get caught.
 
 ### Still planned
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
