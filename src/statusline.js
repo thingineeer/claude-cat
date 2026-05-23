@@ -12,7 +12,7 @@
 // rate_limits for Pro/Max subscribers after the first assistant response.
 
 import { pickCat, catArt, THEME_NAMES } from "./cats.js";
-import { bar, fmtCountdown, absoluteResetParts, fmtCost, colorByPct, colors as C, setRenderNow, getRenderNowSec } from "./format.js";
+import { bar, fmtCountdown, fmtAgo, absoluteResetParts, fmtCost, colorByPct, colors as C, setRenderNow, getRenderNowSec } from "./format.js";
 import { parseIconMode, iconFor } from "./icons.js";
 import { maybeDumpStdin, debugEnabled } from "./debug.js";
 import { writeCacheIfActive, readCacheForIdle } from "./cache.js";
@@ -191,6 +191,16 @@ function stateHint(state) {
   return null;
 }
 
+// Stale marker text ('stale · 14m ago') for bars drawn from a cache
+// entry that's past MAX_AGE_SEC but still within STALE_MAX_SEC. Null
+// when the data is fresh (or not from cache at all). Callers wrap it in
+// whatever dim treatment fits their layout.
+function staleMarker(d) {
+  if (!d?._stale) return null;
+  const ago = fmtAgo(d._cacheAge);
+  return ago ? t("stale_marker", ago) : null;
+}
+
 // Debug chip for the header. Kept to a short tag ('[Debug]') since the
 // actual dump path is documented and the user knows where to look.
 // Suppressed entirely when the caller passes showDebugChip=false — useful
@@ -333,6 +343,7 @@ function renderCompact(d, {
 } = {}) {
   const windows = collectWindows(d, { variant: "short" });
   const state = inferState(d, windows);
+  const stale = d?._stale === true;
   const ctx = renderContextChip(d, { variant: "short" });
   const cs = fmtCost(d?.cost?.total_cost_usd);
 
@@ -356,11 +367,16 @@ function renderCompact(d, {
       //    week ▓▓░░░░░░░░ 18% (Fri 13:00)
       const tail = phrase ? ` ${C.dim}(${phrase})${C.reset}` : "";
       const icon = iconFor(iconMode, w.key);
-      body.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
+      // Stale (last-known) bars render colorless so they don't read as
+      // live numbers; the stale chip in the tail explains why.
+      const pctColor = stale ? C.dim : colorByPct(pct);
+      body.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct, 10, { mono: stale })} ${pctColor}${pct}%${C.reset}${tail}`);
     }
   }
 
   const tailGroup = [];
+  const stl = staleMarker(d);
+  if (stl) tailGroup.push(`${C.dim}${stl}${C.reset}`);
   if (showCost && cs)  tailGroup.push(`${C.cost}${cs}${C.reset}`);
   if (showCtx  && ctx) tailGroup.push(`${C.ctx}${ctx}${C.reset}`);
   const dbg = debugChip({ showDebugChip });
@@ -389,6 +405,7 @@ function renderCompact(d, {
 // next to cat art.
 function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = true, showCtx = true }) {
   const windows = collectWindows(d);
+  const stale = d?._stale === true;
   const cost = d?.cost?.total_cost_usd;
   // Strip C0 control chars before rendering — model.display_name comes
   // from the server (or a poisoned cache) and could otherwise carry
@@ -404,6 +421,8 @@ function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = t
   const cs = fmtCost(cost);
   if (showCost && cs)  header.push(`${C.dim}${cs}${C.reset}`);
   if (showCtx  && ctx) header.push(`${C.dim}${ctx}${C.reset}`);
+  const stl = staleMarker(d);
+  if (stl) header.push(`${C.dim}${stl}${C.reset}`);
   if (dbg) header.push(`${C.dim}${dbg}${C.reset}`);
   if (header.length) lines.push(header.join(`  ${C.gray}·${C.reset}  `));
 
@@ -420,7 +439,10 @@ function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = t
     const icon = iconFor(iconMode, w.key);
     const label = padEndDisplay(icon + w.label, labelCols);
     const right = phrase ? ` ${C.dim}· ${phrase}${C.reset}` : "";
-    lines.push(`${C.dim}${label}${C.reset}${bar(pct, 14)} ${colorByPct(pct)}${String(pct).padStart(3)}%${C.reset}${right}`);
+    // Stale (last-known) bars render colorless; the header stale chip
+    // explains the dimming.
+    const pctColor = stale ? C.dim : colorByPct(pct);
+    lines.push(`${C.dim}${label}${C.reset}${bar(pct, 14, { mono: stale })} ${pctColor}${String(pct).padStart(3)}%${C.reset}${right}`);
   }
   return lines;
 }
@@ -428,8 +450,12 @@ function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = t
 function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip = true, showCost = true, showCtx = true } = {}) {
   const windows = collectWindows(d);
   const state = inferState(d, windows);
+  // Stale data is last-known, not live — the cat rests rather than
+  // reacting to numbers that may have drifted. The dimmed bars + stale
+  // chip still show what the usage was at the last active render.
+  const stale = d?._stale === true;
   const art = catArt(
-    state === "normal" ? { windows } : { state: "resting" },
+    (state === "normal" && !stale) ? { windows } : { state: "resting" },
     catTheme,
   );
   const data = buildDataBlock(d, { iconMode, state, showDebugChip, showCost, showCtx });
@@ -475,8 +501,10 @@ function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip 
 function renderWide(d, { iconMode = "none", showDebugChip = true, showCost = true, showCtx = true } = {}) {
   const windows = collectWindows(d, { variant: "short" });
   const state = inferState(d, windows);
+  const stale = d?._stale === true;
   const ctx = renderContextChip(d, { variant: "short" });
   const cs = fmtCost(d?.cost?.total_cost_usd);
+  const stl = staleMarker(d);
 
   const parts = [];
 
@@ -491,8 +519,11 @@ function renderWide(d, { iconMode = "none", showDebugChip = true, showCost = tru
       const phrase = fmtResetPhrase(w.key, w.resets_at, { variant: "short" });
       const tail = phrase ? ` ${C.dim}(${phrase})${C.reset}` : "";
       const icon = iconFor(iconMode, w.key);
-      parts.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct, 8)} ${colorByPct(pct)}${pct}%${C.reset}${tail}`);
+      // Stale (last-known) bars render colorless; the stale chip explains it.
+      const pctColor = stale ? C.dim : colorByPct(pct);
+      parts.push(`${C.brand}${icon}${w.label}${C.reset} ${bar(pct, 8, { mono: stale })} ${pctColor}${pct}%${C.reset}${tail}`);
     }
+    if (stl) parts.push(`${C.dim}${stl}${C.reset}`);
     if (showCost && cs)  parts.push(`${C.cost}${cs}${C.reset}`);
     if (showCtx  && ctx) parts.push(`${C.ctx}${ctx}${C.reset}`);
   }

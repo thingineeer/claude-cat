@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Added
+- **Bars no longer vanish when you step away** — an idle terminal reads
+  the shared cross-terminal cache, but the cache used to be discarded
+  after 10 minutes, so the bars blinked out into a resting cat the
+  moment you stopped typing for a bit. Cached usage is now kept for up
+  to 6 hours and rendered as **last-known**: the bars stay visible but
+  go colorless, the cat rests (it doesn't react to numbers that may
+  have drifted), and a `stale · 14m ago` chip explains the dimming.
+  Past 6 hours the numbers are dropped as before. `test:stale` smoke
+  script added to CI.
+
 ### Fixed
 - **Wizard answers now reach the command** — `npx claude-cat
   configure`'s "Show session cost ($)?" and "Show context-window
