@@ -18,8 +18,16 @@
 // Design constraints:
 //   - Never throw in a way that breaks the status line.
 //   - Cache is ONLY used when stdin has no rate_limits (idle session).
-//   - Cache entries older than MAX_AGE_SEC are ignored — show resting cat
-//     rather than ancient numbers.
+//   - Freshness has two tiers:
+//       age ≤ MAX_AGE_SEC      → fresh; drives the cat's mood like live
+//                                stdin (no _stale flag).
+//       MAX_AGE_SEC..STALE_MAX → stale-but-recent; still shown so the
+//                                bars don't vanish the moment you step
+//                                away, but flagged `_stale: true` so the
+//                                renderer dims them and rests the cat
+//                                (last-known, not current).
+//       age > STALE_MAX_SEC    → ignored; show the resting cat rather
+//                                than ancient numbers.
 //   - File writes are atomic (write-to-tmp then rename) so a concurrent
 //     read never sees a partial file.
 
@@ -32,10 +40,18 @@ import { sanitizeText, isSafeWindowKey, clampPct } from "./sanitize.js";
 const CACHE_DIR  = join(homedir(), ".claude", "claude-cat");
 const CACHE_FILE = join(CACHE_DIR, "rate-limits-cache.json");
 
-// Cached data older than this is ignored (stale = show resting cat).
-// 10 minutes — matches the recommended refreshInterval so an idle terminal
-// gets fresh data within one refresh cycle.
+// Within this age the cache is "fresh" — an idle terminal treats it
+// exactly like live stdin (the cat reacts to it). 10 minutes matches the
+// recommended refreshInterval so an idle terminal gets fresh data within
+// one refresh cycle.
 const MAX_AGE_SEC = 600;
+
+// Up to this age the cache is "stale-but-recent" — still rendered, but
+// dimmed and flagged so it reads as last-known rather than current. This
+// is what keeps the bars from blinking out the moment you stop typing for
+// ten minutes. 6 hours: long enough to survive a coffee break or a
+// meeting, short enough that the numbers haven't drifted into fiction.
+const STALE_MAX_SEC = 6 * 3600;
 
 function hasRateLimits(d) {
   return d && d.rate_limits && typeof d.rate_limits === "object"
@@ -96,7 +112,9 @@ export function writeCacheIfActive(d) {
 
 // Read cached rate_limits for an idle session.
 // Returns the cached `d`-shaped overlay (rate_limits + optional model),
-// or null if cache is missing / too old / unreadable.
+// or null if cache is missing / too old / unreadable. Entries older than
+// MAX_AGE_SEC (but within STALE_MAX_SEC) come back flagged `_stale: true`
+// so the renderer can dim them and rest the cat.
 export function readCacheForIdle() {
   try {
     const raw = readFileSync(CACHE_FILE, "utf8");
@@ -104,7 +122,7 @@ export function readCacheForIdle() {
     if (!obj || typeof obj !== "object") return null;
 
     const age = Math.floor(Date.now() / 1000) - (obj.written_at ?? 0);
-    if (age > MAX_AGE_SEC) return null;
+    if (age > STALE_MAX_SEC) return null;
 
     if (!hasRateLimits(obj)) return null;
 
@@ -118,6 +136,7 @@ export function readCacheForIdle() {
     return {
       _fromCache: true,
       _cacheAge: age,
+      _stale: age > MAX_AGE_SEC,
       ...clean,
     };
   } catch {

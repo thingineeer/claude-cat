@@ -42,3 +42,5 @@ jobs:
         run: npm run test:no-ctx:compact
       - name: Run sample (--no-ctx chip toggle, wide)
         run: npm run test:no-ctx:wide
+      - name: Run sample (stale cache bars)
+        run: npm run test:stale

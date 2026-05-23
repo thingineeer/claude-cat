@@ -52,6 +52,7 @@
     "test:no-ctx": "cat examples/sample-with-sonnet.json | node bin/cli.js --full --no-ctx",
     "test:no-ctx:compact": "cat examples/sample-with-sonnet.json | node bin/cli.js --no-ctx",
     "test:no-ctx:wide": "cat examples/sample-with-sonnet.json | node bin/cli.js --wide --no-ctx",
+    "test:stale": "bash scripts/test-stale.sh",
     "prepublishOnly": "npm run test:sample && npm run test:full && npm pack --dry-run"
   },
   "dependencies": {
