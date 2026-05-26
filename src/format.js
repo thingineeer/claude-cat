@@ -61,11 +61,14 @@ export function colorByPct(pct) {
 }
 
 // 10-cell progress bar using block glyphs that render in most monospaced fonts.
-export function bar(pct, width = 10) {
+// `mono` renders the filled run in the same dim gray as the empty run —
+// used for stale (last-known) data so the bar keeps its shape but stops
+// competing with the live colored bars.
+export function bar(pct, width = 10, { mono = false } = {}) {
   const p = Math.max(0, Math.min(100, pct ?? 0));
   const filled = Math.round((p / 100) * width);
   const empty = width - filled;
-  const col = colorByPct(p);
+  const col = mono ? C.gray : colorByPct(p);
   return `${col}${"▓".repeat(filled)}${C.gray}${"░".repeat(empty)}${C.reset}`;
 }
 
@@ -101,6 +104,18 @@ export function fmtCountdown(resetsAtSec) {
   // Sub-minute remainders (s in [1, 59]) would round down to `0m`,
   // which misreads as "already reset". Floor at 1m instead.
   return `${Math.max(1, m)}m`;
+}
+
+// Compact "time since" for the stale-cache marker. Same English-Latin
+// unit style as fmtCountdown so the two read consistently.
+//   45 → '1m ago' (floored), 900 → '15m ago', 7200 → '2h ago'
+export function fmtAgo(sec) {
+  if (typeof sec !== "number" || !Number.isFinite(sec) || sec < 0) return null;
+  const m = Math.floor(sec / 60);
+  if (m < 60) return `${Math.max(1, m)}m ago`;
+  const h = Math.floor(sec / 3600);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(sec / 86400)}d ago`;
 }
 
 // 12-hour clock in the exact form Claude's /usage screen uses:

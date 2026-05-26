@@ -20,6 +20,9 @@ const LABELS = {
   warming_up:          "resting — waiting for first reply",
   cost_only_mode:      "API mode — cost only",
   cost_not_tracked:    "cost not tracked on this provider",
+  // Marker on bars drawn from a stale cache entry (idle terminal, last
+  // active session was a while ago). 'ago' phrase comes from fmtAgo.
+  stale_marker:        (ago) => `stale · ${ago}`,
   debug_tag:           "[Debug]",
 };
 

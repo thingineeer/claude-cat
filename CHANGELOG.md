@@ -2,12 +2,33 @@
 
 ## Unreleased
 
-_Nothing yet._
-
 ### Still planned
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
   it; daemon proxying `/api/oauth/usage` is the leading candidate)
 - Light-theme aware palette (currently tuned for dark terminals)
+
+## [1.2.6] - 2026-05-26
+
+### Added
+- **Bars no longer vanish when you step away** — an idle terminal reads
+  the shared cross-terminal cache, but the cache used to be discarded
+  after 10 minutes, so the bars blinked out into a resting cat the
+  moment you stopped typing for a bit. Cached usage is now kept for up
+  to 6 hours and rendered as **last-known**: the bars stay visible but
+  go colorless, the cat rests (it doesn't react to numbers that may
+  have drifted), and a `stale · 14m ago` chip explains the dimming.
+  Past 6 hours the numbers are dropped as before. `test:stale` smoke
+  script added to CI.
+
+### Fixed
+- **Wizard answers now reach the command** — `npx claude-cat
+  configure`'s "Show session cost ($)?" and "Show context-window
+  usage (ctx %)?" answers were silently dropped because
+  `buildCommand()` never read them and no `--no-cost` / `--no-ctx`
+  flags existed. Both flags are now parsed by `statusline.js` and
+  gated in every layout (compact / full / wide); the wizard emits
+  them when the user picks "hide". `test:no-cost` and `test:no-ctx`
+  smoke scripts added to CI so future regressions get caught.
 
 ## [1.2.5] - 2026-04-16
 
