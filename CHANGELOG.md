@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Still planned
+- Extra usage bar (needs a live source — the stdin JSON doesn't expose
+  it; daemon proxying `/api/oauth/usage` is the leading candidate)
+- Light-theme aware palette (currently tuned for dark terminals)
+
+## [1.2.6] - 2026-05-26
+
 ### Added
 - **Bars no longer vanish when you step away** — an idle terminal reads
   the shared cross-terminal cache, but the cache used to be discarded
@@ -22,11 +29,6 @@
   gated in every layout (compact / full / wide); the wizard emits
   them when the user picks "hide". `test:no-cost` and `test:no-ctx`
   smoke scripts added to CI so future regressions get caught.
-
-### Still planned
-- Extra usage bar (needs a live source — the stdin JSON doesn't expose
-  it; daemon proxying `/api/oauth/usage` is the leading candidate)
-- Light-theme aware palette (currently tuned for dark terminals)
 
 ## [1.2.5] - 2026-04-16
 
