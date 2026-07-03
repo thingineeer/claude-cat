@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Added
+- **Fable 5 weekly bar** — Claude Code sends the Fable 5 weekly window
+  as `rate_limits.seven_day_overage_included` (Fable usage is
+  credit-based, so the key is a billing term). It used to render with
+  the raw `overage_included` label; it now shows as `fable` (compact /
+  wide) and `Current week (Fable 5)` (full), pinned right after the
+  all-models `week` bar so alphabetical ordering can't slip `opus` in
+  between. New fixture `examples/sample-with-fable.json` + `test:fable`
+  / `test:fable:compact` smoke scripts wired into CI.
+
 ### Still planned
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
   it; daemon proxying `/api/oauth/usage` is the leading candidate)

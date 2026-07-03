@@ -189,7 +189,7 @@ bars — the wizard sets this automatically).
 
 | chip | meaning |
 | ---- | ------- |
-| `5h` / `week` / `sonnet` | rate-limit window (5-hour session / weekly / per-model weekly) |
+| `5h` / `week` / `fable` / `sonnet` | rate-limit window (5-hour session / weekly / Fable 5 weekly / per-model weekly) |
 | `▓▓▓▓░░░░░░` | 10-cell progress bar — green → yellow → red as it climbs |
 | `47%` | exact percentage |
 | `(1h 19m)` / `(Fri 1pm)` | time until that window resets — relative for session, absolute for weekly |
