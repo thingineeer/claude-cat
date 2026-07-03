@@ -7,6 +7,8 @@
 //   rate_limits.five_hour:  { used_percentage, resets_at }
 //   rate_limits.seven_day:  { used_percentage, resets_at }
 //   rate_limits.seven_day_opus_4x?: same shape (sonnet-only style limits vary)
+//   rate_limits.seven_day_overage_included?: Fable 5 weekly window — Fable
+//     usage is credit-based, so Claude Code keys it by billing term, not model
 //   model.display_name: string
 // Missing fields are treated as optional — Claude Code only populates
 // rate_limits for Pro/Max subscribers after the first assistant response.
@@ -80,11 +82,14 @@ function labelFor(key, { variant = "long" } = {}) {
     //
     //   five_hour       → '5h'
     //   seven_day       → 'week'
+    //   seven_day_overage_included → 'fable' (the Fable 5 weekly window
+    //     is keyed by billing term; show the model name users know)
     //   seven_day_<m>   → '<m>' (lower-cased), e.g. 'sonnet', 'opus'.
     //     We drop the 'week·' prefix: the model name alone already
     //     reads as "the weekly bucket for that model" in context.
     if (key === "five_hour") return "5h";
     if (key === "seven_day") return "week";
+    if (key === "seven_day_overage_included") return "fable";
     if (key.startsWith("seven_day_")) {
       return key.slice("seven_day_".length).toLowerCase();
     }
@@ -93,6 +98,7 @@ function labelFor(key, { variant = "long" } = {}) {
 
   if (key === "five_hour") return t("current_session");
   if (key === "seven_day") return t("current_week_all");
+  if (key === "seven_day_overage_included") return t("current_week_fable");
   if (key.startsWith("seven_day_")) {
     return t("current_week_scope", modelPretty(key.slice("seven_day_".length)));
   }
@@ -113,13 +119,17 @@ function isWindowEntry(v) {
     && typeof v.resets_at === "number";
 }
 
-// Ordering: five_hour first, then seven_day, then every other weekly-style
-// key (alphabetical), then anything else. Deterministic and predictable.
+// Ordering: five_hour first, then seven_day, then the Fable 5 window
+// pinned right after it (it's the primary model's weekly budget, so it
+// reads best next to the all-models bar — alphabetical order would let
+// 'opus' slip in between), then every other weekly-style key
+// (alphabetical), then anything else. Deterministic and predictable.
 function orderKey(k) {
   if (k === "five_hour") return [0, k];
   if (k === "seven_day") return [1, k];
-  if (k.startsWith("seven_day_")) return [2, k];
-  return [3, k];
+  if (k === "seven_day_overage_included") return [2, k];
+  if (k.startsWith("seven_day_")) return [3, k];
+  return [4, k];
 }
 
 function collectWindows(d, { variant = "long" } = {}) {
