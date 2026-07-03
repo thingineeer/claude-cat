@@ -287,11 +287,17 @@ because it's the bar that actually constrains your week.
 
 ## What's *not* in stdin JSON (yet)
 
-Two things `/usage` popup shows but Claude Code doesn't pipe to
+Some things `/usage` popup shows but Claude Code doesn't pipe to
 statusLine scripts, so claude-cat can't render them today:
 
 - **Current week (Sonnet only)** — server includes
   `rate_limits.seven_day_sonnet` only sometimes (condition undocumented).
+- **Fable 5 credit / weekly window** — claude-cat renders
+  `rate_limits.seven_day_overage_included` as a `fable` bar the moment
+  it arrives, but as of Claude Code 2.1.199 the statusLine stdin
+  carries only `five_hour` + `seven_day` even mid-Fable-5-session
+  (verified against a live payload dump). The fable credit row in
+  `/usage` comes from `/api/oauth/usage` (private endpoint).
 - **Extra usage** (e.g. `$14 / $20 spent`) — comes from
   `/api/oauth/usage` (private endpoint).
 
