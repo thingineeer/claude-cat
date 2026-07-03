@@ -44,6 +44,7 @@
     "test:sonnet": "cat examples/sample-with-sonnet.json | node bin/cli.js --full",
     "test:fable": "cat examples/sample-with-fable.json | node bin/cli.js --full",
     "test:fable:compact": "cat examples/sample-with-fable.json | node bin/cli.js",
+    "test:hide": "cat examples/sample-with-fable.json | node bin/cli.js --hide=opus,sonnet",
     "test:warming": "cat examples/sample-warming-up.json | node bin/cli.js --full --kawaii",
     "test:saturated": "cat examples/sample-weekly-saturated.json | node bin/cli.js --full --kawaii",
     "test:apicost": "cat examples/sample-api-cost-only.json | node bin/cli.js --full --kawaii",

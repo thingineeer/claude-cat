@@ -26,6 +26,8 @@ jobs:
         run: npm run test:fable
       - name: Run sample (fable bucket, compact)
         run: npm run test:fable:compact
+      - name: Run sample (--hide window filter)
+        run: npm run test:hide
       - name: Run sample (warming up)
         run: npm run test:warming
       - name: Run sample (weekly saturated)
