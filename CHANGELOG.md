@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Still planned
+- Extra usage bar (needs a live source — the stdin JSON doesn't expose
+  it; daemon proxying `/api/oauth/usage` is the leading candidate)
+- Light-theme aware palette (currently tuned for dark terminals)
+
+## [1.3.0] - 2026-07-03
+
 ### Added
 - **Fable 5 weekly bar** — Claude Code sends the Fable 5 weekly window
   as `rate_limits.seven_day_overage_included` (Fable usage is
@@ -18,10 +25,12 @@
   emits the flag, so it's an install-time checkbox too. `test:hide`
   smoke script wired into CI.
 
-### Still planned
-- Extra usage bar (needs a live source — the stdin JSON doesn't expose
-  it; daemon proxying `/api/oauth/usage` is the leading candidate)
-- Light-theme aware palette (currently tuned for dark terminals)
+### Known limitation
+- As of Claude Code 2.1.199 the statusLine stdin still carries only
+  `five_hour` + `seven_day` even mid-Fable-5-session, so the fable bar
+  stays hidden until Claude Code starts piping the window through — it
+  then appears automatically, no update needed. Renderer is defensive:
+  malformed or missing entries never break the status line.
 
 ## [1.2.6] - 2026-05-26
 
