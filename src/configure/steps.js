@@ -43,6 +43,17 @@ export const STEPS = [
     defaultValue: "show",
   },
   {
+    id: "modelBars",
+    label: "Weekly model bars",
+    description: "Per-model weekly bars (fable / opus / sonnet)?",
+    items: [
+      { label: "all — every bar the server sends (recommended)", value: "all" },
+      { label: "fable only — hide opus / sonnet", value: "fable-only" },
+      { label: "none — just 5h + week", value: "none" },
+    ],
+    defaultValue: "all",
+  },
+  {
     id: "refresh",
     label: "Refresh interval",
     description: "How often to refresh (seconds)?",
