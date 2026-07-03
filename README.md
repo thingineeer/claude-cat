@@ -174,6 +174,9 @@ week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</p
 </table>
 
 Power-user flags: `--stack=auto|always|never`, `--max-cols=<n>`,
+`--hide=<name>[,<name>…]` (drop specific bars — names as shown on the
+chip, e.g. `--hide=opus,sonnet` keeps just `5h · week · fable`; the
+wizard's "Weekly model bars" step sets this),
 `--no-debug-chip`, `--icons=none|emoji|nerd`. Env vars:
 `CLAUDE_CAT_COLUMNS`, `CLAUDE_CAT_DEBUG=1`,
 `CLAUDE_CAT_PLAN=pro|max|auto` (Pro users: set `pro` to hide weekly
@@ -189,7 +192,7 @@ bars — the wizard sets this automatically).
 
 | chip | meaning |
 | ---- | ------- |
-| `5h` / `week` / `sonnet` | rate-limit window (5-hour session / weekly / per-model weekly) |
+| `5h` / `week` / `fable` / `sonnet` | rate-limit window (5-hour session / weekly / Fable 5 weekly / per-model weekly) |
 | `▓▓▓▓░░░░░░` | 10-cell progress bar — green → yellow → red as it climbs |
 | `47%` | exact percentage |
 | `(1h 19m)` / `(Fri 1pm)` | time until that window resets — relative for session, absolute for weekly |
@@ -284,11 +287,17 @@ because it's the bar that actually constrains your week.
 
 ## What's *not* in stdin JSON (yet)
 
-Two things `/usage` popup shows but Claude Code doesn't pipe to
+Some things `/usage` popup shows but Claude Code doesn't pipe to
 statusLine scripts, so claude-cat can't render them today:
 
 - **Current week (Sonnet only)** — server includes
   `rate_limits.seven_day_sonnet` only sometimes (condition undocumented).
+- **Fable 5 credit / weekly window** — claude-cat renders
+  `rate_limits.seven_day_overage_included` as a `fable` bar the moment
+  it arrives, but as of Claude Code 2.1.199 the statusLine stdin
+  carries only `five_hour` + `seven_day` even mid-Fable-5-session
+  (verified against a live payload dump). The fable credit row in
+  `/usage` comes from `/api/oauth/usage` (private endpoint).
 - **Extra usage** (e.g. `$14 / $20 spent`) — comes from
   `/api/oauth/usage` (private endpoint).
 
