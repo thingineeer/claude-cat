@@ -7,6 +7,8 @@
 //   rate_limits.five_hour:  { used_percentage, resets_at }
 //   rate_limits.seven_day:  { used_percentage, resets_at }
 //   rate_limits.seven_day_opus_4x?: same shape (sonnet-only style limits vary)
+//   rate_limits.seven_day_overage_included?: Fable 5 weekly window — Fable
+//     usage is credit-based, so Claude Code keys it by billing term, not model
 //   model.display_name: string
 // Missing fields are treated as optional — Claude Code only populates
 // rate_limits for Pro/Max subscribers after the first assistant response.
@@ -80,11 +82,14 @@ function labelFor(key, { variant = "long" } = {}) {
     //
     //   five_hour       → '5h'
     //   seven_day       → 'week'
+    //   seven_day_overage_included → 'fable' (the Fable 5 weekly window
+    //     is keyed by billing term; show the model name users know)
     //   seven_day_<m>   → '<m>' (lower-cased), e.g. 'sonnet', 'opus'.
     //     We drop the 'week·' prefix: the model name alone already
     //     reads as "the weekly bucket for that model" in context.
     if (key === "five_hour") return "5h";
     if (key === "seven_day") return "week";
+    if (key === "seven_day_overage_included") return "fable";
     if (key.startsWith("seven_day_")) {
       return key.slice("seven_day_".length).toLowerCase();
     }
@@ -93,6 +98,7 @@ function labelFor(key, { variant = "long" } = {}) {
 
   if (key === "five_hour") return t("current_session");
   if (key === "seven_day") return t("current_week_all");
+  if (key === "seven_day_overage_included") return t("current_week_fable");
   if (key.startsWith("seven_day_")) {
     return t("current_week_scope", modelPretty(key.slice("seven_day_".length)));
   }
@@ -113,16 +119,20 @@ function isWindowEntry(v) {
     && typeof v.resets_at === "number";
 }
 
-// Ordering: five_hour first, then seven_day, then every other weekly-style
-// key (alphabetical), then anything else. Deterministic and predictable.
+// Ordering: five_hour first, then seven_day, then the Fable 5 window
+// pinned right after it (it's the primary model's weekly budget, so it
+// reads best next to the all-models bar — alphabetical order would let
+// 'opus' slip in between), then every other weekly-style key
+// (alphabetical), then anything else. Deterministic and predictable.
 function orderKey(k) {
   if (k === "five_hour") return [0, k];
   if (k === "seven_day") return [1, k];
-  if (k.startsWith("seven_day_")) return [2, k];
-  return [3, k];
+  if (k === "seven_day_overage_included") return [2, k];
+  if (k.startsWith("seven_day_")) return [3, k];
+  return [4, k];
 }
 
-function collectWindows(d, { variant = "long" } = {}) {
+function collectWindows(d, { variant = "long", hide } = {}) {
   const rl = d.rate_limits || {};
   const plan = process.env.CLAUDE_CAT_PLAN;
   return Object.entries(rl)
@@ -133,6 +143,14 @@ function collectWindows(d, { variant = "long" } = {}) {
       if (!isSafeWindowKey(k)) return false;
       if (!isWindowEntry(v)) return false;
       if (plan === "pro" && k.startsWith("seven_day")) return false;
+      // --hide=<names>: match the raw key or the short chip label
+      // ('fable', 'opus', …) so users can type the name they actually
+      // see on screen. Hidden windows also drop out of the cat's mood —
+      // hiding a bar means "I don't care about this window".
+      if (hide && hide.size > 0
+        && (hide.has(k) || hide.has(labelFor(k, { variant: "short" })))) {
+        return false;
+      }
       return true;
     })
     .sort(([a], [b]) => {
@@ -340,8 +358,9 @@ function renderCompact(d, {
   showCtx = true,
   stack = "auto",
   cols,
+  hide,
 } = {}) {
-  const windows = collectWindows(d, { variant: "short" });
+  const windows = collectWindows(d, { variant: "short", hide });
   const state = inferState(d, windows);
   const stale = d?._stale === true;
   const ctx = renderContextChip(d, { variant: "short" });
@@ -403,8 +422,8 @@ function renderCompact(d, {
 //   line 1+  — one per window, OR a single short status hint
 // No indentation here; callers add padding if they place the block
 // next to cat art.
-function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = true, showCtx = true }) {
-  const windows = collectWindows(d);
+function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = true, showCtx = true, hide }) {
+  const windows = collectWindows(d, { hide });
   const stale = d?._stale === true;
   const cost = d?.cost?.total_cost_usd;
   // Strip C0 control chars before rendering — model.display_name comes
@@ -447,8 +466,8 @@ function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = t
   return lines;
 }
 
-function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip = true, showCost = true, showCtx = true } = {}) {
-  const windows = collectWindows(d);
+function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip = true, showCost = true, showCtx = true, hide } = {}) {
+  const windows = collectWindows(d, { hide });
   const state = inferState(d, windows);
   // Stale data is last-known, not live — the cat rests rather than
   // reacting to numbers that may have drifted. The dimmed bars + stale
@@ -458,7 +477,7 @@ function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip 
     (state === "normal" && !stale) ? { windows } : { state: "resting" },
     catTheme,
   );
-  const data = buildDataBlock(d, { iconMode, state, showDebugChip, showCost, showCtx });
+  const data = buildDataBlock(d, { iconMode, state, showDebugChip, showCost, showCtx, hide });
 
   // Compact-cat full: inline the 1-line face into the header and indent
   // every data line with 2 spaces, matching the previous look.
@@ -498,8 +517,8 @@ function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip 
 // like compact, but now carries the cost chip alongside ctx so Max-
 // plan users can eyeball spend without leaving the row.
 // Wide is for heavy users who don't want the line to ever wrap.
-function renderWide(d, { iconMode = "none", showDebugChip = true, showCost = true, showCtx = true } = {}) {
-  const windows = collectWindows(d, { variant: "short" });
+function renderWide(d, { iconMode = "none", showDebugChip = true, showCost = true, showCtx = true, hide } = {}) {
+  const windows = collectWindows(d, { variant: "short", hide });
   const state = inferState(d, windows);
   const stale = d?._stale === true;
   const ctx = renderContextChip(d, { variant: "short" });
@@ -568,6 +587,22 @@ function parseStackMode(args) {
   return "auto";
 }
 
+// --hide=<name>[,<name>...] — drop specific rate-limit windows from
+// the display (and the cat's mood). Names are whatever the compact
+// chip shows ('fable', 'opus', 'sonnet', 'week', '5h') or the raw
+// rate_limits key ('seven_day_opus'). Repeatable; lists merge.
+function parseHideList(args) {
+  const out = new Set();
+  for (const a of args) {
+    if (!a.startsWith("--hide=")) continue;
+    for (const p of a.slice("--hide=".length).split(",")) {
+      const v = p.trim().toLowerCase();
+      if (v) out.add(v);
+    }
+  }
+  return out;
+}
+
 // --max-cols=<n> caps the single-line width used for auto-stack
 // detection. Useful when COLUMNS / stdout.columns don't match what the
 // user actually sees (e.g. embedded statusLine panes).
@@ -593,6 +628,7 @@ async function main() {
   const catTheme = parseCatTheme(args);
   const stack = parseStackMode(args);
   const cols = parseMaxCols(args);
+  const hide = parseHideList(args);
   const showDebugChip = !args.includes("--no-debug-chip");
   const showCost = !args.includes("--no-cost");
   const showCtx = !args.includes("--no-ctx");
@@ -618,7 +654,7 @@ async function main() {
     }
   }
 
-  const opts = { iconMode, catTheme, showDebugChip, showCost, showCtx, stack, cols };
+  const opts = { iconMode, catTheme, showDebugChip, showCost, showCtx, stack, cols, hide };
   let out;
   if (layout === "wide") out = renderWide(d, opts);
   else if (layout === "full") out = renderFull(d, opts);

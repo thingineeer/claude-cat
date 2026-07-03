@@ -19,6 +19,7 @@ themes=(compact kawaii none)
 fixtures=(
   examples/sample-stdin.json
   examples/sample-with-sonnet.json
+  examples/sample-with-fable.json
   examples/sample-critical.json
   examples/sample-api-only.json
   examples/sample-warming-up.json

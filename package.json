@@ -1,6 +1,6 @@
 {
   "name": "claude-cat",
-  "version": "1.2.6",
+  "version": "1.3.0",
   "description": "A cute cat on your Claude Code status line that shows remaining credits at a glance.",
   "keywords": [
     "claude",
@@ -42,6 +42,9 @@
     "test:full": "cat examples/sample-stdin.json | node bin/cli.js --full",
     "test:critical": "cat examples/sample-critical.json | node bin/cli.js",
     "test:sonnet": "cat examples/sample-with-sonnet.json | node bin/cli.js --full",
+    "test:fable": "cat examples/sample-with-fable.json | node bin/cli.js --full",
+    "test:fable:compact": "cat examples/sample-with-fable.json | node bin/cli.js",
+    "test:hide": "cat examples/sample-with-fable.json | node bin/cli.js --hide=opus,sonnet",
     "test:warming": "cat examples/sample-warming-up.json | node bin/cli.js --full --kawaii",
     "test:saturated": "cat examples/sample-weekly-saturated.json | node bin/cli.js --full --kawaii",
     "test:apicost": "cat examples/sample-api-cost-only.json | node bin/cli.js --full --kawaii",

@@ -7,6 +7,31 @@
   it; daemon proxying `/api/oauth/usage` is the leading candidate)
 - Light-theme aware palette (currently tuned for dark terminals)
 
+## [1.3.0] - 2026-07-03
+
+### Added
+- **Fable 5 weekly bar** — Claude Code sends the Fable 5 weekly window
+  as `rate_limits.seven_day_overage_included` (Fable usage is
+  credit-based, so the key is a billing term). It used to render with
+  the raw `overage_included` label; it now shows as `fable` (compact /
+  wide) and `Current week (Fable 5)` (full), pinned right after the
+  all-models `week` bar so alphabetical ordering can't slip `opus` in
+  between. New fixture `examples/sample-with-fable.json` + `test:fable`
+  / `test:fable:compact` smoke scripts wired into CI.
+- **`--hide=<name>[,…]` window filter** — drop specific rate-limit bars
+  from the display (and the cat's mood) by chip name (`opus`, `sonnet`,
+  `fable`, …) or raw key (`seven_day_opus`). `npx claude-cat configure`
+  gained a "Weekly model bars" step (all / fable only / none) that
+  emits the flag, so it's an install-time checkbox too. `test:hide`
+  smoke script wired into CI.
+
+### Known limitation
+- As of Claude Code 2.1.199 the statusLine stdin still carries only
+  `five_hour` + `seven_day` even mid-Fable-5-session, so the fable bar
+  stays hidden until Claude Code starts piping the window through — it
+  then appears automatically, no update needed. Renderer is defensive:
+  malformed or missing entries never break the status line.
+
 ## [1.2.6] - 2026-05-26
 
 ### Added

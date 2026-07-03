@@ -19,6 +19,12 @@ export function buildCommand(answers) {
   if (answers.cost === "hide") flags.push("--no-cost");
   if (answers.context === "hide") flags.push("--no-ctx");
 
+  // Per-model weekly bars. --hide is a blacklist of the known model
+  // buckets — an unknown future bucket still shows up, matching the
+  // "render whatever the server sends" philosophy.
+  if (answers.modelBars === "fable-only") flags.push("--hide=opus,sonnet");
+  else if (answers.modelBars === "none") flags.push("--hide=fable,opus,sonnet");
+
   return `npx -y claude-cat@latest${flags.length ? " " + flags.join(" ") : ""}`;
 }
 
