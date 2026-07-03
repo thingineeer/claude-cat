@@ -174,6 +174,9 @@ week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</p
 </table>
 
 Power-user flags: `--stack=auto|always|never`, `--max-cols=<n>`,
+`--hide=<name>[,<name>…]` (drop specific bars — names as shown on the
+chip, e.g. `--hide=opus,sonnet` keeps just `5h · week · fable`; the
+wizard's "Weekly model bars" step sets this),
 `--no-debug-chip`, `--icons=none|emoji|nerd`. Env vars:
 `CLAUDE_CAT_COLUMNS`, `CLAUDE_CAT_DEBUG=1`,
 `CLAUDE_CAT_PLAN=pro|max|auto` (Pro users: set `pro` to hide weekly

@@ -11,6 +11,12 @@
   all-models `week` bar so alphabetical ordering can't slip `opus` in
   between. New fixture `examples/sample-with-fable.json` + `test:fable`
   / `test:fable:compact` smoke scripts wired into CI.
+- **`--hide=<name>[,…]` window filter** — drop specific rate-limit bars
+  from the display (and the cat's mood) by chip name (`opus`, `sonnet`,
+  `fable`, …) or raw key (`seven_day_opus`). `npx claude-cat configure`
+  gained a "Weekly model bars" step (all / fable only / none) that
+  emits the flag, so it's an install-time checkbox too. `test:hide`
+  smoke script wired into CI.
 
 ### Still planned
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
