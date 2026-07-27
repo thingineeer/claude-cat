@@ -87,11 +87,11 @@ Pick a mode, paste the prompt into Claude Code, and it edits
 
 ### A) ⭐ Default — compact, one line *(recommended)*
 
-You get a single line: usage bars + `$` cost + `ctx %`. No cat. Wraps
-on narrow terminals.
+You get a single line: model + usage bars + `$` cost + `ctx %`. No cat.
+Wraps on narrow terminals.
 
 ```text
-5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
+opus 5 | 5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
 ```
 
 ```text
@@ -142,7 +142,7 @@ Same install pattern — just swap the `command` value.
 <tr>
 <td><strong>⭐ (default)</strong></td>
 <td><code>npx -y claude-cat@latest</code></td>
-<td><pre>5h ▓░░░░░░░░░ 10% (3h 21m) | week ▓▓░░░░░░░░ 18% (Fri 1pm) | $0.123</pre></td>
+<td><pre>opus 5 | 5h ▓░░░░░░░░░ 10% (3h 21m) | week ▓▓░░░░░░░░ 18% (Fri 1pm) | $0.123</pre></td>
 </tr>
 <tr>
 <td><code>--full --kawaii</code></td>
