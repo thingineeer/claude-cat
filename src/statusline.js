@@ -105,6 +105,32 @@ function labelFor(key, { variant = "long" } = {}) {
   return key;
 }
 
+// Compact-only model chip: shorten `model.display_name` into a single
+// token that fits at the head of a one-line status bar.
+//
+//   'Opus 5 (1M context)'   → 'opus5'
+//   'Fable 5'               → 'fable5'
+//   'Sonnet 4.6'            → 'sonnet4.6'
+//   'Haiku 4.5'             → 'haiku4.5'
+//
+// Parenthetical variants ('(1M context)') are dropped: compact is the
+// width-constrained layout, and the ctx chip already reports the
+// context window. The --full layout keeps the untouched display_name
+// in its header — this shortening is deliberately not applied there.
+//
+// display_name is server-supplied, so sanitize first, then keep only
+// [a-z0-9.] — the same defensive posture as isSafeWindowKey. An
+// unrecognizable name yields null and the chip is simply omitted
+// rather than rendering attacker-chosen text.
+function shortModelName(displayName) {
+  const clean = sanitizeText(displayName);
+  if (typeof clean !== "string") return null;
+  const base = clean.split("(")[0];
+  const token = base.toLowerCase().replace(/[^a-z0-9.]/g, "");
+  if (!token) return null;
+  return token.slice(0, 24);
+}
+
 // Accept any shape the server sends: collect every rate_limits.* entry
 // that looks like { used_percentage, resets_at, ... }. This lets
 // model-scoped weekly buckets (e.g. Sonnet-only) appear automatically,
@@ -356,6 +382,7 @@ function renderCompact(d, {
   showDebugChip = true,
   showCost = true,
   showCtx = true,
+  showModel = true,
   stack = "auto",
   cols,
   hide,
@@ -370,7 +397,13 @@ function renderCompact(d, {
   // cost now rides alongside ctx in the tail group. Max-plan users
   // asked for the $ back; the bold-white cost chip sits next to the
   // dim-cyan ctx chip so the bars still lead the eye.
+  //
+  // The model chip leads the line. `head` is locked to line 1 by
+  // joinWithWrap, so "which model am I talking to" stays visible even
+  // when a narrow pane wraps the bars onto continuation lines.
   const head = [];
+  const modelChip = showModel ? shortModelName(d?.model?.display_name) : null;
+  if (modelChip) head.push(`${C.model}${modelChip}${C.reset}`);
 
   const body = [];
   if (state !== "normal") {
@@ -632,6 +665,9 @@ async function main() {
   const showDebugChip = !args.includes("--no-debug-chip");
   const showCost = !args.includes("--no-cost");
   const showCtx = !args.includes("--no-ctx");
+  // --no-model drops the compact layout's leading model chip. The
+  // --full header shows the full display_name regardless.
+  const showModel = !args.includes("--no-model");
   const raw = await readStdin();
   let d = safeParse(raw);
 
@@ -654,7 +690,7 @@ async function main() {
     }
   }
 
-  const opts = { iconMode, catTheme, showDebugChip, showCost, showCtx, stack, cols, hide };
+  const opts = { iconMode, catTheme, showDebugChip, showCost, showCtx, showModel, stack, cols, hide };
   let out;
   if (layout === "wide") out = renderWide(d, opts);
   else if (layout === "full") out = renderFull(d, opts);
