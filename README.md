@@ -188,12 +188,12 @@ bars — the wizard sets this automatically).
 ## Reading the output
 
 ```text
-opus5 | 5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
+opus 5 | 5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
 ```
 
 | chip | meaning |
 | ---- | ------- |
-| `opus5` / `fable5` / `sonnet5` | the model this session is talking to — compact layout only (`--full` shows the full name in its header). Hide with `--no-model` |
+| `opus 5` / `fable 5` / `sonnet 4.6` | the model this session is talking to — compact layout only (`--full` shows the full name in its header). Hide with `--no-model` |
 | `5h` / `week` / `fable` / `sonnet` | rate-limit window (5-hour session / weekly / Fable 5 weekly / per-model weekly) |
 | `▓▓▓▓░░░░░░` | 10-cell progress bar — green → yellow → red as it climbs |
 | `47%` | exact percentage |

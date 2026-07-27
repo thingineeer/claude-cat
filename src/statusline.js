@@ -108,10 +108,13 @@ function labelFor(key, { variant = "long" } = {}) {
 // Compact-only model chip: shorten `model.display_name` into a single
 // token that fits at the head of a one-line status bar.
 //
-//   'Opus 5 (1M context)'   → 'opus5'
-//   'Fable 5'               → 'fable5'
-//   'Sonnet 4.6'            → 'sonnet4.6'
-//   'Haiku 4.5'             → 'haiku4.5'
+//   'Opus 5 (1M context)'   → 'opus 5'
+//   'Fable 5'               → 'fable 5'
+//   'Sonnet 4.6'            → 'sonnet 4.6'
+//   'Haiku 4.5'             → 'haiku 4.5'
+//
+// The space is kept: 'opus 5' is how the model is actually spelled,
+// and squashing it to 'opus5' reads as a typo at a glance.
 //
 // Parenthetical variants ('(1M context)') are dropped: compact is the
 // width-constrained layout, and the ctx chip already reports the
@@ -119,16 +122,24 @@ function labelFor(key, { variant = "long" } = {}) {
 // in its header — this shortening is deliberately not applied there.
 //
 // display_name is server-supplied, so sanitize first, then keep only
-// [a-z0-9.] — the same defensive posture as isSafeWindowKey. An
-// unrecognizable name yields null and the chip is simply omitted
-// rather than rendering attacker-chosen text.
+// [a-z0-9. ] — the same defensive posture as isSafeWindowKey, widened
+// by a literal space. sanitizeText has already stripped C0 controls
+// (including tabs/newlines), so the only whitespace that can survive
+// here is U+0020; runs are collapsed and the ends trimmed so a padded
+// name can't shove the bars rightward. An unrecognizable name yields
+// null and the chip is simply omitted rather than rendering
+// attacker-chosen text.
 function shortModelName(displayName) {
   const clean = sanitizeText(displayName);
   if (typeof clean !== "string") return null;
   const base = clean.split("(")[0];
-  const token = base.toLowerCase().replace(/[^a-z0-9.]/g, "");
+  const token = base
+    .toLowerCase()
+    .replace(/[^a-z0-9. ]/g, "")
+    .replace(/ +/g, " ")
+    .trim();
   if (!token) return null;
-  return token.slice(0, 24);
+  return token.slice(0, 24).trim();
 }
 
 // Accept any shape the server sends: collect every rate_limits.* entry

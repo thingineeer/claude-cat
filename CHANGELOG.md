@@ -5,8 +5,9 @@
 ### Added
 - **Model chip in the compact layout** — the one-line layout now leads
   with the model the session is talking to, shortened from
-  `model.display_name` to a single token (`Opus 5 (1M context)` →
-  `opus5`, `Fable 5` → `fable5`, `Sonnet 4.6` → `sonnet4.6`).
+  `model.display_name` (`Opus 5 (1M context)` → `opus 5`, `Fable 5` →
+  `fable 5`, `Sonnet 4.6` → `sonnet 4.6`). The space is kept — that's
+  how the model is actually spelled.
   Parenthetical variants are dropped: compact is the width-constrained
   layout and the `ctx N%` chip already reports the context window. The
   chip is pinned to line 1, so it survives narrow-pane wrapping. Hide
