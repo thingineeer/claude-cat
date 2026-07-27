@@ -87,11 +87,11 @@ Pick a mode, paste the prompt into Claude Code, and it edits
 
 ### A) ⭐ Default — compact, one line *(recommended)*
 
-You get a single line: usage bars + `$` cost + `ctx %`. No cat. Wraps
-on narrow terminals.
+You get a single line: model + usage bars + `$` cost + `ctx %`. No cat.
+Wraps on narrow terminals.
 
 ```text
-5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
+opus 5 | 5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
 ```
 
 ```text
@@ -142,7 +142,7 @@ Same install pattern — just swap the `command` value.
 <tr>
 <td><strong>⭐ (default)</strong></td>
 <td><code>npx -y claude-cat@latest</code></td>
-<td><pre>5h ▓░░░░░░░░░ 10% (3h 21m) | week ▓▓░░░░░░░░ 18% (Fri 1pm) | $0.123</pre></td>
+<td><pre>opus 5 | 5h ▓░░░░░░░░░ 10% (3h 21m) | week ▓▓░░░░░░░░ 18% (Fri 1pm) | $0.123</pre></td>
 </tr>
 <tr>
 <td><code>--full --kawaii</code></td>
@@ -177,6 +177,7 @@ Power-user flags: `--stack=auto|always|never`, `--max-cols=<n>`,
 `--hide=<name>[,<name>…]` (drop specific bars — names as shown on the
 chip, e.g. `--hide=opus,sonnet` keeps just `5h · week · fable`; the
 wizard's "Weekly model bars" step sets this),
+`--no-model` (drop the compact layout's leading model chip),
 `--no-debug-chip`, `--icons=none|emoji|nerd`. Env vars:
 `CLAUDE_CAT_COLUMNS`, `CLAUDE_CAT_DEBUG=1`,
 `CLAUDE_CAT_PLAN=pro|max|auto` (Pro users: set `pro` to hide weekly
@@ -187,11 +188,12 @@ bars — the wizard sets this automatically).
 ## Reading the output
 
 ```text
-5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
+opus 5 | 5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
 ```
 
 | chip | meaning |
 | ---- | ------- |
+| `opus 5` / `fable 5` / `sonnet 4.6` | the model this session is talking to — compact layout only (`--full` shows the full name in its header). Hide with `--no-model` |
 | `5h` / `week` / `fable` / `sonnet` | rate-limit window (5-hour session / weekly / Fable 5 weekly / per-model weekly) |
 | `▓▓▓▓░░░░░░` | 10-cell progress bar — green → yellow → red as it climbs |
 | `47%` | exact percentage |
