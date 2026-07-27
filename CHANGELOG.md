@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Still planned
+- Extra usage bar (needs a live source — the stdin JSON doesn't expose
+  it; daemon proxying `/api/oauth/usage` is the leading candidate)
+- Light-theme aware palette (currently tuned for dark terminals)
+
+## [1.4.0] - 2026-07-27
+
 ### Added
 - **Model chip in the compact layout** — the one-line layout now leads
   with the model the session is talking to, shortened from
@@ -11,14 +18,16 @@
   Parenthetical variants are dropped: compact is the width-constrained
   layout and the `ctx N%` chip already reports the context window. The
   chip is pinned to line 1, so it survives narrow-pane wrapping. Hide
-  it with `--no-model`; `test:no-model` smoke script wired into CI.
+  it with `--no-model`; `scripts/test-model-chip.sh` (`test:no-model`)
+  asserts both directions of the toggle and is wired into CI.
   The `--full` and `--wide` layouts are unchanged — `--full` already
   carried the untouched `display_name` in its header.
 
-### Still planned
-- Extra usage bar (needs a live source — the stdin JSON doesn't expose
-  it; daemon proxying `/api/oauth/usage` is the leading candidate)
-- Light-theme aware palette (currently tuned for dark terminals)
+  `display_name` is server-supplied, so the chip goes through the same
+  trust boundary as every other rendered field: `sanitizeText` first,
+  then a `[a-z0-9. ]` whitelist, space runs collapsed and ends trimmed
+  so a padded name can't shove the bars rightward. An unrecognizable
+  name yields no chip rather than attacker-chosen text.
 
 ## [1.3.0] - 2026-07-03
 
