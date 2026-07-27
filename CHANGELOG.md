@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Added
+- **Model chip in the compact layout** — the one-line layout now leads
+  with the model the session is talking to, shortened from
+  `model.display_name` to a single token (`Opus 5 (1M context)` →
+  `opus5`, `Fable 5` → `fable5`, `Sonnet 4.6` → `sonnet4.6`).
+  Parenthetical variants are dropped: compact is the width-constrained
+  layout and the `ctx N%` chip already reports the context window. The
+  chip is pinned to line 1, so it survives narrow-pane wrapping. Hide
+  it with `--no-model`; `test:no-model` smoke script wired into CI.
+  The `--full` and `--wide` layouts are unchanged — `--full` already
+  carried the untouched `display_name` in its header.
+
 ### Still planned
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
   it; daemon proxying `/api/oauth/usage` is the leading candidate)
