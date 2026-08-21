@@ -1,6 +1,7 @@
 {
   "hook_event_name": "Status",
   "session_id": "example-session",
+  "effort": { "level": "max" },
   "model": { "id": "claude-fable-5", "display_name": "Fable 5" },
   "cost": { "total_cost_usd": 1.87 },
   "context_window": { "used_percentage": 28, "remaining_percentage": 72 },
