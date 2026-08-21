@@ -87,11 +87,11 @@ Pick a mode, paste the prompt into Claude Code, and it edits
 
 ### A) ⭐ Default — compact, one line *(recommended)*
 
-You get a single line: model + usage bars + `$` cost + `ctx %`. No cat.
+You get a single line: model · effort + usage bars + `$` cost + `ctx %`. No cat.
 Wraps on narrow terminals.
 
 ```text
-opus 5 | 5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
+opus 5 · high | 5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
 ```
 
 ```text
@@ -109,10 +109,12 @@ Don't touch any other key. Show me the diff first.
 ### B) 3-row kawaii cat
 
 You get a 3-row card: ASCII cat on the left, data rows on the right.
-The cat's face and prop change with your usage.
+The cat's face and prop change with your usage. The header row carries
+model · effort · cost · ctx — effort slots into the header's spare
+width, so the card stays 3 rows.
 
 ```text
- /\_/\    Opus 4.6  ·  $38.52  ·  ctx 23% used (77% left)
+ /\_/\    Opus 4.6 · high  ·  $38.52  ·  ctx 23% used (77% left)
 ( ^ω^ )   Current session            ▓▓▓▓▓▓░░░░░░░  51% · 1h 15m
  / >🍣    Current week (all models)  ▓▓▓░░░░░░░░░░  31% · Resets Apr 17, 1pm
 ```
@@ -142,19 +144,19 @@ Same install pattern — just swap the `command` value.
 <tr>
 <td><strong>⭐ (default)</strong></td>
 <td><code>npx -y claude-cat@latest</code></td>
-<td><pre>opus 5 | 5h ▓░░░░░░░░░ 10% (3h 21m) | week ▓▓░░░░░░░░ 18% (Fri 1pm) | $0.123</pre></td>
+<td><pre>opus 5 · high | 5h ▓░░░░░░░░░ 10% (3h 21m) | week ▓▓░░░░░░░░ 18% (Fri 1pm) | $0.123</pre></td>
 </tr>
 <tr>
 <td><code>--full --kawaii</code></td>
 <td><code>npx -y claude-cat@latest --full --kawaii</code></td>
-<td><pre> /\_/\   Opus 4.6 · $0.123
+<td><pre> /\_/\   Opus 4.6 · high · $0.123
 ( ^ω^ )  session  ▓░░░░░░░░░░░░░ 10% · 3h 21m
  / >🍣   week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</pre></td>
 </tr>
 <tr>
 <td><code>--full</code></td>
 <td><code>npx -y claude-cat@latest --full</code></td>
-<td><pre>/ᐠ ^ᴥ^ ᐟ\  Opus 4.6 · $0.123
+<td><pre>/ᐠ ^ᴥ^ ᐟ\  Opus 4.6 · high · $0.123
 session  ▓░░░░░░░░░░░░░ 10% · 3h 21m
 week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</pre></td>
 </tr>
@@ -166,7 +168,7 @@ week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</p
 <tr>
 <td><code>--full --no-cat</code></td>
 <td><code>npx -y claude-cat@latest --full --no-cat</code></td>
-<td><pre>Opus 4.6 · $0.123
+<td><pre>Opus 4.6 · high · $0.123
 session  ▓░░░░░░░░░░░░░ 10% · 3h 21m
 week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</pre></td>
 </tr>
@@ -177,7 +179,9 @@ Power-user flags: `--stack=auto|always|never`, `--max-cols=<n>`,
 `--hide=<name>[,<name>…]` (drop specific bars — names as shown on the
 chip, e.g. `--hide=opus,sonnet` keeps just `5h · week · fable`; the
 wizard's "Weekly model bars" step sets this),
-`--no-model` (drop the compact layout's leading model chip),
+`--no-model` (drop the compact layout's leading model chip — takes the
+effort level with it), `--no-effort` (keep the model, drop the
+`· high` effort level — compact and `--full`),
 `--no-debug-chip`, `--icons=none|emoji|nerd`. Env vars:
 `CLAUDE_CAT_COLUMNS`, `CLAUDE_CAT_DEBUG=1`,
 `CLAUDE_CAT_PLAN=pro|max|auto` (Pro users: set `pro` to hide weekly
@@ -188,12 +192,13 @@ bars — the wizard sets this automatically).
 ## Reading the output
 
 ```text
-opus 5 | 5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
+opus 5 · high | 5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
 ```
 
 | chip | meaning |
 | ---- | ------- |
 | `opus 5` / `fable 5` / `sonnet 4.6` | the model this session is talking to — compact layout only (`--full` shows the full name in its header). Hide with `--no-model` |
+| `· high` / `· max` | the session's effort level (`effort.level` — `low` / `medium` / `high` / `xhigh` / `max`), riding on the model chip in compact and `--full`. Hide with `--no-effort` |
 | `5h` / `week` / `fable` / `sonnet` | rate-limit window (5-hour session / weekly / Fable 5 weekly / per-model weekly) |
 | `▓▓▓▓░░░░░░` | 10-cell progress bar — green → yellow → red as it climbs |
 | `47%` | exact percentage |
