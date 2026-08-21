@@ -97,5 +97,7 @@ printf '%s\n' "$BOGUS_OUT" | grep -Fq 'opus 5' \
   || { echo "FAIL: bogus effort took the model chip with it"; exit 1; }
 printf '%s\n' "$BOGUS_FULL_OUT" | grep -Fqi 'passwd' \
   && { echo "FAIL: bogus effort leaked into full output"; exit 1; }
+printf '%s\n' "$BOGUS_FULL_OUT" | grep -Fq 'Opus 5 (1M context)' \
+  || { echo "FAIL: bogus effort took the full header model name with it"; exit 1; }
 
 echo "OK: model chip (model + effort) toggles correctly"
