@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Still planned
+- Extra usage bar (needs a live source — the stdin JSON doesn't expose
+  it; daemon proxying `/api/oauth/usage` is the leading candidate)
+- Light-theme aware palette (currently tuned for dark terminals)
+
+## [1.5.0] - 2026-08-21
+
 ### Added
 - **Effort level on the model chip** — Claude Code pipes the session's
   effort level as `effort.level` (`low` / `medium` / `high` / `xhigh` /
@@ -18,11 +25,6 @@
   unrecognizable value drops the effort and keeps the model chip.
   `scripts/test-model-chip.sh` (`test:no-model`) covers every toggle
   direction plus the bogus-value path.
-
-### Still planned
-- Extra usage bar (needs a live source — the stdin JSON doesn't expose
-  it; daemon proxying `/api/oauth/usage` is the leading candidate)
-- Light-theme aware palette (currently tuned for dark terminals)
 
 ## [1.4.0] - 2026-07-27
 
