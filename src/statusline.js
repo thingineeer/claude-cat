@@ -10,6 +10,7 @@
 //   rate_limits.seven_day_overage_included?: Fable 5 weekly window — Fable
 //     usage is credit-based, so Claude Code keys it by billing term, not model
 //   model.display_name: string
+//   effort.level: string — 'low' | 'medium' | 'high' | 'xhigh' | 'max'
 // Missing fields are treated as optional — Claude Code only populates
 // rate_limits for Pro/Max subscribers after the first assistant response.
 
@@ -140,6 +141,31 @@ function shortModelName(displayName) {
     .trim();
   if (!token) return null;
   return token.slice(0, 24).trim();
+}
+
+// Effort chip: `effort.level` as Claude Code reports it ('low' /
+// 'medium' / 'high' / 'xhigh' / 'max'). Rides on the model chip —
+// 'fable 5 · high' — in both compact and full so "which model, how
+// hard is it thinking" reads as one unit.
+//
+// Same trust boundary as the model chip: sanitizeText, then a strict
+// [a-z] whitelist. Levels are lowercase words, so anything else
+// (digits, punctuation, path-looking strings) yields null and the
+// effort is simply omitted — the model chip still renders.
+function effortLevel(effort) {
+  const clean = sanitizeText(effort?.level);
+  if (typeof clean !== "string") return null;
+  const token = clean.trim().toLowerCase();
+  if (!/^[a-z]{1,12}$/.test(token)) return null;
+  return token;
+}
+
+// Join model + effort into one chip; the caller decides color. Returns
+// null when there's no model — effort alone ('high') is meaningless
+// without the model it qualifies, so it never renders on its own.
+function modelEffortChip(model, effort) {
+  if (!model) return null;
+  return effort ? `${model} · ${effort}` : model;
 }
 
 // Accept any shape the server sends: collect every rate_limits.* entry
@@ -394,6 +420,7 @@ function renderCompact(d, {
   showCost = true,
   showCtx = true,
   showModel = true,
+  showEffort = true,
   stack = "auto",
   cols,
   hide,
@@ -413,7 +440,12 @@ function renderCompact(d, {
   // joinWithWrap, so "which model am I talking to" stays visible even
   // when a narrow pane wraps the bars onto continuation lines.
   const head = [];
-  const modelChip = showModel ? shortModelName(d?.model?.display_name) : null;
+  const modelChip = showModel
+    ? modelEffortChip(
+        shortModelName(d?.model?.display_name),
+        showEffort ? effortLevel(d?.effort) : null,
+      )
+    : null;
   if (modelChip) head.push(`${C.model}${modelChip}${C.reset}`);
 
   const body = [];
@@ -466,7 +498,7 @@ function renderCompact(d, {
 //   line 1+  — one per window, OR a single short status hint
 // No indentation here; callers add padding if they place the block
 // next to cat art.
-function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = true, showCtx = true, hide }) {
+function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = true, showCtx = true, showEffort = true, hide }) {
   const windows = collectWindows(d, { hide });
   const stale = d?._stale === true;
   const cost = d?.cost?.total_cost_usd;
@@ -474,7 +506,14 @@ function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = t
   // from the server (or a poisoned cache) and could otherwise carry
   // ANSI escapes that retitle the terminal, clear the screen, or
   // inject fake hyperlinks.
-  const model = sanitizeText(d?.model?.display_name);
+  //
+  // The effort level rides on the model ('Fable 5 · high'). The header
+  // row is shorter than the window rows below it, so the extra token
+  // lands in otherwise-blank space — the card doesn't grow.
+  const model = modelEffortChip(
+    sanitizeText(d?.model?.display_name),
+    showEffort ? effortLevel(d?.effort) : null,
+  );
   const ctx = renderContextChip(d);
   const dbg = debugChip({ showDebugChip });
 
@@ -510,7 +549,7 @@ function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = t
   return lines;
 }
 
-function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip = true, showCost = true, showCtx = true, hide } = {}) {
+function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip = true, showCost = true, showCtx = true, showEffort = true, hide } = {}) {
   const windows = collectWindows(d, { hide });
   const state = inferState(d, windows);
   // Stale data is last-known, not live — the cat rests rather than
@@ -521,7 +560,7 @@ function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip 
     (state === "normal" && !stale) ? { windows } : { state: "resting" },
     catTheme,
   );
-  const data = buildDataBlock(d, { iconMode, state, showDebugChip, showCost, showCtx, hide });
+  const data = buildDataBlock(d, { iconMode, state, showDebugChip, showCost, showCtx, showEffort, hide });
 
   // Compact-cat full: inline the 1-line face into the header and indent
   // every data line with 2 spaces, matching the previous look.
@@ -679,6 +718,10 @@ async function main() {
   // --no-model drops the compact layout's leading model chip. The
   // --full header shows the full display_name regardless.
   const showModel = !args.includes("--no-model");
+  // --no-effort drops the effort level from the model chip (compact
+  // and --full). Effort rides on the model chip, so --no-model hides
+  // both.
+  const showEffort = !args.includes("--no-effort");
   const raw = await readStdin();
   let d = safeParse(raw);
 
@@ -701,7 +744,7 @@ async function main() {
     }
   }
 
-  const opts = { iconMode, catTheme, showDebugChip, showCost, showCtx, showModel, stack, cols, hide };
+  const opts = { iconMode, catTheme, showDebugChip, showCost, showCtx, showModel, showEffort, stack, cols, hide };
   let out;
   if (layout === "wide") out = renderWide(d, opts);
   else if (layout === "full") out = renderFull(d, opts);
