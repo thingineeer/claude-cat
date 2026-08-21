@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### Added
+- **Effort level on the model chip** — Claude Code pipes the session's
+  effort level as `effort.level` (`low` / `medium` / `high` / `xhigh` /
+  `max`). It now rides on the model chip in both one-line and 3-row
+  layouts, so "which model, how hard is it thinking" reads as one unit:
+  compact `fable 5 · high | 5h …`, `--full` header `Fable 5 · high  ·
+  $1.87  ·  ctx …`. In `--full` the header row is shorter than the
+  window rows, so the extra token lands in otherwise-blank width — the
+  card stays 3 rows. `--wide` has no model chip and is unchanged.
+  Hide with `--no-effort` (keeps the model); `--no-model` drops both,
+  since effort alone is meaningless without the model it qualifies.
+  `effort.level` goes through the same trust boundary as the model
+  chip: `sanitizeText`, then a strict `[a-z]{1,12}` whitelist — an
+  unrecognizable value drops the effort and keeps the model chip.
+  `scripts/test-model-chip.sh` (`test:no-model`) covers every toggle
+  direction plus the bogus-value path.
+
 ### Still planned
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
   it; daemon proxying `/api/oauth/usage` is the leading candidate)

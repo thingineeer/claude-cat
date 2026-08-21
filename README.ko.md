@@ -78,10 +78,10 @@ npx -y claude-cat@latest configure
 
 ### A) ⭐ 기본 — compact, 한 줄 *(추천)*
 
-깔리는 것: 한 줄에 사용량 바 + `$` 비용 + `ctx %`. 고양이 없음. 좁은 터미널에선 자동 줄바꿈.
+깔리는 것: 한 줄에 모델 · effort + 사용량 바 + `$` 비용 + `ctx %`. 고양이 없음. 좁은 터미널에선 자동 줄바꿈.
 
 ```text
-5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
+opus 5 · high | 5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
 ```
 
 ```text
@@ -99,9 +99,11 @@ Don't touch any other key. Show me the diff first.
 ### B) 3줄 kawaii 고양이
 
 깔리는 것: 3줄 카드 — 왼쪽엔 ASCII 고양이, 오른쪽엔 데이터 행. 사용량에 따라 얼굴과 소품이 바뀝니다.
+header 줄에 모델 · effort · 비용 · ctx 가 들어가며, effort 는 header 의 빈 폭에
+들어가므로 카드는 그대로 3줄입니다.
 
 ```text
- /\_/\    Opus 4.6  ·  $38.52  ·  ctx 23% used (77% left)
+ /\_/\    Opus 4.6 · high  ·  $38.52  ·  ctx 23% used (77% left)
 ( ^ω^ )   Current session            ▓▓▓▓▓▓░░░░░░░  51% · 1h 15m
  / >🍣    Current week (all models)  ▓▓▓░░░░░░░░░░  31% · Resets Apr 17, 1pm
 ```
@@ -131,19 +133,19 @@ Don't touch any other key. Show me the diff first.
 <tr>
 <td><strong>⭐ (기본값)</strong></td>
 <td><code>npx -y claude-cat@latest</code></td>
-<td><pre>5h ▓░░░░░░░░░ 10% (3h 21m) | week ▓▓░░░░░░░░ 18% (Fri 1pm) | $0.123</pre></td>
+<td><pre>opus 5 · high | 5h ▓░░░░░░░░░ 10% (3h 21m) | week ▓▓░░░░░░░░ 18% (Fri 1pm) | $0.123</pre></td>
 </tr>
 <tr>
 <td><code>--full --kawaii</code></td>
 <td><code>npx -y claude-cat@latest --full --kawaii</code></td>
-<td><pre> /\_/\   Opus 4.6 · $0.123
+<td><pre> /\_/\   Opus 4.6 · high · $0.123
 ( ^ω^ )  session  ▓░░░░░░░░░░░░░ 10% · 3h 21m
  / >🍣   week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</pre></td>
 </tr>
 <tr>
 <td><code>--full</code></td>
 <td><code>npx -y claude-cat@latest --full</code></td>
-<td><pre>/ᐠ ^ᴥ^ ᐟ\  Opus 4.6 · $0.123
+<td><pre>/ᐠ ^ᴥ^ ᐟ\  Opus 4.6 · high · $0.123
 session  ▓░░░░░░░░░░░░░ 10% · 3h 21m
 week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</pre></td>
 </tr>
@@ -155,13 +157,15 @@ week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</p
 <tr>
 <td><code>--full --no-cat</code></td>
 <td><code>npx -y claude-cat@latest --full --no-cat</code></td>
-<td><pre>Opus 4.6 · $0.123
+<td><pre>Opus 4.6 · high · $0.123
 session  ▓░░░░░░░░░░░░░ 10% · 3h 21m
 week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</pre></td>
 </tr>
 </tbody>
 </table>
 
+`--no-model` (compact 의 모델 chip 숨김 — effort 도 같이 빠짐), `--no-effort`
+(모델은 두고 `· high` effort 만 숨김 — compact 와 `--full` 공통).
 전체 플래그/환경변수: 영문 README 참조.
 `CLAUDE_CAT_PLAN=pro|max|auto` — Pro 사용자는 `pro` 설정하면 주간 bar
 자동 숨김 (wizard가 자동 설정).
@@ -171,11 +175,13 @@ week     ▓▓▓░░░░░░░░░░░ 18% · Resets Apr 17, 1pm</p
 ## 출력 읽는 법
 
 ```text
-5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
+opus 5 · high | 5h ▓▓▓▓░░░░░░ 47% (1h 19m) | week ▓▓▓░░░░░░░ 31% (Fri 1pm) | $37.37 | ctx 20%
 ```
 
 | 칩 | 의미 |
 | --- | --- |
+| `opus 5` / `fable 5` / `sonnet 4.6` | 이 세션이 대화 중인 모델 — compact 전용 (`--full` 은 header 에 전체 이름 표시). `--no-model` 로 숨김 |
+| `· high` / `· max` | 세션의 effort level (`effort.level` — `low` / `medium` / `high` / `xhigh` / `max`). compact 와 `--full` 모두 모델 chip 뒤에 붙음. `--no-effort` 로 숨김 |
 | `5h` / `week` / `fable` / `sonnet` | rate-limit 창 (5시간 세션 / 주간 / Fable 5 주간 / 모델별 주간) |
 | `▓▓▓▓░░░░░░` | 10칸 진행 바 — 초록 → 노랑 → 빨강 |
 | `47%` | 정확한 퍼센트 |
