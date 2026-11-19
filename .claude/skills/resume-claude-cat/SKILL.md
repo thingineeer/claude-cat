@@ -17,6 +17,7 @@ disable-model-invocation: true
 ## 2. Read the refreshed files (pull 이후에)
 git pull로 파일이 새로고침됐으니, 이제 Read 도구로 읽는다:
 - `CLAUDE.md` — branch model, worktree-only policy, release flow, layout/mood invariants
+- `.claude/memory/resume-claude-cat.md` — 최신 진입점(한 줄 상태, 다음 할 일, 함정)
 - `docs/checkpoints/SESSION-STATE.md` — 작업 상태 + 대화 요약
 - 위 SESSION-STATE.md의 "Key Files"에 `@`참조로 적힌 파일들을 모두 읽는다 — 각 설명대로 어떤 파일이 어떤 작업과 관련되는지 파악한다.
 

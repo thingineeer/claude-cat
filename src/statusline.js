@@ -2,17 +2,22 @@
 // Reads a single JSON object from stdin (fed by Claude Code) and prints
 // one or more lines suitable for the statusLine feature.
 //
-// Expected (partial) schema:
+// Expected (partial) schema — verified against Claude Code 2.1.327
+// (2026-11-19, live payload dump):
 //   cost.total_cost_usd: number
-//   rate_limits.five_hour:  { used_percentage, resets_at }
-//   rate_limits.seven_day:  { used_percentage, resets_at }
-//   rate_limits.seven_day_opus_4x?: same shape (sonnet-only style limits vary)
-//   rate_limits.seven_day_overage_included?: Fable 5 weekly window — Fable
-//     usage is credit-based, so Claude Code keys it by billing term, not model
+//   rate_limits.five_hour?:   { used_percentage, resets_at } — absent on
+//     weekly-only plans (Ultra — formerly Max — sends seven_day alone)
+//   rate_limits.seven_day:    { used_percentage, resets_at }
+//   rate_limits.spend_limit?: { used_percentage, resets_at, used_usd?,
+//     limit_usd?, period? } — Claude apps gateway spend cap
+//   rate_limits.seven_day_<model>?: per-model weekly bucket (fable /
+//     opus / sonnet …) — rendered automatically whenever it arrives.
+//     `seven_day_overage_included` is the older Fable billing-term key.
 //   model.display_name: string
 //   effort.level: string — 'low' | 'medium' | 'high' | 'xhigh' | 'max'
 // Missing fields are treated as optional — Claude Code only populates
-// rate_limits for Pro/Max subscribers after the first assistant response.
+// rate_limits for Pro/Ultra (formerly Max) subscribers after the first assistant
+// response, and drops each window once its resets_at passes.
 
 import { pickCat, catArt, THEME_NAMES } from "./cats.js";
 import { bar, fmtCountdown, fmtAgo, absoluteResetParts, fmtCost, colorByPct, colors as C, setRenderNow, getRenderNowSec } from "./format.js";
@@ -66,6 +71,13 @@ function safeParse(raw) {
   try { return raw ? JSON.parse(raw) : {}; } catch { return {}; }
 }
 
+// Fable's weekly bucket has shipped under two names: the billing-term
+// key `seven_day_overage_included` and the model-named
+// `seven_day_fable`. Both read as the same 'fable' bar.
+function isFableKey(k) {
+  return k === "seven_day_overage_included" || k === "seven_day_fable";
+}
+
 // Window labels mirror the official Claude /usage screen *verbatim*.
 // English only — we want the in-terminal wording identical to the popup
 // so users don't have to map two sets of phrases. Only the session
@@ -83,14 +95,16 @@ function labelFor(key, { variant = "long" } = {}) {
     //
     //   five_hour       → '5h'
     //   seven_day       → 'week'
-    //   seven_day_overage_included → 'fable' (the Fable 5 weekly window
-    //     is keyed by billing term; show the model name users know)
+    //   seven_day_overage_included → 'fable' (the older Fable weekly
+    //     key, named by billing term; show the model name users know)
+    //   spend_limit     → 'spend' (Claude apps gateway spend cap)
     //   seven_day_<m>   → '<m>' (lower-cased), e.g. 'sonnet', 'opus'.
     //     We drop the 'week·' prefix: the model name alone already
     //     reads as "the weekly bucket for that model" in context.
     if (key === "five_hour") return "5h";
     if (key === "seven_day") return "week";
     if (key === "seven_day_overage_included") return "fable";
+    if (key === "spend_limit") return "spend";
     if (key.startsWith("seven_day_")) {
       return key.slice("seven_day_".length).toLowerCase();
     }
@@ -99,7 +113,8 @@ function labelFor(key, { variant = "long" } = {}) {
 
   if (key === "five_hour") return t("current_session");
   if (key === "seven_day") return t("current_week_all");
-  if (key === "seven_day_overage_included") return t("current_week_fable");
+  if (isFableKey(key)) return t("current_week_fable");
+  if (key === "spend_limit") return t("spend_limit");
   if (key.startsWith("seven_day_")) {
     return t("current_week_scope", modelPretty(key.slice("seven_day_".length)));
   }
@@ -182,7 +197,7 @@ function isWindowEntry(v) {
     && typeof v.resets_at === "number";
 }
 
-// Ordering: five_hour first, then seven_day, then the Fable 5 window
+// Ordering: five_hour first, then seven_day, then the Fable window
 // pinned right after it (it's the primary model's weekly budget, so it
 // reads best next to the all-models bar — alphabetical order would let
 // 'opus' slip in between), then every other weekly-style key
@@ -190,7 +205,7 @@ function isWindowEntry(v) {
 function orderKey(k) {
   if (k === "five_hour") return [0, k];
   if (k === "seven_day") return [1, k];
-  if (k === "seven_day_overage_included") return [2, k];
+  if (isFableKey(k)) return [2, k];
   if (k.startsWith("seven_day_")) return [3, k];
   return [4, k];
 }
@@ -205,6 +220,9 @@ function collectWindows(d, { variant = "long", hide } = {}) {
       // like "$(rm -rf /)" or "../../../etc/passwd".
       if (!isSafeWindowKey(k)) return false;
       if (!isWindowEntry(v)) return false;
+      // CLAUDE_CAT_PLAN: 'pro' hides weekly bars. 'ultra' (the plan
+      // formerly called Max — 'max' is still accepted) and 'auto'
+      // render everything the server sends.
       if (plan === "pro" && k.startsWith("seven_day")) return false;
       // --hide=<names>: match the raw key or the short chip label
       // ('fable', 'opus', …) so users can type the name they actually
@@ -740,7 +758,14 @@ async function main() {
   } else {
     const cached = readCacheForIdle();
     if (cached) {
-      d = { ...d, ...cached };
+      // Borrow only the *usage* from the cache. The model chip must
+      // always reflect the model selected in THIS session — the cache
+      // was written by whichever session rendered last, which may be an
+      // old one still on 'Opus 5' while this one runs 'Opus 5.5'. The
+      // cached model is a fallback only when our own stdin has none.
+      const { model: cachedModel, ...usage } = cached;
+      const ownModel = d?.model?.display_name ? d.model : null;
+      d = { ...d, ...usage, model: ownModel ?? cachedModel ?? d.model };
     }
   }
 
