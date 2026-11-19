@@ -28,6 +28,12 @@ jobs:
         run: npm run test:fable:compact
       - name: Run sample (--hide window filter)
         run: npm run test:hide
+      - name: Run ultra (weekly only, compact)
+        run: npm run test:ultra
+      - name: Run ultra (weekly only, full kawaii)
+        run: npm run test:ultra:full
+      - name: Run ultra (week + fable, compact)
+        run: npm run test:ultra:fable
       - name: Run sample (warming up)
         run: npm run test:warming
       - name: Run sample (weekly saturated)
