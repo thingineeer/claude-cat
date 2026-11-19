@@ -2,7 +2,24 @@
 
 ## Unreleased
 
+### Still planned
+- Extra usage bar (needs a live source — the stdin JSON doesn't expose
+  it; daemon proxying `/api/oauth/usage` is the leading candidate)
+- Light-theme aware palette (currently tuned for dark terminals)
+
+## [1.6.0] - 2026-11-19
+
 ### Added
+- **`claude-cat update`** — one command (`npx -y claude-cat@latest
+  update`) brings every local copy to the latest release: removes
+  stale claude-cat entries from the npm `_npx` cache (never another
+  tool's), upgrades an older global install, bumps a pinned
+  `claude-cat@x.y.z` in `~/.claude/settings.json`, and pre-warms the
+  exact npx spec the status line runs so the next render is instant.
+  `--dry-run` previews every change; `claude-cat --version` prints the
+  running version. This user-invoked command is the only code path that
+  touches the network (npm registry only) — the render path stays
+  network-free; README and SECURITY.md spell out the exception.
 - **Claude Code 2.1.327 support** — re-verified the statusLine stdin
   against a live payload dump (2026-11-19). Ultra plans (formerly Max)
   now send `rate_limits.seven_day` alone; the line renders cleanly as
@@ -32,10 +49,13 @@
   section, and a list-price reference table (Fable 5.2 $8 / $40 per
   MTok, Opus 5.5, Sonnet 5.5, Haiku 5.5) next to the `$` explanation.
 
-### Still planned
-- Extra usage bar (needs a live source — the stdin JSON doesn't expose
-  it; daemon proxying `/api/oauth/usage` is the leading candidate)
-- Light-theme aware palette (currently tuned for dark terminals)
+### Fixed
+- **Model chip always shows this session's model** — an idle session
+  (no `rate_limits` in its stdin) borrows usage from the shared cache,
+  but the overlay also replaced its `model` with whatever session wrote
+  the cache last, so long-running sessions could show `opus 5` /
+  `4.8` instead of the model actually selected. Only usage is borrowed
+  now; the cached model is a fallback when stdin carries none.
 
 ## [1.5.0] - 2026-08-21
 
