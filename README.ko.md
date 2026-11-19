@@ -2,7 +2,7 @@
 
 <p align="left"><img src="assets/logo.svg" width="96" alt="claude-cat" /></p>
 
-> **오프라인 전용 Claude Code 상태 표시줄.** 네트워크 한 번 안 타고 남은 사용량을 고양이가 알려줍니다.
+> **오프라인 우선 Claude Code 상태 표시줄.** 기본 설정에선 네트워크 한 번 안 타고 남은 사용량을 고양이가 알려줍니다.
 
 [English README →](./README.md)
 
@@ -11,13 +11,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![node](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](https://nodejs.org)
 [![install size](https://packagephobia.com/badge?p=claude-cat)](https://packagephobia.com/result?p=claude-cat)
-[![zero network](https://img.shields.io/badge/network-0%20calls-brightgreen)](#개인정보와-보안)
-[![zero credentials](https://img.shields.io/badge/credentials-never%20read-brightgreen)](#개인정보와-보안)
+[![zero network](https://img.shields.io/badge/network-0%20calls%20by%20default-brightgreen)](#개인정보와-보안)
+[![zero credentials](https://img.shields.io/badge/credentials-not%20read%20by%20default-brightgreen)](#개인정보와-보안)
 
 <p align="center">
   <img src="assets/screenshots/kawaii-full.png" alt="주간·Fable 사용량 바와 kawaii 고양이" width="780" />
   <br />
-  <em><code>--full --kawaii</code> — Fable 행은 Claude Code 가 해당 버킷을 보내면 표시됩니다</em>
+  <em><code>--full --kawaii --fable-usage</code></em>
 </p>
 
 ```text
@@ -97,8 +97,8 @@ week ▓▓▓▓▓░░░ 66% (Sun 10pm) | $12.34 | ctx 18%
 ```
 
 기본 한 줄은 좁은 터미널에서 줄바꿈되고, `--full` 은 3줄 카드를 유지합니다.
-Claude Code 가 Fable 주간 버킷을 보내면 같은 줄에 붙고, 5시간 세션 창이 있는
-플랜은 `5h` 바가 앞에 붙습니다:
+[`--fable-usage`](#fable-사용량-opt-in) 를 켜면 Fable 주간 바가 같은 줄에 붙고,
+5시간 세션 창이 있는 플랜은 `5h` 바가 앞에 붙습니다:
 
 ```text
 fable 5.2 · high | week ▓▓▓▓▓▓▓░░░ 66% (Sun 10pm) | fable ▓▓▓░░░░░░░ 34% (Sun 10pm) | $12.34 | ctx 18%
@@ -125,6 +125,7 @@ sonnet 5.5 · medium | 5h ▓▓▓▓▓░░░░░ 47% (1h 18m) | week ▓
 | ------ | ---- |
 | `--full` · `--wide` | 레이아웃 (기본: 한 줄) |
 | `--kawaii` · `--no-cat` · `--cat=compact\|kawaii\|none` | `--full` 의 고양이 테마 |
+| `--fable-usage` | **opt-in** — usage API 에서 Fable 주간 바를 가져옴 ([Fable 사용량](#fable-사용량-opt-in) 참조) |
 | `--hide=<이름>` | chip 이름으로 바 숨김 — `--hide=opus,sonnet` 이면 `week` + `fable` 만 |
 | `--no-model` · `--no-effort` | 모델 chip / effort 만 숨김 |
 | `--no-cost` · `--no-ctx` | `$` / `ctx` chip 숨김 |
@@ -164,10 +165,36 @@ sonnet 5.5 · medium | 5h ▓▓▓▓▓░░░░░ 47% (1h 18m) | week ▓
 | `cost.total_cost_usd` | `$` |
 | `context_window.used_percentage` | `ctx` |
 
-아직 stdin 에 없어서 표시하지 못하는 것: Ultra 의 **Fable 주간 한도**(`/usage` 에는
-있지만 Claude Code 2.1.327 은 `seven_day` 만 보냄 — 보내기 시작하면 `fable` 바가
-바로 뜸)와 **Extra usage**. 둘 다 `/api/oauth/usage` 에만 있고, claude-cat 은
-의도적으로 그 엔드포인트를 부르지 않습니다.
+stdin 에 없는 것: Ultra 의 **Fable 주간 한도**(`/usage` 에는 있지만 Claude Code
+2.1.327 은 `seven_day` 만 보냄)와 **Extra usage**. 둘 다 비공개 엔드포인트
+`/api/oauth/usage` 에만 있습니다. Fable 은 아래 opt-in 플래그로 가져올 수 있고,
+나중에 Claude Code 가 stdin 으로 보내기 시작하면 그 값이 자동으로 우선합니다.
+
+<a id="fable-사용량-opt-in"></a>
+### Fable 사용량 (opt-in)
+
+```bash
+npx -y claude-cat@latest --fable-usage
+```
+
+`week` 옆에 `fable` 바를 붙입니다. 동작과 트레이드오프:
+
+- Claude Code **access token** 을 읽어(macOS Keychain 항목
+  `Claude Code-credentials`, 없으면 `~/.claude/.credentials.json`)
+  `GET https://api.anthropic.com/api/oauth/usage` 를 호출합니다 — `/usage` 팝업과
+  같은 읽기 전용 요청입니다. **문서화되지 않은 엔드포인트**라 바뀌거나 없어질 수
+  있고, 약관상 회색 지대입니다.
+- 토큰을 **절대 갱신(refresh)하지 않습니다.** 만료됐거나 401 이면 Claude Code 가
+  갱신할 때까지 건너뜁니다.
+- 요청은 **분리된 백그라운드 프로세스**에서 최대 5분에 한 번, 여러 터미널에서도
+  한 번에 하나만 실행되고, 오류 시 간격을 늘립니다. 상태 표시줄은 로컬 캐시만
+  읽어서 네트워크를 기다리지 않습니다.
+- 캐시(`~/.claude/claude-cat/fable-cache.json`)에는 Fable 퍼센트와 리셋 시각만
+  저장하고, 토큰은 저장하지 않습니다.
+- 계정을 바꾸면 새 계정 값이 올 때까지 바를 숨깁니다(주간 리셋 시각으로 판별).
+
+Fable 이 100 % 에 가까우면 다른 주간 바처럼 고양이 mood 에도 반영됩니다. 참고용으로만
+보고 싶으면 `--hide=fable` 을 쓰세요.
 
 <a id="의-의미"></a>
 ### `$` 의 의미
@@ -219,19 +246,21 @@ resting     chill       curious     alert       nervous     critical
 claude-cat 은 Claude Code 가 statusLine 스크립트에 이미 stdin 으로 넘겨주는
 JSON 만 렌더링합니다.
 
-- **네트워크 없음** — 렌더링 중엔 `api.anthropic.com`, `claude.ai`,
-  `/api/oauth/usage` 모두 안 부릅니다. 유일한 예외는 직접 실행하는
-  `claude-cat update` 로, npm registry 에 최신 버전만 물어봅니다.
-- **크레덴셜 없음** — `~/.claude/.credentials.json`, Keychain, OAuth 토큰을
-  절대 읽지 않습니다.
+- **기본은 네트워크 없음** — `api.anthropic.com`, `claude.ai`,
+  `/api/oauth/usage` 모두 안 부릅니다. 명시적 예외는 둘: 직접 실행하는
+  `claude-cat update`(npm registry), opt-in 플래그
+  [`--fable-usage`](#fable-사용량-opt-in).
+- **기본은 크레덴셜 없음** — `--fable-usage` 를 켜지 않으면
+  `~/.claude/.credentials.json`, Keychain, OAuth 토큰을 읽지 않습니다(켜도
+  access token 만 읽음).
 - **쓰기 제한** — `~/.claude/claude-cat/`(터미널 간 캐시, opt-in 디버그 덤프)
   밖에는 쓰지 않습니다.
 
 | | **claude-cat** | ccstatusline | claude-dashboard | ccusage |
 | --- | :---: | :---: | :---: | :---: |
 | 실시간 statusLine | ✅ | ✅ | ✅ | ❌ (CLI) |
-| 네트워크 호출 없음 | ✅ | ❌ | ❌ | 🟡 |
-| 크레덴셜 읽기 없음 | ✅ | ❌ | ❌ | ✅ |
+| 네트워크 호출 없음 (기본) | ✅ | ❌ | ❌ | 🟡 |
+| 크레덴셜 읽기 없음 (기본) | ✅ | ❌ | ❌ | ✅ |
 | 고양이 mood 😺 | ✅ | ❌ | ❌ | ❌ |
 | 비용 리포트 | ❌ | 🟡 | ✅ | ✅ |
 
