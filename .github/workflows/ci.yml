@@ -58,3 +58,5 @@ jobs:
         run: npm run test:no-model
       - name: Run sample (stale cache bars)
         run: npm run test:stale
+      - name: Update command (offline)
+        run: npm run test:update

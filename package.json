@@ -60,6 +60,7 @@
     "test:no-ctx:wide": "cat examples/sample-with-sonnet.json | node bin/cli.js --wide --no-ctx",
     "test:no-model": "bash scripts/test-model-chip.sh",
     "test:stale": "bash scripts/test-stale.sh",
+    "test:update": "bash scripts/test-update.sh",
     "prepublishOnly": "npm run test:sample && npm run test:full && npm pack --dry-run"
   },
   "dependencies": {
