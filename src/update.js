@@ -241,14 +241,18 @@ export async function run(argv = process.argv.slice(3)) {
     say(`  settings.json   ${c.green}${pinned ? `pinned ${pinned} (up to date)` : "uses @latest"}${c.reset}`);
   }
 
-  // 4. pre-warm npx so the next status-line render is instant
-  const needsWarm = warm && (copies.length === 0 || stale.length > 0);
-  if (needsWarm) {
-    say(`  ${tag}npx cache       install ${latest}`);
+  // 4. pre-warm npx so the next status-line render is instant.
+  // npx keys its cache dir by the *spec string*, so warm exactly the
+  // spec the statusLine runs: `claude-cat@latest` for the default
+  // command, `claude-cat@<latest>` for a pinned one. Warming a
+  // different spec would install a copy the status line never uses.
+  const usesNpx = typeof cmd !== "string" || /\bnpx\b|\bnpm\s+exec\b/.test(cmd);
+  if (warm && usesNpx) {
+    const spec = pinned ? `${PKG}@${latest}` : `${PKG}@latest`;
+    say(`  ${tag}npx cache       warm ${spec}`);
     if (!dryRun) {
       try {
-        npm(["exec", "--yes", `--package=${PKG}@${latest}`, "--", PKG, "--version"], { timeout: 180000 });
-        changed++;
+        npm(["exec", "--yes", `--package=${spec}`, "--", PKG, "--version"], { timeout: 180000 });
       } catch {
         say(`  ${c.dim}  (pre-warm skipped — the next status-line render will install it)${c.reset}`);
       }
