@@ -758,7 +758,14 @@ async function main() {
   } else {
     const cached = readCacheForIdle();
     if (cached) {
-      d = { ...d, ...cached };
+      // Borrow only the *usage* from the cache. The model chip must
+      // always reflect the model selected in THIS session — the cache
+      // was written by whichever session rendered last, which may be an
+      // old one still on 'Opus 5' while this one runs 'Opus 5.5'. The
+      // cached model is a fallback only when our own stdin has none.
+      const { model: cachedModel, ...usage } = cached;
+      const ownModel = d?.model?.display_name ? d.model : null;
+      d = { ...d, ...usage, model: ownModel ?? cachedModel ?? d.model };
     }
   }
 
