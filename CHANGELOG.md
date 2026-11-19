@@ -2,7 +2,16 @@
 
 ## Unreleased
 
+### Still planned
+- Extra usage bar (needs a live source — the stdin JSON doesn't expose
+  it; daemon proxying `/api/oauth/usage` is the leading candidate)
+- Light-theme aware palette (currently tuned for dark terminals)
+
+## [1.7.0] - 2026-11-19
+
 ### Changed
+- **Requires Node.js 22+** (`engines.node` `>=22`) — Node 18 and 20 are
+  end-of-life.
 - **Dependencies on latest stable** — `ink` 5 → 8, `react` 18 → 19.3,
   `ink-select-input` 6.2. They power only the `configure` wizard
   (lazy-imported), and the wizard was driven end-to-end on the new
@@ -27,10 +36,9 @@
   never-imported `src/configure/preview.js`. Rendered output is
   byte-identical across every fixture × layout × theme.
 
-### Still planned
-- Extra usage bar (needs a live source — the stdin JSON doesn't expose
-  it; daemon proxying `/api/oauth/usage` is the leading candidate)
-- Light-theme aware palette (currently tuned for dark terminals)
+### Housekeeping
+- CodeRabbit removed from the repo; the release flow publishes the draft
+  the release workflow opens instead of creating a duplicate.
 
 ## [1.6.0] - 2026-11-19
 
