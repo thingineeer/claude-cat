@@ -1,15 +1,32 @@
 {
   "name": "claude-cat",
   "version": "1.7.0",
-  "description": "A cute cat on your Claude Code status line that shows remaining credits at a glance.",
+  "description": "Claude Code status line for usage limits — weekly limit, Fable usage, 5-hour session, cost and context % at a glance, with a cute cat. Offline-first.",
   "keywords": [
     "claude",
     "claude-code",
+    "claude-code-statusline",
     "statusline",
+    "status-line",
+    "claude-usage",
+    "claude-code-usage",
+    "usage-limit",
+    "usage-limits",
+    "rate-limit",
+    "weekly-limit",
+    "usage-tracker",
+    "usage-monitor",
+    "claude-ultra",
+    "claude-max",
+    "claude-pro",
+    "fable",
+    "opus",
+    "anthropic",
+    "ccusage",
     "cli",
+    "terminal",
     "cat",
-    "usage",
-    "credits"
+    "kawaii"
   ],
   "homepage": "https://github.com/thingineeer/claude-cat#readme",
   "bugs": {
@@ -62,6 +79,8 @@
     "test:stale": "bash scripts/test-stale.sh",
     "test:update": "bash scripts/test-update.sh",
     "test:cache-tmp": "bash scripts/test-cache-tmp.sh",
+    "test:fable-usage": "bash scripts/test-fable.sh",
+    "test:zero": "bash scripts/test-zero.sh",
     "prepublishOnly": "npm run test:sample && npm run test:full && npm pack --dry-run"
   },
   "dependencies": {

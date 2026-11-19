@@ -29,23 +29,33 @@ project's threat model is narrow:
 These are invariants — if you find the script doing any of them,
 that's a bug worth reporting:
 
-- ❌ Read `~/.claude/.credentials.json` or the macOS Keychain
+- ❌ Read `~/.claude/.credentials.json` or the macOS Keychain *(unless
+  you opt in with `--fable-usage`, below)*
 - ❌ Contact `api.anthropic.com`, `claude.ai`, or any other network
   endpoint while rendering the status line
-- ❌ Write outside `~/.claude/claude-cat/` (debug dumps only) while
-  rendering the status line
-
-The user-invoked `claude-cat update` command is the single, explicit
-exception: it asks `registry.npmjs.org` (or your configured npm
-registry) for the latest version, removes stale claude-cat entries
-from the npm `_npx` cache, may run `npm install -g claude-cat@<latest>`
-for an existing global install, and bumps a pinned
-`claude-cat@x.y.z` in `~/.claude/settings.json`. It never reads
-credentials and never contacts Anthropic. `--dry-run` shows every
-change without applying it.
+- ❌ Write outside `~/.claude/claude-cat/` (cache + debug dumps)
 - ❌ Exec arbitrary shell commands from stdin content
 - ❌ Load extra runtime dependencies at statusLine render time
   (Ink/React are `configure` wizard-only, lazy-imported)
+
+### Explicit exceptions
+
+- **`claude-cat update`** (you run it) — asks `registry.npmjs.org` (or
+  your configured npm registry) for the latest version, removes stale
+  claude-cat entries from the npm `_npx` cache, may run
+  `npm install -g claude-cat@<latest>` for an existing global install,
+  and bumps a pinned `claude-cat@x.y.z` in `~/.claude/settings.json`.
+  It never reads credentials and never contacts Anthropic. `--dry-run`
+  shows every change without applying it.
+- **`--fable-usage`** (opt-in flag) — a detached background process
+  reads the Claude Code **access token** (Keychain item
+  `Claude Code-credentials` via `/usr/bin/security`, else
+  `~/.claude/.credentials.json`) and calls
+  `GET https://api.anthropic.com/api/oauth/usage`, at most every
+  5 minutes. It never reads or uses the refresh token, never refreshes,
+  and never writes the token anywhere; only the Fable percentage and
+  reset times go to `~/.claude/claude-cat/fable-cache.json`. The render
+  path itself stays network- and credential-free.
 
 ## Supported versions
 

@@ -62,3 +62,7 @@ jobs:
         run: npm run test:update
       - name: Cache tmp sweep
         run: npm run test:cache-tmp
+      - name: Fable usage overlay (offline fixture)
+        run: npm run test:fable-usage
+      - name: Unused / reset windows read 0%
+        run: npm run test:zero

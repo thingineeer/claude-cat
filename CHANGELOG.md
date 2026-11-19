@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+### Added
+- **`--fable-usage` (opt-in)** — the Fable weekly bar on Ultra.
+  Claude Code 2.1.327 doesn't put it on the statusLine stdin, so this
+  flag reads it from the private `/api/oauth/usage` endpoint
+  (`limits[]` → `weekly_scoped` / `Fable`). A detached background
+  refresher reads the access token (never refreshes it, never stores
+  it), fetches at most every 5 minutes with a cross-terminal lock and
+  backoff, and caches only the Fable percentage + reset times; the
+  render path just reads that cache. After an account switch the bar
+  hides until the new account's numbers arrive (matched by weekly
+  reset time). A native `seven_day_fable` on stdin always wins. Offered
+  in the configure wizard; off by default. README/SECURITY.md describe
+  the tradeoff (undocumented endpoint, ToS gray area).
+
+### Changed
+- **Unused or reset windows read 0%** — a window whose reset time has
+  passed now shows `0%` (it has been reset) instead of the old number
+  with "ready now", and a weekly window Claude Code dropped after its
+  reset shows as `week 0%` instead of vanishing. Previously, when every
+  window had reset, the line fell back to "API mode — cost only".
+
+- README (en/ko): real Claude Code 2.1.328 screenshot as the hero
+  (Opus 5.5, week + Fable), a keyword-rich intro and an FAQ (usage
+  limit without `/usage`, Fable usage, no 5-hour bar on Ultra, plans,
+  performance, ccusage). npm description/keywords refreshed.
+
+### Fixed
+- `--full` labels exactly 26 columns wide (`Current week (Sonnet
+  only)`) no longer touch their bar.
+
 ### Still planned
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
   it; daemon proxying `/api/oauth/usage` is the leading candidate)
