@@ -51,8 +51,8 @@ All editing, committing, and pushing happens in **side worktrees**:
 ```
 
 **One topic = one worktree = one branch = one PR.** Never stack
-multiple unrelated changes on the same branch — reviewers (and
-CodeRabbit) should see one coherent change per PR.
+multiple unrelated changes on the same branch — reviewers should see
+one coherent change per PR.
 
 Worktree kind prefixes (must match what CI / hooks expect):
 `feat/` `fix/` `chore/` `docs/` `refactor/` `test/` `ci/`.
@@ -71,8 +71,8 @@ When a user asks for a change in this repo:
 5. `git push -u origin <kind>/<topic>`.
 6. `gh pr create --base dev --head <kind>/<topic>` with a filled-in
    template.
-7. Wait for CI + CodeRabbit review. If red, fix and push; don't merge
-   red.
+7. Wait for CI. If red, fix and push; don't merge red. (No bot
+   reviewer — CodeRabbit was removed in 2026-11.)
 8. `gh pr merge <num> --merge --delete-branch` — **merge commit, not
    squash**. The repo prefers preserving branch topology so every PR
    shows up as a visible fork/join in the graph; squash flattens that
@@ -113,17 +113,6 @@ equivalent)**:
 **Never** merge to `main` without that explicit signal — the branch
 model treats main as the released timeline, and unannounced merges
 pollute the release history.
-
-## Review: CodeRabbit
-
-Every PR (base `dev` or `main`) gets an automated CodeRabbit review
-once the app is installed on the repo. Config lives in
-`.coderabbit.yaml` (chill profile, Korean output, auto-review on
-PRs whose base is main). Don't merge over a CodeRabbit-request-
-changes unless you've answered the comment.
-
-One-time install (maintainer): https://github.com/apps/coderabbitai
-→ install on `thingineeer/claude-cat`.
 
 ## Commit messages
 
