@@ -30,7 +30,7 @@
 // the network.
 
 import { readFileSync, writeFileSync, mkdirSync, renameSync, unlinkSync, statSync, openSync, closeSync } from "node:fs";
-import { homedir } from "node:os";
+import { homedir, userInfo } from "node:os";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { execFileSync, spawn } from "node:child_process";
@@ -207,30 +207,52 @@ export function decodeSecurityOutput(raw) {
 // Read only the access token and its expiry. Never refreshes, never
 // returns or stores the refresh token. `trace` collects step outcomes
 // (no secret values) for `__fable-refresh --verbose`.
+// Key names only (never values) — enough to tell "wrong item" from
+// "schema changed" in `--verbose` output.
+function shapeOf(obj) {
+  const names = (o) => Object.keys(o || {})
+    .map((k) => (/^[A-Za-z][A-Za-z0-9_]{0,40}$/.test(k) ? k : "?"))
+    .join(",") || "-";
+  const oauth = obj?.claudeAiOauth;
+  return `keys=[${names(obj)}]` + (oauth && typeof oauth === "object" ? ` claudeAiOauth=[${names(oauth)}]` : "");
+}
+
 function readAccessToken(trace = []) {
   const pick = (raw, src) => {
-    const json = src === "keychain" ? decodeSecurityOutput(raw) : raw;
+    const json = src.startsWith("keychain") ? decodeSecurityOutput(raw) : raw;
     if (!json) { trace.push(`${src}: empty or unrecognized output`); return null; }
-    let o;
-    try { o = JSON.parse(json)?.claudeAiOauth; } catch {
+    let obj;
+    try { obj = JSON.parse(json); } catch {
       trace.push(`${src}: not JSON`); return null;
     }
+    const o = obj?.claudeAiOauth;
     if (!o || typeof o.accessToken !== "string" || !o.accessToken) {
-      trace.push(`${src}: no claudeAiOauth.accessToken`); return null;
+      trace.push(`${src}: no claudeAiOauth.accessToken (${shapeOf(obj)})`); return null;
     }
-    const expiresAt = Number(o.expiresAt) || null;
+    const exp = Number(o.expiresAt) || null;
+    // expiresAt is epoch ms; tolerate seconds just in case.
+    const expiresAt = exp && exp < 1e12 ? exp * 1000 : exp;
     trace.push(`${src}: access token found${expiresAt ? `, expires in ${Math.round((expiresAt - Date.now()) / 60000)} min` : ""}`);
     return { token: o.accessToken, expiresAt };
   };
   if (process.platform === "darwin") {
-    try {
-      const raw = execFileSync("/usr/bin/security",
-        ["find-generic-password", "-s", "Claude Code-credentials", "-w"],
-        { encoding: "utf8", timeout: 5000, stdio: ["ignore", "pipe", "ignore"] });
-      const got = pick(raw, "keychain");
-      if (got) return got;
-    } catch (e) {
-      trace.push(`keychain: security failed (${e?.status != null ? `exit ${e.status}` : e?.signal || e?.code || "error"})`);
+    // Claude Code writes the item with account = the macOS user. Ask for
+    // that one first — other items can share the service name — then
+    // fall back to the first match.
+    let user = null;
+    try { user = userInfo().username; } catch {}
+    const attempts = user ? [["-a", user], []] : [[]];
+    for (const acct of attempts) {
+      const src = acct.length ? "keychain(account=$USER)" : "keychain(any account)";
+      try {
+        const raw = execFileSync("/usr/bin/security",
+          ["find-generic-password", "-s", "Claude Code-credentials", ...acct, "-w"],
+          { encoding: "utf8", timeout: 5000, stdio: ["ignore", "pipe", "ignore"] });
+        const got = pick(raw, src);
+        if (got) return got;
+      } catch (e) {
+        trace.push(`${src}: ${e?.status === 44 ? "no such item" : `security failed (${e?.status != null ? `exit ${e.status}` : e?.signal || e?.code || "error"})`}`);
+      }
     }
   }
   const dir = process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude");
