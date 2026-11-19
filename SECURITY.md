@@ -31,8 +31,18 @@ that's a bug worth reporting:
 
 - ❌ Read `~/.claude/.credentials.json` or the macOS Keychain
 - ❌ Contact `api.anthropic.com`, `claude.ai`, or any other network
-  endpoint
-- ❌ Write outside `~/.claude/claude-cat/` (debug dumps only)
+  endpoint while rendering the status line
+- ❌ Write outside `~/.claude/claude-cat/` (debug dumps only) while
+  rendering the status line
+
+The user-invoked `claude-cat update` command is the single, explicit
+exception: it asks `registry.npmjs.org` (or your configured npm
+registry) for the latest version, removes stale claude-cat entries
+from the npm `_npx` cache, may run `npm install -g claude-cat@<latest>`
+for an existing global install, and bumps a pinned
+`claude-cat@x.y.z` in `~/.claude/settings.json`. It never reads
+credentials and never contacts Anthropic. `--dry-run` shows every
+change without applying it.
 - ❌ Exec arbitrary shell commands from stdin content
 - ❌ Load extra runtime dependencies at statusLine render time
   (Ink/React are `configure` wizard-only, lazy-imported)

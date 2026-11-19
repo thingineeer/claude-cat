@@ -2,16 +2,22 @@
 // Reads a single JSON object from stdin (fed by Claude Code) and prints
 // one or more lines suitable for the statusLine feature.
 //
-// Expected (partial) schema:
+// Expected (partial) schema — verified against Claude Code 2.1.327
+// (2026-11-19, live payload dump):
 //   cost.total_cost_usd: number
-//   rate_limits.five_hour:  { used_percentage, resets_at }
-//   rate_limits.seven_day:  { used_percentage, resets_at }
-//   rate_limits.seven_day_opus_4x?: same shape (sonnet-only style limits vary)
-//   rate_limits.seven_day_overage_included?: Fable 5 weekly window — Fable
-//     usage is credit-based, so Claude Code keys it by billing term, not model
+//   rate_limits.five_hour?:   { used_percentage, resets_at } — absent on
+//     weekly-only plans (Ultra — formerly Max — sends seven_day alone)
+//   rate_limits.seven_day:    { used_percentage, resets_at }
+//   rate_limits.spend_limit?: { used_percentage, resets_at, used_usd?,
+//     limit_usd?, period? } — Claude apps gateway spend cap
+//   rate_limits.seven_day_<model>?: per-model weekly bucket (fable /
+//     opus / sonnet …) — rendered automatically whenever it arrives.
+//     `seven_day_overage_included` is the older Fable billing-term key.
 //   model.display_name: string
+//   effort.level: string — 'low' | 'medium' | 'high' | 'xhigh' | 'max'
 // Missing fields are treated as optional — Claude Code only populates
-// rate_limits for Pro/Max subscribers after the first assistant response.
+// rate_limits for Pro/Ultra (formerly Max) subscribers after the first assistant
+// response, and drops each window once its resets_at passes.
 
 import { pickCat, catArt, THEME_NAMES } from "./cats.js";
 import { bar, fmtCountdown, fmtAgo, absoluteResetParts, fmtCost, colorByPct, colors as C, setRenderNow, getRenderNowSec } from "./format.js";
@@ -65,6 +71,13 @@ function safeParse(raw) {
   try { return raw ? JSON.parse(raw) : {}; } catch { return {}; }
 }
 
+// Fable's weekly bucket has shipped under two names: the billing-term
+// key `seven_day_overage_included` and the model-named
+// `seven_day_fable`. Both read as the same 'fable' bar.
+function isFableKey(k) {
+  return k === "seven_day_overage_included" || k === "seven_day_fable";
+}
+
 // Window labels mirror the official Claude /usage screen *verbatim*.
 // English only — we want the in-terminal wording identical to the popup
 // so users don't have to map two sets of phrases. Only the session
@@ -82,14 +95,16 @@ function labelFor(key, { variant = "long" } = {}) {
     //
     //   five_hour       → '5h'
     //   seven_day       → 'week'
-    //   seven_day_overage_included → 'fable' (the Fable 5 weekly window
-    //     is keyed by billing term; show the model name users know)
+    //   seven_day_overage_included → 'fable' (the older Fable weekly
+    //     key, named by billing term; show the model name users know)
+    //   spend_limit     → 'spend' (Claude apps gateway spend cap)
     //   seven_day_<m>   → '<m>' (lower-cased), e.g. 'sonnet', 'opus'.
     //     We drop the 'week·' prefix: the model name alone already
     //     reads as "the weekly bucket for that model" in context.
     if (key === "five_hour") return "5h";
     if (key === "seven_day") return "week";
     if (key === "seven_day_overage_included") return "fable";
+    if (key === "spend_limit") return "spend";
     if (key.startsWith("seven_day_")) {
       return key.slice("seven_day_".length).toLowerCase();
     }
@@ -98,7 +113,8 @@ function labelFor(key, { variant = "long" } = {}) {
 
   if (key === "five_hour") return t("current_session");
   if (key === "seven_day") return t("current_week_all");
-  if (key === "seven_day_overage_included") return t("current_week_fable");
+  if (isFableKey(key)) return t("current_week_fable");
+  if (key === "spend_limit") return t("spend_limit");
   if (key.startsWith("seven_day_")) {
     return t("current_week_scope", modelPretty(key.slice("seven_day_".length)));
   }
@@ -142,6 +158,31 @@ function shortModelName(displayName) {
   return token.slice(0, 24).trim();
 }
 
+// Effort chip: `effort.level` as Claude Code reports it ('low' /
+// 'medium' / 'high' / 'xhigh' / 'max'). Rides on the model chip —
+// 'fable 5 · high' — in both compact and full so "which model, how
+// hard is it thinking" reads as one unit.
+//
+// Same trust boundary as the model chip: sanitizeText, then a strict
+// [a-z] whitelist. Levels are lowercase words, so anything else
+// (digits, punctuation, path-looking strings) yields null and the
+// effort is simply omitted — the model chip still renders.
+function effortLevel(effort) {
+  const clean = sanitizeText(effort?.level);
+  if (typeof clean !== "string") return null;
+  const token = clean.trim().toLowerCase();
+  if (!/^[a-z]{1,12}$/.test(token)) return null;
+  return token;
+}
+
+// Join model + effort into one chip; the caller decides color. Returns
+// null when there's no model — effort alone ('high') is meaningless
+// without the model it qualifies, so it never renders on its own.
+function modelEffortChip(model, effort) {
+  if (!model) return null;
+  return effort ? `${model} · ${effort}` : model;
+}
+
 // Accept any shape the server sends: collect every rate_limits.* entry
 // that looks like { used_percentage, resets_at, ... }. This lets
 // model-scoped weekly buckets (e.g. Sonnet-only) appear automatically,
@@ -156,7 +197,7 @@ function isWindowEntry(v) {
     && typeof v.resets_at === "number";
 }
 
-// Ordering: five_hour first, then seven_day, then the Fable 5 window
+// Ordering: five_hour first, then seven_day, then the Fable window
 // pinned right after it (it's the primary model's weekly budget, so it
 // reads best next to the all-models bar — alphabetical order would let
 // 'opus' slip in between), then every other weekly-style key
@@ -164,7 +205,7 @@ function isWindowEntry(v) {
 function orderKey(k) {
   if (k === "five_hour") return [0, k];
   if (k === "seven_day") return [1, k];
-  if (k === "seven_day_overage_included") return [2, k];
+  if (isFableKey(k)) return [2, k];
   if (k.startsWith("seven_day_")) return [3, k];
   return [4, k];
 }
@@ -179,6 +220,9 @@ function collectWindows(d, { variant = "long", hide } = {}) {
       // like "$(rm -rf /)" or "../../../etc/passwd".
       if (!isSafeWindowKey(k)) return false;
       if (!isWindowEntry(v)) return false;
+      // CLAUDE_CAT_PLAN: 'pro' hides weekly bars. 'ultra' (the plan
+      // formerly called Max — 'max' is still accepted) and 'auto'
+      // render everything the server sends.
       if (plan === "pro" && k.startsWith("seven_day")) return false;
       // --hide=<names>: match the raw key or the short chip label
       // ('fable', 'opus', …) so users can type the name they actually
@@ -394,6 +438,7 @@ function renderCompact(d, {
   showCost = true,
   showCtx = true,
   showModel = true,
+  showEffort = true,
   stack = "auto",
   cols,
   hide,
@@ -413,7 +458,12 @@ function renderCompact(d, {
   // joinWithWrap, so "which model am I talking to" stays visible even
   // when a narrow pane wraps the bars onto continuation lines.
   const head = [];
-  const modelChip = showModel ? shortModelName(d?.model?.display_name) : null;
+  const modelChip = showModel
+    ? modelEffortChip(
+        shortModelName(d?.model?.display_name),
+        showEffort ? effortLevel(d?.effort) : null,
+      )
+    : null;
   if (modelChip) head.push(`${C.model}${modelChip}${C.reset}`);
 
   const body = [];
@@ -466,7 +516,7 @@ function renderCompact(d, {
 //   line 1+  — one per window, OR a single short status hint
 // No indentation here; callers add padding if they place the block
 // next to cat art.
-function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = true, showCtx = true, hide }) {
+function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = true, showCtx = true, showEffort = true, hide }) {
   const windows = collectWindows(d, { hide });
   const stale = d?._stale === true;
   const cost = d?.cost?.total_cost_usd;
@@ -474,7 +524,14 @@ function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = t
   // from the server (or a poisoned cache) and could otherwise carry
   // ANSI escapes that retitle the terminal, clear the screen, or
   // inject fake hyperlinks.
-  const model = sanitizeText(d?.model?.display_name);
+  //
+  // The effort level rides on the model ('Fable 5 · high'). The header
+  // row is shorter than the window rows below it, so the extra token
+  // lands in otherwise-blank space — the card doesn't grow.
+  const model = modelEffortChip(
+    sanitizeText(d?.model?.display_name),
+    showEffort ? effortLevel(d?.effort) : null,
+  );
   const ctx = renderContextChip(d);
   const dbg = debugChip({ showDebugChip });
 
@@ -510,7 +567,7 @@ function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = t
   return lines;
 }
 
-function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip = true, showCost = true, showCtx = true, hide } = {}) {
+function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip = true, showCost = true, showCtx = true, showEffort = true, hide } = {}) {
   const windows = collectWindows(d, { hide });
   const state = inferState(d, windows);
   // Stale data is last-known, not live — the cat rests rather than
@@ -521,7 +578,7 @@ function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip 
     (state === "normal" && !stale) ? { windows } : { state: "resting" },
     catTheme,
   );
-  const data = buildDataBlock(d, { iconMode, state, showDebugChip, showCost, showCtx, hide });
+  const data = buildDataBlock(d, { iconMode, state, showDebugChip, showCost, showCtx, showEffort, hide });
 
   // Compact-cat full: inline the 1-line face into the header and indent
   // every data line with 2 spaces, matching the previous look.
@@ -679,6 +736,10 @@ async function main() {
   // --no-model drops the compact layout's leading model chip. The
   // --full header shows the full display_name regardless.
   const showModel = !args.includes("--no-model");
+  // --no-effort drops the effort level from the model chip (compact
+  // and --full). Effort rides on the model chip, so --no-model hides
+  // both.
+  const showEffort = !args.includes("--no-effort");
   const raw = await readStdin();
   let d = safeParse(raw);
 
@@ -697,11 +758,18 @@ async function main() {
   } else {
     const cached = readCacheForIdle();
     if (cached) {
-      d = { ...d, ...cached };
+      // Borrow only the *usage* from the cache. The model chip must
+      // always reflect the model selected in THIS session — the cache
+      // was written by whichever session rendered last, which may be an
+      // old one still on 'Opus 5' while this one runs 'Opus 5.5'. The
+      // cached model is a fallback only when our own stdin has none.
+      const { model: cachedModel, ...usage } = cached;
+      const ownModel = d?.model?.display_name ? d.model : null;
+      d = { ...d, ...usage, model: ownModel ?? cachedModel ?? d.model };
     }
   }
 
-  const opts = { iconMode, catTheme, showDebugChip, showCost, showCtx, showModel, stack, cols, hide };
+  const opts = { iconMode, catTheme, showDebugChip, showCost, showCtx, showModel, showEffort, stack, cols, hide };
   let out;
   if (layout === "wide") out = renderWide(d, opts);
   else if (layout === "full") out = renderFull(d, opts);

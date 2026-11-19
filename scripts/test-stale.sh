@@ -34,3 +34,17 @@ echo "$OUT" | grep -qE "▓|░"       || { echo "FAIL: bars missing"; exit 1; }
 echo "$OUT" | grep -qE "42%|67%"   || { echo "FAIL: cached pct missing"; exit 1; }
 
 echo "OK: stale bars rendered"
+
+# The idle session's own model must win over the cached one — the cache
+# may have been written by an older session on a different model.
+OWN="$(printf '%s' '{"model":{"display_name":"Opus 5.5"}}' \
+  | HOME="$TMPHOME" node "$ROOT/bin/cli.js")"
+printf '%s\n' "$OWN"
+echo "$OWN" | grep -q "opus 5.5"  || { echo "FAIL: own model chip missing"; exit 1; }
+echo "$OWN" | grep -q "opus 4.7"  && { echo "FAIL: cached model leaked into idle session"; exit 1; }
+
+# No model in stdin at all → fall back to the cached model.
+FALLBACK="$(printf '%s' '{}' | HOME="$TMPHOME" node "$ROOT/bin/cli.js")"
+echo "$FALLBACK" | grep -q "opus 4.7" || { echo "FAIL: cached model fallback missing"; exit 1; }
+
+echo "OK: own model wins over cache"

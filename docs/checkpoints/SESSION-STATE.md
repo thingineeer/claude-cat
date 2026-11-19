@@ -1,67 +1,64 @@
 # Session State — claude-cat
 
 ## Date
-2026-07-03
+2026-08-21
 
 ## Branch
-- `dev` tip: `4e71814` = `main` = `v1.3.0` tag — everything in sync
-- Last released to npm: `claude-cat@1.3.0` (latest)
+- `dev` tip = `main` = `v1.5.0` tag (`4d33299` Merge PR #88) — everything in sync
+- Last released to npm: `claude-cat@1.5.0` (latest)
 - No in-flight worktrees; no local feature branches
+- 최신 진입점: @.claude/memory/resume-claude-cat.md
 
 ## Completed (this session)
-- [x] **v1.3.0 released** — Fable 5 대응 (PR #79 feat → dev, PR #80 release → main, tag `v1.3.0`, GitHub Release, npm publish)
-  - **Fable 5 weekly bar**: Claude Code는 Fable 주간 윈도우를 `rate_limits.seven_day_overage_included`(크레딧 과금 용어)로 보냄 — 라벨을 `fable`(compact/wide) / `Current week (Fable 5)`(full)로 매핑, `week` 바로 오른쪽 고정 정렬 (알파벳순이면 opus가 끼어듦)
-  - **`--hide=<name>[,…]` 윈도우 필터**: 칩 이름(`opus`,`sonnet`,`fable`,…) 또는 raw 키로 특정 바 숨김. 숨긴 윈도우는 고양이 mood 계산에서도 제외
-  - **configure 위저드 "Weekly model bars" 스텝**: all / fable only(`--hide=opus,sonnet`) / none(`--hide=fable,opus,sonnet`)
-  - fixture `examples/sample-with-fable.json`(5h+week+fable+opus, 정렬 검증용) + `test:fable` / `test:fable:compact` / `test:hide` smoke, CI 등록
-  - README(en/ko) 칩 표에 `fable` 추가, "What's not in stdin JSON" 섹션에 현황 문서화, CHANGELOG `[1.3.0]`
-- [x] **방어 검증**: malformed payload(`used_percentage:"abc"`), 쓰레기 stdin, 엉터리 `--hide` 값 전부 exit 0 — 상태바 절대 안 깨짐
-- [x] 로컬 statusLine = `npx -y claude-cat@latest --hide=opus,sonnet` (debug 제거된 클린 상태, padding 0, refreshInterval 300)
+- [x] **v1.5.0 released** — effort chip (PR #87 feat → dev, PR #88 release → main, tag `v1.5.0`, GitHub Release, npm publish, `npx -y claude-cat@1.5.0` 렌더 확인)
+  - **effort chip**: CC stdin `effort.level`(low/medium/high/xhigh/max)을 모델 chip 뒤에 `· <effort>`로 붙임 — compact `fable 5 · high | 5h …`, `--full` header `Fable 5 · high  ·  $1.87  ·  ctx …`. `--wide`는 모델 chip이 없어 변경 없음
+  - full에서 header 줄(66col)이 window 줄(98~113col)보다 짧아 빈 폭에 들어감 → 카드 3줄 유지 (사용자 요구사항: "세줄은 마냥 길어지지 않게")
+  - `--no-effort`(모델 유지, effort만 숨김), `--no-model`(둘 다 숨김 — 모델 없는 effort 단독은 의미 없음)
+  - `effort.level`은 `sanitizeText` + `[a-z]{1,12}` whitelist — 불량 값이면 effort만 생략, 모델 chip 유지
+  - fixture: `sample-stdin.json`(high), `sample-with-fable.json`(max)에 effort 추가; `scripts/test-model-chip.sh`가 모든 토글 방향 + 불량 값 경로 검증 (CodeRabbit minor 반영: bogus 시 full header 모델명 잔존 단언)
+  - README(en/ko) 레이아웃 예시·플래그·chip 범례, README.ko에 모델/effort chip 범례 행 추가(영문과 동기화), CHANGELOG `[1.5.0] - 2026-08-21`
+- [x] 로컬 statusLine = `npx -y claude-cat@latest --hide=opus,sonnet --no-debug-chip` → 재시작 시 1.5.0 자동 반영
 
 ## In Progress
 없음 — 릴리즈 완료
 
 ## Remaining (backlog)
-- **fable 바 실표시 대기** — Claude Code 2.1.199 기준 statusline stdin에 `five_hour`/`seven_day`만 옴 (Fable 5 세션 중에도; 라이브 payload 덤프로 확정). CC가 `seven_day_overage_included`를 보내는 순간 업데이트 없이 자동 표시됨. 확인법: statusLine 명령 앞에 `CLAUDE_CAT_DEBUG=1` 붙이고 `cat ~/.claude/claude-cat/last-keys.txt`
-- **`/api/oauth/usage` opt-in 프록시** — fable credit을 지금 당장 표시하는 유일한 방법. CLAUDE.md 정책: 명시적 opt-in 플래그 + README에 tradeoff(비공식 endpoint, ToS 그레이존) 명시 필수. 사용자가 원하면 별도 PR
-- **capture-all.sh 버그** — 존재하지 않는 `examples/sample-api-only.json`을 참조해서 `set -e`로 중간에 죽음 (이번 세션 범위 밖이라 미수정)
-- Extra usage bar / Light-theme palette (기존 backlog 유지)
+- **fable 바 실표시 대기** — CC가 statusline stdin에 `seven_day_overage_included`를 보내는 순간 자동 표시. 확인법: `CLAUDE_CAT_DEBUG=1` + `cat ~/.claude/claude-cat/last-keys.txt`
+- **`/api/oauth/usage` opt-in 프록시** — CLAUDE.md 정책: 명시적 opt-in 플래그 + README tradeoff 명시. 사용자가 원하면 별도 PR
+- **capture-all.sh 버그** — 존재하지 않는 `examples/sample-api-only.json` 참조로 `set -e` 중단 (미수정)
+- Extra usage bar / Light-theme palette (기존 backlog)
 
 ## Key Files
-- @src/statusline.js — `labelFor`/`orderKey`/`parseHideList`/`collectWindows` — fable 라벨·정렬·`--hide` 구현부
-- @src/i18n.js — `current_week_fable` 라벨
-- @src/configure/steps.js — 위저드 "Weekly model bars" 스텝
-- @src/configure/writer.js — `buildCommand`의 modelBars → `--hide` 매핑
-- @examples/sample-with-fable.json — fable+opus fixture (정렬 회귀 검증)
-- @CHANGELOG.md — `[1.3.0] - 2026-07-03` 섹션 + Known limitation
+- @src/statusline.js — `effortLevel`/`modelEffortChip`(effort chip), `shortModelName`, `renderCompact`/`buildDataBlock`의 chip 조립, `--no-effort` 파싱
+- @scripts/test-model-chip.sh — 모델+effort chip 토글 smoke (`npm run test:no-model`, CI 등록)
+- @examples/sample-with-fable.json — fable+opus+effort(max) fixture
+- @CHANGELOG.md — `[1.5.0] - 2026-08-21`
 - @docs/MAINTAINER.md — release/publish 플레이북
 
 ## 대화 요약
 
 ### 이번 세션에서 결정한 것
-- **fable 윈도우 키 = `seven_day_overage_included`** — 이유: CC 2.1.199 바이너리 strings 분석에서 `seven_day_overage_included → "Fable 5 limit"` 라벨 매핑 확인, `seven_day_fable` 키는 존재하지 않음 (Fable이 usage credit 과금이라 키가 billing 용어)
-- **`--hide`는 블랙리스트 방식** — 이유: 미래에 새 버킷이 와도 기본은 표시 — "render whatever the server sends" 철학(CLAUDE.md invariant) 유지
-- **숨긴 윈도우는 mood에서도 제외** — 이유: 숨겼다는 건 그 윈도우에 관심 없다는 뜻; 안 보이는 바 때문에 고양이가 critical 되면 혼란
-- **위저드는 체크박스 대신 3옵션 단일선택** (all / fable only / none) — 이유: 기존 위저드가 ink-select-input 단일선택 스텝 머신; 실사용 케이스 3개로 충분
-- **release/* 커밋은 `ALLOW_DIRECT_COMMIT=1`** — pre-commit hook이 release 브랜치도 막음; MAINTAINER.md에 문서화된 escape
-
-### 시도했다 접은 것
-- settings.json에 디버그 env 자동 주입 (사용자 요청 전) — 권한 거부됨 → CC 바이너리 strings 분석으로 우회. 이후 fable 미표시 디버깅 때 사용자 요청 하에 켜서 라이브 payload 캡처, 확인 후 다시 제거
+- **effort는 별도 chip이 아니라 모델 chip에 `·`로 합침** — 이유: "fable 5 옆에"라는 요구 + `high` 단독은 무엇의 high인지 모호; full header의 `(1M context)` 뒤에 괄호를 또 붙이면 `(1M context) (high)`가 되어 `·` 선택
+- **full은 header에 넣어 세로 길이 유지** — 사용자 요구: 한 줄은 길어져도 되지만 세 줄은 빈 공간 활용. header < window 줄 폭이라 실제로 카드 크기 불변
+- **`--no-model`이 effort도 숨김** — effort가 모델 chip에 올라타는 구조라 일관성 위해
+- **wide 미변경** — 1.4.0 때도 모델 chip을 wide에 넣지 않았음; 같은 정책 유지
+- **effort 값은 캐시(rate-limits-cache.json)에 넣지 않음** — 세션 로컬 설정이라 항상 자기 stdin에서만 읽음
 
 ### 명시된 사용자 선호
-- statusLine 모드: **`--hide=opus,sonnet`** — "5h · week · fable만 있으면 됨"
-- **에러 절대 노출 금지** — 데이터 형식이 바뀌거나 안 와도 상태바는 유지 (malformed payload 검증 완료)
-- 배포 후 로컬은 항상 배포판(npx @latest)으로 전환
+- 세 줄 레이아웃은 정보가 늘어도 "빈 공간에 넣어 지금이랑 비슷하게" — 세로 확장 금지
+- 기능 → 배포(릴리즈+npm)까지 한 번에, README도 같이
 
 ### 다음 세션이 알아야 할 맥락
-- **fable 바가 안 보이는 건 버그가 아님**: CC가 statusline stdin에 안 보내는 것. `/usage`의 fable credit 표시는 사설 `/api/oauth/usage` 경로라 별개. 서버가 보내는 순간 v1.3.0 그대로 자동 표시
-- CC statusline payload 스키마 확인법: `strings` + grep으로 바이너리 분석 (`~/.local/share/claude/versions/<ver>`), 또는 `CLAUDE_CAT_DEBUG=1`로 라이브 덤프
+- CC statusline stdin에 `effort.level`이 이미 옴 (2.1.219 기준, `~/.claude/claude-cat/last-stdin.json`으로 확인) — 값은 `high` 등 소문자 단어
+- 릴리즈 함정: `release/*` 커밋은 `ALLOW_DIRECT_COMMIT=1`, `gh pr merge --delete-branch`는 로컬 checkout 에러를 내지만 GitHub merge는 성공, npx 스모크는 HOME 바꾸면 실패
 
 ### 이 프로젝트 세션 이력 (이 기기)
 - 04-14 ~ 04-15 — v1.0.x → v1.2.4: configure 위저드, cross-terminal cache, Pro/Max 분기, separator·색상 폴리시, README 표/GIF
 - 04-16 ~ 04-17 — 보안 점검(침투테스트, sanitize/clamp), v1.2.5, 계정 swap 도구(프로젝트 외)
 - 05-26 — 외부 PR 검토/정리, npm 토큰 회전, v1.2.6 (stale 캐시 dim 유지)
-- 07-03 (이번) — Fable 5 대응 v1.3.0: fable 라벨/정렬 + `--hide` + 위저드 스텝, 릴리즈 전체 사이클, 로컬 적용
+- 07-03 — Fable 5 대응 v1.3.0: fable 라벨/정렬 + `--hide` + 위저드 스텝, 릴리즈 전체 사이클, 로컬 적용
+- 07-27 — v1.4.0: compact 모델 chip(`opus 5`), `--no-model`, test-model-chip.sh (세션 저장 없이 종료)
+- 08-21 (이번) — v1.5.0: 모델 chip에 effort level(`fable 5 · high`), `--no-effort`, README en/ko, 릴리즈 전체 사이클
 
 ## Notes
 - **미추적 파일 3개는 의도적으로 커밋 안 함**: `.agents/`(Codex용 스킬), `AGENTS.md`(Codex용 플레이북 사본), `.claude/settings.local.json`(로컬 권한 — 커밋 금지 대상)
