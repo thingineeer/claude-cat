@@ -54,6 +54,17 @@ export const STEPS = [
     defaultValue: "all",
   },
   {
+    id: "fableUsage",
+    label: "Fable usage (opt-in)",
+    description: "Show the Fable weekly bar? Claude Code doesn't send it, so this reads your Claude Code login token and asks Anthropic's usage API every 5 min.",
+    items: [
+      { label: "off — stdin only, zero network (recommended)", value: "off" },
+      { label: "on — add --fable-usage", value: "on" },
+    ],
+    defaultValue: "off",
+    skip: (answers) => answers.modelBars === "none",
+  },
+  {
     id: "refresh",
     label: "Refresh interval",
     description: "How often to refresh (seconds)?",
