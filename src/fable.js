@@ -70,10 +70,12 @@ function writeJsonAtomic(path, obj) {
   }
 }
 
+// Round, don't floor: the API sends resets like "…T03:59:59.926+00:00",
+// and flooring that renders as "12:59 pm" next to the week's "1pm".
 const toEpoch = (iso) => {
-  if (typeof iso === "number" && Number.isFinite(iso)) return Math.floor(iso);
+  if (typeof iso === "number" && Number.isFinite(iso)) return Math.round(iso);
   const t = Date.parse(iso);
-  return Number.isFinite(t) ? Math.floor(t / 1000) : null;
+  return Number.isFinite(t) ? Math.round(t / 1000) : null;
 };
 
 // ── response parsing ────────────────────────────────────────────────

@@ -22,7 +22,7 @@
       "group": "weekly",
       "percent": 34,
       "severity": "normal",
-      "resets_at": "2099-01-05T13:00:00.155270+00:00",
+      "resets_at": "2099-01-05T12:59:59.926920+00:00",
       "scope": { "model": { "id": null, "display_name": "Fable" }, "surface": null },
       "is_active": false
     }

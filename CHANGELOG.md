@@ -7,6 +7,14 @@
   it; the `--fable-usage` refresher could carry it behind the same flag)
 - Light-theme aware palette (currently tuned for dark terminals)
 
+## [1.8.1] - 2026-11-19
+
+### Fixed
+- `--fable-usage`: the Fable reset time no longer reads one minute early
+  (`12:59 pm` next to the week's `1pm`). The usage API sends resets
+  like `…T03:59:59.926Z`; they're now rounded to the nearest second
+  instead of truncated.
+
 ## [1.8.0] - 2026-11-19
 
 ### Added
