@@ -17,7 +17,7 @@
 <p align="center">
   <img src="assets/screenshots/kawaii-full.png" alt="kawaii cat with weekly and Fable usage bars in a terminal" width="780" />
   <br />
-  <em><code>--full --kawaii</code></em>
+  <em><code>--full --kawaii</code> — the Fable row appears once Claude Code sends that bucket</em>
 </p>
 
 ```text

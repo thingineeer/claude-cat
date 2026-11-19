@@ -17,7 +17,7 @@
 <p align="center">
   <img src="assets/screenshots/kawaii-full.png" alt="주간·Fable 사용량 바와 kawaii 고양이" width="780" />
   <br />
-  <em><code>--full --kawaii</code></em>
+  <em><code>--full --kawaii</code> — Fable 행은 Claude Code 가 해당 버킷을 보내면 표시됩니다</em>
 </p>
 
 ```text
