@@ -77,4 +77,12 @@ node -e '
   if (c.fable?.used_percentage !== 34) throw new Error("lost last good value");
 ' "$DIR/fable-cache.json" || fail "backoff"
 
+# 8. `security -w` hex output (non-ASCII value) decodes to the JSON.
+node --input-type=module -e '
+  const m = await import(process.argv[1]);
+  const j = JSON.stringify({ claudeAiOauth: { accessToken: "x" }, note: "é" });
+  if (m.decodeSecurityOutput(Buffer.from(j).toString("hex") + "\n") !== j) throw new Error("hex");
+  if (m.decodeSecurityOutput(j + "\n") !== j) throw new Error("plain");
+' "$ROOT/src/fable.js" || fail "security output decoding"
+
 echo "OK: --fable-usage overlay"

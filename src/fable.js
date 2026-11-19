@@ -190,39 +190,67 @@ function acquireLock() {
   }
 }
 
+// `security -w` prints the value followed by a newline — but as a hex
+// string when the value contains any non-ASCII byte (observed with
+// Claude Code's item). Undo that, then cut to the outermost JSON object.
+export function decodeSecurityOutput(raw) {
+  let s = String(raw ?? "").replace(/\r?\n$/, "");
+  if (!s) return null;
+  if (s[0] !== "{" && s.length % 2 === 0 && /^[0-9a-fA-F]+$/.test(s)) {
+    s = Buffer.from(s, "hex").toString("utf8");
+  }
+  const a = s.indexOf("{");
+  const b = s.lastIndexOf("}");
+  return a >= 0 && b > a ? s.slice(a, b + 1) : null;
+}
+
 // Read only the access token and its expiry. Never refreshes, never
-// returns or stores the refresh token.
-function readAccessToken() {
-  const pick = (raw) => {
-    try {
-      const o = JSON.parse(raw)?.claudeAiOauth;
-      if (o && typeof o.accessToken === "string" && o.accessToken) {
-        return { token: o.accessToken, expiresAt: Number(o.expiresAt) || null };
-      }
-    } catch {}
-    return null;
+// returns or stores the refresh token. `trace` collects step outcomes
+// (no secret values) for `__fable-refresh --verbose`.
+function readAccessToken(trace = []) {
+  const pick = (raw, src) => {
+    const json = src === "keychain" ? decodeSecurityOutput(raw) : raw;
+    if (!json) { trace.push(`${src}: empty or unrecognized output`); return null; }
+    let o;
+    try { o = JSON.parse(json)?.claudeAiOauth; } catch {
+      trace.push(`${src}: not JSON`); return null;
+    }
+    if (!o || typeof o.accessToken !== "string" || !o.accessToken) {
+      trace.push(`${src}: no claudeAiOauth.accessToken`); return null;
+    }
+    const expiresAt = Number(o.expiresAt) || null;
+    trace.push(`${src}: access token found${expiresAt ? `, expires in ${Math.round((expiresAt - Date.now()) / 60000)} min` : ""}`);
+    return { token: o.accessToken, expiresAt };
   };
   if (process.platform === "darwin") {
     try {
       const raw = execFileSync("/usr/bin/security",
         ["find-generic-password", "-s", "Claude Code-credentials", "-w"],
         { encoding: "utf8", timeout: 5000, stdio: ["ignore", "pipe", "ignore"] });
-      const got = pick(raw);
+      const got = pick(raw, "keychain");
       if (got) return got;
-    } catch {}
+    } catch (e) {
+      trace.push(`keychain: security failed (${e?.status != null ? `exit ${e.status}` : e?.signal || e?.code || "error"})`);
+    }
   }
   const dir = process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude");
-  try { return pick(readFileSync(join(dir, ".credentials.json"), "utf8")); } catch { return null; }
+  try {
+    return pick(readFileSync(join(dir, ".credentials.json"), "utf8"), "credentials.json");
+  } catch {
+    trace.push("credentials.json: not found");
+    return null;
+  }
 }
 
-async function fetchUsage(ccVersion) {
+async function fetchUsage(ccVersion, trace = []) {
   const fixture = process.env.CLAUDE_CAT_FABLE_FIXTURE;
   if (fixture) {
     const json = readJson(fixture);
+    trace.push(json ? "fixture: loaded" : "fixture: unreadable");
     return json ? { ok: true, json } : { ok: false, reason: "bad_response" };
   }
 
-  const cred = readAccessToken();
+  const cred = readAccessToken(trace);
   if (!cred) return { ok: false, reason: "credential" };
   if (cred.expiresAt && cred.expiresAt <= Date.now()) return { ok: false, reason: "expired" };
 
@@ -238,6 +266,7 @@ async function fetchUsage(ccVersion) {
         Accept: "application/json",
       },
     });
+    trace.push(`usage API: HTTP ${res.status}`);
     if (res.status === 401) return { ok: false, reason: "unauthorized" };
     if (res.status === 429) {
       const ra = Number(res.headers.get("retry-after"));
@@ -245,7 +274,8 @@ async function fetchUsage(ccVersion) {
     }
     if (!res.ok) return { ok: false, reason: "network" };
     return { ok: true, json: await res.json() };
-  } catch {
+  } catch (e) {
+    trace.push(`usage API: ${e?.name === "AbortError" ? "timeout" : "network error"}`);
     return { ok: false, reason: "network" };
   } finally {
     clearTimeout(timer);
@@ -253,13 +283,19 @@ async function fetchUsage(ccVersion) {
 }
 
 export async function runRefresh(argv = []) {
-  if (!acquireLock()) return;
+  // --verbose: print each step (never the token) and ignore the backoff
+  // window — for a one-off manual check.
+  const verbose = argv.includes("--verbose");
+  const say = (m) => { if (verbose) process.stdout.write(m + "\n"); };
+  if (!acquireLock()) { say("another refresh is running — try again in a minute"); return; }
   const ccVersion = argv.find((a) => a.startsWith("--cc-version="))?.slice("--cc-version=".length);
   const prev = readJson(CACHE()) || {};
   const now = nowSec();
+  const trace = [];
   try {
-    const r = await fetchUsage(ccVersion);
+    const r = await fetchUsage(ccVersion, trace);
     const parsed = r.ok ? parseUsage(r.json) : null;
+    trace.forEach((t) => say("  " + t));
     if (parsed) {
       writeJsonAtomic(CACHE(), {
         fetched_at: now,
@@ -268,11 +304,15 @@ export async function runRefresh(argv = []) {
         weekly_resets_at: parsed.weekly_resets_at,
         fable: parsed.fable,
       });
+      say(parsed.fable
+        ? `✔ fable ${parsed.fable.used_percentage}% · resets ${new Date(parsed.fable.resets_at * 1000).toLocaleString()}`
+        : "✔ usage fetched — this account has no Fable weekly limit");
     } else {
       const reason = r.ok ? "bad_response" : r.reason;
       const wait = Math.max(r.retryAfter || 0, BACKOFF[reason] || BACKOFF.network);
       // Keep the last good numbers; only push the next attempt out.
       writeJsonAtomic(CACHE(), { ...prev, next_try_at: now + wait, status: reason });
+      say(`✖ ${reason} — next automatic try in ${Math.round(wait / 60)} min`);
     }
   } finally {
     try { unlinkSync(LOCK()); } catch {}
