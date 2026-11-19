@@ -16,6 +16,17 @@
   in the configure wizard; off by default. README/SECURITY.md describe
   the tradeoff (undocumented endpoint, ToS gray area).
 
+### Changed
+- **Unused or reset windows read 0%** — a window whose reset time has
+  passed now shows `0%` (it has been reset) instead of the old number
+  with "ready now", and a weekly window Claude Code dropped after its
+  reset shows as `week 0%` instead of vanishing. Previously, when every
+  window had reset, the line fell back to "API mode — cost only".
+
+### Fixed
+- `--full` labels exactly 26 columns wide (`Current week (Sonnet
+  only)`) no longer touch their bar.
+
 ### Still planned
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
   it; daemon proxying `/api/oauth/usage` is the leading candidate)
