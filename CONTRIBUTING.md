@@ -79,8 +79,8 @@ git fetch origin && git pull --ff-only origin dev
 - One topic per worktree. Unrelated changes go in separate worktrees.
 - Run several side worktrees in parallel when several topics are in
   flight. They share the same `.git` store, so it's cheap.
-- Split commits by **logical unit**, not "end of day". Reviewers (and
-  CodeRabbit) should be able to read commits one by one.
+- Split commits by **logical unit**, not "end of day". Reviewers
+  should be able to read commits one by one.
 - Rebase on `origin/dev` before opening a PR.
 - **Merge commits** are the default (`gh pr merge --merge`), so every
   PR shows up as a visible fork/join in the graph. No squash.

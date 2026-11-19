@@ -139,23 +139,10 @@ function fmtShortDate(date) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-// IANA timezone (e.g. "Asia/Seoul"); null when the runtime can't resolve it.
-// Resolved once at module load — the timezone can't change mid-process.
-const _tzName = (() => {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
-  } catch {
-    return null;
-  }
-})();
-export function tzName() {
-  return _tzName;
-}
-
-// Absolute reset phrase data for long windows (weekly, extra usage),
+// Absolute reset phrase data for long windows (weekly, spend limit),
 // returned as a struct so the renderer composes the final sentence via
 // i18n.t(). Shape:
-//   { clock: "1pm", date: "Apr 17" | null, tz: "Asia/Seoul" | null }
+//   { clock: "1pm", date: "Apr 17" | null }
 // If resets_at is in the past, returns "ready".
 export function absoluteResetParts(resetsAtSec, { now = new Date(nowMs()) } = {}) {
   if (!resetsAtSec) return null;
@@ -166,7 +153,6 @@ export function absoluteResetParts(resetsAtSec, { now = new Date(nowMs()) } = {}
   return {
     clock: fmtClock(target),
     date: sameDay ? null : fmtShortDate(target),
-    tz: tzName(),
   };
 }
 

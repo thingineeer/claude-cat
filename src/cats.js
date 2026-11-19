@@ -16,14 +16,6 @@
 
 import { getRenderNowSec } from "./format.js";
 
-const THRESHOLDS = [
-  { max: 30,  mood: "chill"    },
-  { max: 60,  mood: "curious"  },
-  { max: 85,  mood: "alert"    },
-  { max: 95,  mood: "nervous"  },
-  { max: 101, mood: "critical" },
-];
-
 // One-line cat for the compact theme.
 // A single 'eyes + ᴥ + eyes' family. Only the eye glyph changes across
 // moods so the face shape stays consistent and reads the same in every
@@ -51,13 +43,6 @@ const KAWAII = {
 const THEMES = { compact: COMPACT, kawaii: KAWAII, none: null };
 
 export const THEME_NAMES = Object.keys(THEMES);
-
-// Map a single percentage to a mood (legacy; prefer moodFromWindows).
-export function moodFor(percent) {
-  const p = Math.max(0, Math.min(100, percent ?? 0));
-  for (const t of THRESHOLDS) if (p < t.max) return t.mood;
-  return THRESHOLDS[THRESHOLDS.length - 1].mood;
-}
 
 // Pick a mood from the full window set.
 //
@@ -102,37 +87,21 @@ export function moodFromWindows(windows, { now = getRenderNowSec() } = {}) {
   return "chill";
 }
 
-// Pick art for a given mood. Accepts either:
-//   catArt(percent, theme)                — legacy, uses moodFor(pct)
-//   catArt({ windows, state }, theme)     — preferred
-// State takes priority over window-derived mood when provided.
+// Pick art for a mood: catArt({ windows, state }, theme). An explicit
+// state ('resting') takes priority over the window-derived mood.
 //
 // Returns { lines, mood } or null.
 export function catArt(source, theme = "compact") {
   const table = THEMES[theme];
   if (!table) return null;
 
-  let mood;
-  if (typeof source === "number") {
-    mood = moodFor(source);
-  } else if (source && typeof source === "object") {
-    if (source.state === "resting") {
-      mood = "resting";
-    } else {
-      mood = moodFromWindows(source.windows || []);
-    }
-  } else {
-    return null;
-  }
+  if (!source || typeof source !== "object") return null;
+  const mood = source.state === "resting"
+    ? "resting"
+    : moodFromWindows(source.windows || []);
 
   const art = table[mood];
   if (!art) return null;
   const lines = Array.isArray(art) ? art : [art];
   return { lines, mood };
-}
-
-// Back-compat shim for the old single-face API.
-export function pickCat(percent) {
-  const mood = moodFor(percent);
-  return { mood, face: COMPACT[mood] };
 }

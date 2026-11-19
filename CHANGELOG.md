@@ -7,6 +7,39 @@
   it; daemon proxying `/api/oauth/usage` is the leading candidate)
 - Light-theme aware palette (currently tuned for dark terminals)
 
+## [1.7.0] - 2026-11-19
+
+### Changed
+- **Requires Node.js 22+** (`engines.node` `>=22`) — Node 18 and 20 are
+  end-of-life.
+- **Dependencies on latest stable** — `ink` 5 → 8, `react` 18 → 19.3,
+  `ink-select-input` 6.2. They power only the `configure` wizard
+  (lazy-imported), and the wizard was driven end-to-end on the new
+  versions. Ink 7+ needs Node.js 22, so `engines.node` is now `>=22`
+  and CI runs on Node 22. The status-line render path itself is
+  unchanged.
+- **README rewrite** (en/ko) — shorter, one structure for both
+  languages: quick start → layouts → options/env tables → plans and
+  stdin fields → moods → privacy & security. Fresh screenshots of the
+  current output (Fable 5.2, week + fable).
+
+### Fixed
+- Cache tmp files no longer pile up in `~/.claude/claude-cat/` when a
+  render is killed mid-write — a failed write removes its tmp file and
+  leftovers older than 10 minutes are swept.
+- `scripts/capture-all.sh` globs `examples/*.json` instead of a
+  hard-coded list that referenced a missing fixture.
+
+### Removed
+- Dead code: the percent-based cat API (`moodFor` / `pickCat`), an
+  unused inline-glyph helper, `tzName`, two unused labels, and the
+  never-imported `src/configure/preview.js`. Rendered output is
+  byte-identical across every fixture × layout × theme.
+
+### Housekeeping
+- CodeRabbit removed from the repo; the release flow publishes the draft
+  the release workflow opens instead of creating a duplicate.
+
 ## [1.6.0] - 2026-11-19
 
 ### Added

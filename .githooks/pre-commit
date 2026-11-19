@@ -23,7 +23,7 @@ Create a side worktree for your topic:
     gh pr create --base dev --head <kind>/<topic>
 
 <kind> is one of: feat | fix | chore | docs | refactor | test. One topic
-per worktree so CodeRabbit + reviewers see a single coherent change.
+per worktree so reviewers see a single coherent change.
 
 (Bypass once with ALLOW_DIRECT_COMMIT=1 — reserved for repo bootstrap.)
 EOF

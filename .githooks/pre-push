@@ -28,8 +28,8 @@ while read -r local_ref local_sha remote_ref remote_sha; do
 ✖ push blocked: direct push to '$branch' on '$remote' is not allowed.
 
 This repo uses a worktree-only policy — every change to main or dev
-lands through a reviewed pull request so CodeRabbit + maintainers
-have a chance to weigh in.
+lands through a pull request so CI and the maintainer have a chance
+to weigh in.
 
     1. git worktree add ../claude-cat.<kind>-<topic> -b <kind>/<topic> origin/dev
     2. cd there, commit in logical units, push the feature branch

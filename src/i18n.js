@@ -13,7 +13,6 @@ const LABELS = {
   current_week_fable:  "Current week (Fable)",
   // Claude apps gateway spend cap (`rate_limits.spend_limit`).
   spend_limit:         "Spend limit",
-  extra_usage:         "Extra usage",
   // Reset phrase — concise, no timezone (always local time).
   //   'Resets 7pm'          — same-day windows
   //   'Resets Apr 17, 1pm'  — different-day windows
@@ -25,7 +24,6 @@ const LABELS = {
   // wrapping; keep them under ~40 columns.
   warming_up:          "resting — waiting for first reply",
   cost_only_mode:      "API mode — cost only",
-  cost_not_tracked:    "cost not tracked on this provider",
   // Marker on bars drawn from a stale cache entry (idle terminal, last
   // active session was a while ago). 'ago' phrase comes from fmtAgo.
   stale_marker:        (ago) => `stale · ${ago}`,

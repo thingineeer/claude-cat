@@ -22,4 +22,3 @@
 - [ ] 논리 단위로 커밋 분리
 - [ ] Co-Authored-By(AI) 라인 없음
 - [ ] secret/credential 포함 없음
-- [ ] CodeRabbit 리뷰 반영 완료
