@@ -2,7 +2,7 @@
 
 <p align="left"><img src="assets/logo.svg" width="96" alt="claude-cat" /></p>
 
-> **오프라인 우선 Claude Code 상태 표시줄.** 기본 설정에선 네트워크 한 번 안 타고 남은 사용량을 고양이가 알려줍니다.
+> **Claude Code 사용량 한도를 상태 표시줄에서 바로 확인하세요.** 주간 한도, Fable 주간 한도, 5시간 세션, 세션 비용, 컨텍스트 % 를 귀여운 고양이와 함께 보여줍니다. 오프라인 우선 — 기본 설정에선 네트워크를 쓰지 않습니다.
 
 [English README →](./README.md)
 
@@ -15,17 +15,20 @@
 [![zero credentials](https://img.shields.io/badge/credentials-not%20read%20by%20default-brightgreen)](#개인정보와-보안)
 
 <p align="center">
-  <img src="assets/screenshots/kawaii-full.png" alt="주간·Fable 사용량 바와 kawaii 고양이" width="780" />
+  <img src="assets/screenshots/compact.png" alt="Opus 5.5, 주간 사용량 71%, Fable 주간 사용량 100% 를 보여주는 Claude Code 상태 표시줄" width="900" />
   <br />
-  <em><code>--full --kawaii --fable-usage</code></em>
+  <em>Claude Code 2.1.328 · Opus 5.5 · Ultra 플랜 — <code>npx -y claude-cat@latest --fable-usage</code></em>
 </p>
 
-```text
-opus 5.5 · xhigh | week ▓▓▓▓▓▓▓░░░ 66% (Sun 10pm) | $12.34 | ctx 18%
-```
+**claude-cat** 은 Claude Code `statusLine` 으로, **사용량 한도**를 프롬프트 바로 아래에
+띄워 `/usage` 를 칠 필요가 없게 해 줍니다. **주간 한도**, **Fable 주간 한도**, **5시간
+세션 창**(있는 플랜만), 이 세션의 **비용**, **컨텍스트 창 %** 를 보여주고, rate limit 에
+가까워질수록 바가 초록 → 노랑 → 빨강으로 바뀌며 고양이 표정도 따라 바뀝니다.
 
-**Claude Code 2.1.327** 로 검증했습니다 — 주간 한도만 있는 **Ultra** 플랜(구 Max),
-한 줄에 `week` + `fable`, `Opus 5.5` / `Fable 5.2` 모델 chip.
+- ✅ **Claude Code 2.1.328**, **Opus 5.5**, **Fable 5.2**, Sonnet 5.5, **Ultra** 플랜(구 Max)
+  최신 대응 — Pro, API 키도 지원
+- ✅ 설정 없이 한 줄: `npx -y claude-cat@latest`
+- ✅ 오프라인 우선 — Claude Code 가 넘겨주는 데이터만 읽고, Fable 바만 명시적 opt-in
 
 ## 빠른 시작
 
@@ -73,7 +76,7 @@ npx -y claude-cat@latest update --dry-run  # 미리보기만
 
 ## 레이아웃
 
-<p align="center"><img src="assets/screenshots/compact.png" alt="기본 한 줄 레이아웃" width="780" /></p>
+<p align="center"><img src="assets/screenshots/kawaii-full.png" alt="claude-cat --full --kawaii: 주간·Fable 사용량 바와 3줄 고양이 카드" width="780" /></p>
 
 | 플래그 | 출력 |
 | ------ | ---- |
@@ -153,7 +156,7 @@ sonnet 5.5 · medium | 5h ▓▓▓▓▓░░░░░ 47% (1h 18m) | week ▓
 세션의 값을 빌려 쓰고(10분이 지나면 `stale · 14m ago` 로 흐리게), 모델 chip 은
 항상 그 터미널 자신의 모델을 보여줍니다.
 
-### stdin 필드 (Claude Code 2.1.327)
+### stdin 필드 (Claude Code 2.1.328)
 
 | 필드 | 용도 |
 | ---- | ---- |
@@ -166,7 +169,7 @@ sonnet 5.5 · medium | 5h ▓▓▓▓▓░░░░░ 47% (1h 18m) | week ▓
 | `context_window.used_percentage` | `ctx` |
 
 stdin 에 없는 것: Ultra 의 **Fable 주간 한도**(`/usage` 에는 있지만 Claude Code
-2.1.327 은 `seven_day` 만 보냄)와 **Extra usage**. 둘 다 비공개 엔드포인트
+2.1.328 은 `seven_day` 만 보냄)와 **Extra usage**. 둘 다 비공개 엔드포인트
 `/api/oauth/usage` 에만 있습니다. Fable 은 아래 opt-in 플래그로 가져올 수 있고,
 나중에 Claude Code 가 stdin 으로 보내기 시작하면 그 값이 자동으로 우선합니다.
 
@@ -226,7 +229,7 @@ Fable 이 100 % 에 가까우면 다른 주간 바처럼 고양이 mood 에도 �
 | critical | 어느 창이든 ≥ 95 % | `/ᐠ ✖ᴥ✖ ᐟ\` | 🛌 |
 
 mood 는 주간 한도가 결정합니다 — 실제로 한 주를 막는 한도이고, Ultra 에선 유일한
-한도입니다. 리셋 시각이 지난 창은 무시합니다.
+한도입니다. 리셋 시각이 지난 창은 0% 로 표시합니다(이미 리셋됐으므로).
 
 <details>
 <summary>3줄 kawaii 갤러리</summary>
@@ -239,6 +242,33 @@ resting     chill       curious     alert       nervous     critical
 ```
 
 </details>
+
+## 자주 묻는 질문
+
+**`/usage` 를 치지 않고 Claude Code 사용량 한도를 보려면?**
+claude-cat 을 상태 표시줄로 설치하세요(`npx -y claude-cat@latest configure`). 주간 한도,
+5시간 창, 세션 비용이 프롬프트 아래에 항상 떠 있고 응답마다 갱신됩니다.
+
+**Fable 사용량(Fable 주간 한도)은 어떻게 보나요?**
+`--fable-usage` 를 붙이세요. Claude Code 가 Fable 한도를 statusLine 에 넘겨주지 않아서,
+`/usage` 팝업과 같은 usage API 에서 읽어 오는 opt-in 옵션입니다 —
+[Fable 사용량](#fable-사용량-opt-in) 참조.
+
+**5시간 바가 안 보여요.**
+Ultra(구 Max)는 주간 한도만 있어서 Claude Code 가 `five_hour` 를 보내지 않습니다. Pro 는
+`5h` 바가 그대로 나옵니다.
+
+**Claude Max, Ultra, Pro, API 키, Bedrock 에서 되나요?**
+네 — [플랜](#플랜) 참조. Ultra/Max·Pro 는 사용량 바, API 키는 실제 비용,
+Bedrock/Vertex 는 고양이와 컨텍스트 % 를 보여줍니다.
+
+**Claude Code 가 느려지지 않나요?**
+아니요. 렌더링은 stdin 과 작은 로컬 캐시만 읽습니다(네트워크·의존성 로드 없음). opt-in
+Fable 조회는 분리된 백그라운드 프로세스에서 최대 5분에 한 번 실행됩니다.
+
+**ccusage 와 뭐가 다른가요?**
+[ccusage](https://github.com/ryoppippi/ccusage) 는 로컬 로그로 토큰 비용을 사후 분석하고,
+claude-cat 은 실시간 rate limit 사용량을 상태 표시줄에 보여줍니다. 같이 쓰면 좋습니다.
 
 <a id="개인정보와-보안"></a>
 ## 개인정보와 보안

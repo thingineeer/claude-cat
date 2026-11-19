@@ -163,8 +163,8 @@ CI runs every `test:*` script on every PR into `dev` or `main`.
 - window keys are auto-collected from `rate_limits.*` — don't
   hard-code a list of bucket names.
 - mood policy is **weekly-first**: weekly ≥ 60 or session ≥ 75 → alert;
-  any ≥ 85 → nervous; any ≥ 95 → critical; ignore windows whose
-  `resets_at` has passed. When no rate_limits are present, the cat is
+  any ≥ 85 → nervous; any ≥ 95 → critical; a window whose
+  `resets_at` has passed renders as 0% (it has been reset). When no rate_limits are present, the cat is
   **resting** regardless of percentage.
 - side-by-side kawaii stays as a 3-row card in `--full`. Additional
   data rows extend the right side; the cat column stays 3 rows and

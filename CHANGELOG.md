@@ -23,6 +23,11 @@
   reset shows as `week 0%` instead of vanishing. Previously, when every
   window had reset, the line fell back to "API mode — cost only".
 
+- README (en/ko): real Claude Code 2.1.328 screenshot as the hero
+  (Opus 5.5, week + Fable), a keyword-rich intro and an FAQ (usage
+  limit without `/usage`, Fable usage, no 5-hour bar on Ultra, plans,
+  performance, ccusage). npm description/keywords refreshed.
+
 ### Fixed
 - `--full` labels exactly 26 columns wide (`Current week (Sonnet
   only)`) no longer touch their bar.

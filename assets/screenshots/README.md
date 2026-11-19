@@ -5,8 +5,8 @@ reference them by path.
 
 | file | shows | command |
 | ---- | ----- | ------- |
-| `kawaii-full.png` | `--full --kawaii`, week + Fable (README hero) | `node bin/cli.js --full --kawaii --no-debug-chip` |
-| `compact.png` | default one-line layout | `node bin/cli.js --no-debug-chip` |
+| `compact.png` | real Claude Code 2.1.328 capture, one line + `--fable-usage` (README hero) | `npx -y claude-cat@latest --hide=opus,sonnet --fable-usage` |
+| `kawaii-full.png` | `--full --kawaii`, week + Fable (Layouts section) | `node bin/cli.js --full --kawaii --no-debug-chip` |
 | `configure-wizard.gif` | `claude-cat configure` walkthrough | `node bin/cli.js configure` |
 
 ## Re-capturing

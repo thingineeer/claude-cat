@@ -2,7 +2,7 @@
 
 <p align="left"><img src="assets/logo.svg" width="96" alt="claude-cat" /></p>
 
-> **The offline-first Claude Code status line.** A cute cat tells you how much usage is left — by default without touching a single network endpoint.
+> **See your Claude Code usage limits right in the status line.** Weekly limit, Fable weekly limit, 5-hour session, session cost and context % — with a cute cat. Offline-first: by default it never touches the network.
 
 [한국어 README →](./README.ko.md)
 
@@ -15,18 +15,23 @@
 [![zero credentials](https://img.shields.io/badge/credentials-not%20read%20by%20default-brightgreen)](#privacy--security)
 
 <p align="center">
-  <img src="assets/screenshots/kawaii-full.png" alt="kawaii cat with weekly and Fable usage bars in a terminal" width="780" />
+  <img src="assets/screenshots/compact.png" alt="Claude Code status line showing Opus 5.5, weekly usage limit 71% and Fable weekly usage 100%" width="900" />
   <br />
-  <em><code>--full --kawaii --fable-usage</code></em>
+  <em>Claude Code 2.1.328 · Opus 5.5 · Ultra plan — <code>npx -y claude-cat@latest --fable-usage</code></em>
 </p>
 
-```text
-opus 5.5 · xhigh | week ▓▓▓▓▓▓▓░░░ 66% (Sun 10pm) | $12.34 | ctx 18%
-```
+**claude-cat** is a Claude Code `statusLine` that keeps your **usage
+limits** under the prompt, so you never have to stop and type `/usage`:
+the **weekly limit**, the **Fable weekly limit**, the **5-hour session
+window** (on plans that have one), this session's **cost** and the
+**context window %**. Bars turn green → yellow → red as you approach a
+rate limit, and the cat's face follows along.
 
-Verified against **Claude Code 2.1.327** — weekly-only **Ultra** plans
-(formerly Max), `week` + `fable` on one line, `Opus 5.5` / `Fable 5.2`
-model chips.
+- ✅ Up to date with **Claude Code 2.1.328**, **Opus 5.5**, **Fable 5.2**,
+  Sonnet 5.5 and the **Ultra** plan (formerly Max) — also Pro and API keys
+- ✅ One line, zero config: `npx -y claude-cat@latest`
+- ✅ Offline-first — reads only what Claude Code already pipes in;
+  the Fable bar is an explicit opt-in
 
 ## Quick start
 
@@ -76,7 +81,7 @@ the running version.
 
 ## Layouts
 
-<p align="center"><img src="assets/screenshots/compact.png" alt="default one-line layout" width="780" /></p>
+<p align="center"><img src="assets/screenshots/kawaii-full.png" alt="claude-cat --full --kawaii: 3-row cat card with weekly and Fable usage bars" width="780" /></p>
 
 | flag | output |
 | ---- | ------ |
@@ -158,7 +163,7 @@ reuse the last active session's numbers (dimmed as `stale · 14m ago`
 after 10 minutes); the model chip always shows the terminal's own
 model.
 
-### stdin fields (Claude Code 2.1.327)
+### stdin fields (Claude Code 2.1.328)
 
 | field | used for |
 | ----- | -------- |
@@ -171,7 +176,7 @@ model.
 | `context_window.used_percentage` | `ctx` |
 
 Not in stdin: the **Fable weekly limit** on Ultra (the `/usage` popup
-has it, but Claude Code 2.1.327 pipes only `seven_day`) and **Extra
+has it, but Claude Code 2.1.328 pipes only `seven_day`) and **Extra
 usage**. Both live only behind the private `/api/oauth/usage` endpoint.
 Fable can be pulled from there with the opt-in flag below; if Claude
 Code starts sending it on stdin, that value wins automatically.
@@ -234,8 +239,8 @@ List prices per million tokens, for reference
 | critical | any ≥ 95 % | `/ᐠ ✖ᴥ✖ ᐟ\` | 🛌 |
 
 Weekly drives the mood — it's the limit that constrains your week, and
-on Ultra it's the only one. Windows whose reset time has passed are
-ignored.
+on Ultra it's the only one. A window whose reset time has passed reads
+0% — it has been reset.
 
 <details>
 <summary>3-row kawaii gallery</summary>
@@ -248,6 +253,36 @@ resting     chill       curious     alert       nervous     critical
 ```
 
 </details>
+
+## FAQ
+
+**How do I see my Claude Code usage limit without typing `/usage`?**
+Install claude-cat as your status line (`npx -y claude-cat@latest
+configure`). The weekly limit, 5-hour window and session cost stay
+visible under the prompt and refresh after every reply.
+
+**How do I check my Fable usage / Fable weekly limit?**
+Run with `--fable-usage`. Claude Code doesn't send the Fable limit to
+status-line scripts, so this opt-in flag reads it from the same usage
+API the `/usage` popup uses — see [Fable usage](#fable-usage-opt-in).
+
+**Why is there no 5-hour bar?**
+Ultra (formerly Max) is weekly-only — Claude Code sends no `five_hour`
+window for it. Pro plans still get the `5h` bar.
+
+**Does it work with Claude Max, Ultra, Pro, API keys, Bedrock?**
+Yes — see [Plans](#plans). Ultra/Max and Pro show usage bars, API keys
+show real cost, Bedrock/Vertex show the cat and context %.
+
+**Will it slow Claude Code down?**
+No. Rendering reads stdin and a small local cache — no network, no
+dependencies loaded. The opt-in Fable fetch runs in a detached
+background process at most every 5 minutes.
+
+**How is this different from ccusage?**
+[ccusage](https://github.com/ryoppippi/ccusage) analyzes token cost
+from local logs after the fact; claude-cat shows live rate-limit usage
+in the status line. They work well together.
 
 <a id="privacy--security"></a>
 ## Privacy & security
