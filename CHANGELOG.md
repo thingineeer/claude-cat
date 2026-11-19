@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Fixed
+- `--fable-usage`: the Fable reset time no longer reads one minute early
+  (`12:59 pm` next to the week's `1pm`). The usage API sends resets
+  like `…T03:59:59.926Z`; they're now rounded to the nearest second
+  instead of truncated.
+
 ### Still planned
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
   it; the `--fable-usage` refresher could carry it behind the same flag)
