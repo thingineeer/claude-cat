@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Still planned
+- Extra usage bar (needs a live source — the stdin JSON doesn't expose
+  it; the `--fable-usage` refresher could carry it behind the same flag)
+- Light-theme aware palette (currently tuned for dark terminals)
+
+## [1.8.0] - 2026-11-19
+
 ### Added
 - **`--fable-usage` (opt-in)** — the Fable weekly bar on Ultra.
   Claude Code 2.1.327 doesn't put it on the statusLine stdin, so this
@@ -31,11 +38,6 @@
 ### Fixed
 - `--full` labels exactly 26 columns wide (`Current week (Sonnet
   only)`) no longer touch their bar.
-
-### Still planned
-- Extra usage bar (needs a live source — the stdin JSON doesn't expose
-  it; daemon proxying `/api/oauth/usage` is the leading candidate)
-- Light-theme aware palette (currently tuned for dark terminals)
 
 ## [1.7.0] - 2026-11-19
 
