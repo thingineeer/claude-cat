@@ -19,7 +19,7 @@
 // rate_limits for Pro/Ultra (formerly Max) subscribers after the first assistant
 // response, and drops each window once its resets_at passes.
 
-import { pickCat, catArt, THEME_NAMES } from "./cats.js";
+import { catArt, THEME_NAMES } from "./cats.js";
 import { bar, fmtCountdown, fmtAgo, absoluteResetParts, fmtCost, colorByPct, colors as C, setRenderNow, getRenderNowSec } from "./format.js";
 import { parseIconMode, iconFor } from "./icons.js";
 import { maybeDumpStdin, debugEnabled } from "./debug.js";
@@ -124,13 +124,13 @@ function labelFor(key, { variant = "long" } = {}) {
 // Compact-only model chip: shorten `model.display_name` into a single
 // token that fits at the head of a one-line status bar.
 //
-//   'Opus 5 (1M context)'   → 'opus 5'
-//   'Fable 5'               → 'fable 5'
-//   'Sonnet 4.6'            → 'sonnet 4.6'
-//   'Haiku 4.5'             → 'haiku 4.5'
+//   'Opus 5.5 (1M context)' → 'opus 5.5'
+//   'Fable 5.2'             → 'fable 5.2'
+//   'Sonnet 5.5'            → 'sonnet 5.5'
+//   'Haiku 5.5'             → 'haiku 5.5'
 //
-// The space is kept: 'opus 5' is how the model is actually spelled,
-// and squashing it to 'opus5' reads as a typo at a glance.
+// The space is kept: 'opus 5.5' is how the model is actually spelled,
+// and squashing it to 'opus5.5' reads as a typo at a glance.
 //
 // Parenthetical variants ('(1M context)') are dropped: compact is the
 // width-constrained layout, and the ctx chip already reports the
@@ -160,7 +160,7 @@ function shortModelName(displayName) {
 
 // Effort chip: `effort.level` as Claude Code reports it ('low' /
 // 'medium' / 'high' / 'xhigh' / 'max'). Rides on the model chip —
-// 'fable 5 · high' — in both compact and full so "which model, how
+// 'fable 5.2 · high' — in both compact and full so "which model, how
 // hard is it thinking" reads as one unit.
 //
 // Same trust boundary as the model chip: sanitizeText, then a strict
@@ -252,15 +252,6 @@ function collectWindows(d, { variant = "long", hide } = {}) {
 // Label width / padding — delegated to src/width.js which understands
 // East Asian Width (Korean labels take 2 columns per glyph).
 
-// Inline cat glyph for single-line layouts (compact / wide). Kawaii
-// art is multi-line so we fall back to the compact glyph there — the
-// kawaii 3-line art only makes sense in 'full'.
-function inlineCatGlyph({ windows, state }, theme) {
-  if (theme === "none") return null;
-  const art = catArt({ windows, state }, "compact");  // always single-line here
-  return art ? art.lines[0] : null;
-}
-
 // Classify the *situation* independent of usage percent. Drives which
 // fallback phrase to print and whether the cat should rest instead of
 // react to windows. Signals:
@@ -268,7 +259,7 @@ function inlineCatGlyph({ windows, state }, theme) {
 //   - cost > 0 and no windows                  → 'cost_only'
 //     (API-key or provider that reports cost but not rate_limits)
 //   - cost === 0 and no windows and ctx exists → 'warming_up'
-//     (Pro/Max session before the first reply, most common)
+//     (subscription session before the first reply, most common)
 //   - nothing at all                           → 'warming_up' (conservative)
 //
 // Windows whose resets_at has already passed are ignored — they're stale
@@ -450,8 +441,8 @@ function renderCompact(d, {
   const cs = fmtCost(d?.cost?.total_cost_usd);
 
   // Compact stays cat-less — the cat lives in --full --kawaii — but
-  // cost now rides alongside ctx in the tail group. Max-plan users
-  // asked for the $ back; the bold-white cost chip sits next to the
+  // cost now rides alongside ctx in the tail group. Subscription
+  // users asked for the $ back; the bold-white cost chip sits next to the
   // dim-cyan ctx chip so the bars still lead the eye.
   //
   // The model chip leads the line. `head` is locked to line 1 by
@@ -525,7 +516,7 @@ function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = t
   // ANSI escapes that retitle the terminal, clear the screen, or
   // inject fake hyperlinks.
   //
-  // The effort level rides on the model ('Fable 5 · high'). The header
+  // The effort level rides on the model ('Fable 5.2 · high'). The header
   // row is shorter than the window rows below it, so the extra token
   // lands in otherwise-blank space — the card doesn't grow.
   const model = modelEffortChip(
@@ -615,8 +606,8 @@ function renderFull(d, { iconMode = "none", catTheme = "compact", showDebugChip 
 }
 
 // Wide layout: every window on a single horizontal line. Cat-less
-// like compact, but now carries the cost chip alongside ctx so Max-
-// plan users can eyeball spend without leaving the row.
+// like compact, but carries the cost chip alongside ctx so
+// subscription users can eyeball spend without leaving the row.
 // Wide is for heavy users who don't want the line to ever wrap.
 function renderWide(d, { iconMode = "none", showDebugChip = true, showCost = true, showCtx = true, hide } = {}) {
   const windows = collectWindows(d, { variant: "short", hide });
