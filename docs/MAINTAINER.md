@@ -53,7 +53,7 @@ In that worktree:
 3. Commit (`chore(release): X.Y.Z`).
 4. Push the `release/X.Y.Z` branch.
 5. `gh pr create --base main --head release/X.Y.Z --title "chore(release): X.Y.Z"`.
-6. Wait for CI + CodeRabbit. Resolve threads.
+6. Wait for CI.
 7. `gh pr merge <num> --merge` (merge commit, not squash).
 
 Then back in the primary checkout:
@@ -67,9 +67,12 @@ git push origin vX.Y.Z
 
 # extract just the version's CHANGELOG section for release notes
 awk '/^## \[X\.Y\.Z\]/{p=1} /^## /&&!/^## \[X\.Y\.Z\]/&&p{exit} p' CHANGELOG.md > /tmp/notes.md
-gh release create vX.Y.Z --title "claude-cat vX.Y.Z" --notes-file /tmp/notes.md
+# The release-draft workflow already opened a *draft* vX.Y.Z when the
+# release PR hit main — publish that draft. Don't `gh release create`
+# a second one; that leaves a duplicate draft behind.
+gh release edit vX.Y.Z --title "claude-cat vX.Y.Z" --notes-file /tmp/notes.md --draft=false --latest
 
-npm publish               # token already in ~/.npmrc from setup.sh
+npm publish               # see "npm auth" below if it fails with E401/E403
 
 # fast-forward dev onto main
 git checkout dev
@@ -115,6 +118,20 @@ To rotate:
 
 Never paste the token into the public `claude-cat` repo, GitHub
 Actions logs, screenshots, or any chat transcript that gets shared.
+
+## npm auth (2FA security key)
+
+Since 2026-11 the npm account has 2FA on (`auth-and-writes`, security
+key). Publishing needs either:
+
+- **Interactive** — `npm login`, then `npm publish`. Both print an
+  `https://www.npmjs.com/auth/cli/…` URL; open it in **Chrome or
+  Safari** (the Aside browser doesn't surface the WebAuthn prompt) and
+  approve with the key. A login token created *before* 2FA was turned
+  on gets a flat `E403` instead of the auth prompt — `npm logout && npm
+  login` again.
+- **Token** — a granular token with "Bypass 2FA" (see below), for
+  non-interactive publishes.
 
 ## Common gotchas
 
