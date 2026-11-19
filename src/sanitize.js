@@ -28,13 +28,13 @@ export function sanitizeText(v) {
 }
 
 // Validate a rate_limits bucket key. Legitimate keys from Claude Code
-// look like `five_hour`, `seven_day`, `seven_day_opus_4x` — alphanum
+// look like `five_hour`, `seven_day`, `seven_day_fable` — alphanum
 // plus underscore, starting with a letter. Anything else (path
 // traversal, shell metachars, ANSI) is rejected and the renderer
 // falls back to displaying the raw key as `?` so the UI isn't
 // spoofable via window names.
 // Lowercase-only — Claude Code's documented keys (`five_hour`,
-// `seven_day`, `seven_day_opus_4x`) are all snake_case. Dropping the
+// `seven_day`, `spend_limit`) are all snake_case. Dropping the
 // case-insensitive flag keeps the whitelist tight and matches the
 // release policy ("alphanum + underscore, starting with a letter").
 const SAFE_KEY = /^[a-z][a-z0-9_]*$/;

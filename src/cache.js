@@ -31,7 +31,7 @@
 //   - File writes are atomic (write-to-tmp then rename) so a concurrent
 //     read never sees a partial file.
 
-import { readFileSync, writeFileSync, mkdirSync, renameSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, renameSync, readdirSync, statSync, unlinkSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
@@ -92,21 +92,46 @@ function cleanForCache(d) {
   return out;
 }
 
+const TMP_PREFIX = ".ratelimits-tmp-";
+const TMP_MAX_AGE_MS = 10 * 60 * 1000;
+
+// Claude Code can kill a status-line process mid-write, which leaves a
+// tmp file behind that never gets renamed. Sweep any that are older than
+// a few minutes (a live writer finishes in milliseconds). The directory
+// holds a handful of entries, so this is cheap enough for the hot path.
+function sweepStaleTmp() {
+  try {
+    const cutoff = Date.now() - TMP_MAX_AGE_MS;
+    for (const name of readdirSync(CACHE_DIR)) {
+      if (!name.startsWith(TMP_PREFIX)) continue;
+      const p = join(CACHE_DIR, name);
+      try {
+        if (statSync(p).mtimeMs < cutoff) unlinkSync(p);
+      } catch {}
+    }
+  } catch {}
+}
+
 export function writeCacheIfActive(d) {
   if (!hasRateLimits(d)) return;
+  let tmp = null;
   try {
     mkdirSync(CACHE_DIR, { recursive: true });
+    sweepStaleTmp();
     const clean = cleanForCache(d);
     const payload = JSON.stringify({
       written_at: Math.floor(Date.now() / 1000),
       ...clean,
     });
     // Atomic write: tmp → rename so concurrent readers never see partial data.
-    const tmp = join(CACHE_DIR, `.ratelimits-tmp-${randomBytes(4).toString("hex")}.json`);
+    tmp = join(CACHE_DIR, `${TMP_PREFIX}${randomBytes(4).toString("hex")}.json`);
     writeFileSync(tmp, payload, { encoding: "utf8" });
     renameSync(tmp, CACHE_FILE);
+    tmp = null;
   } catch {
-    // Cache write failures must never break the status line.
+    // Cache write failures must never break the status line — but don't
+    // leave the half-written tmp file behind either.
+    if (tmp) { try { unlinkSync(tmp); } catch {} }
   }
 }
 

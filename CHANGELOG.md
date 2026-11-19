@@ -9,6 +9,23 @@
   versions. Ink 7+ needs Node.js 22, so `engines.node` is now `>=22`
   and CI runs on Node 22. The status-line render path itself is
   unchanged.
+- **README rewrite** (en/ko) — shorter, one structure for both
+  languages: quick start → layouts → options/env tables → plans and
+  stdin fields → moods → privacy & security. Fresh screenshots of the
+  current output (Fable 5.2, week + fable).
+
+### Fixed
+- Cache tmp files no longer pile up in `~/.claude/claude-cat/` when a
+  render is killed mid-write — a failed write removes its tmp file and
+  leftovers older than 10 minutes are swept.
+- `scripts/capture-all.sh` globs `examples/*.json` instead of a
+  hard-coded list that referenced a missing fixture.
+
+### Removed
+- Dead code: the percent-based cat API (`moodFor` / `pickCat`), an
+  unused inline-glyph helper, `tzName`, two unused labels, and the
+  never-imported `src/configure/preview.js`. Rendered output is
+  byte-identical across every fixture × layout × theme.
 
 ### Still planned
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose

@@ -60,3 +60,5 @@ jobs:
         run: npm run test:stale
       - name: Update command (offline)
         run: npm run test:update
+      - name: Cache tmp sweep
+        run: npm run test:cache-tmp

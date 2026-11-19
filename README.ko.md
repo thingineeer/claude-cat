@@ -1,5 +1,7 @@
 # 🐾 claude-cat
 
+<p align="left"><img src="assets/logo.svg" width="96" alt="claude-cat" /></p>
+
 > **오프라인 전용 Claude Code 상태 표시줄.** 네트워크 한 번 안 타고 남은 사용량을 고양이가 알려줍니다.
 
 [English README →](./README.md)
@@ -9,335 +11,254 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![node](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](https://nodejs.org)
 [![install size](https://packagephobia.com/badge?p=claude-cat)](https://packagephobia.com/result?p=claude-cat)
-[![zero network](https://img.shields.io/badge/network-0%20calls-brightgreen)](#why-claude-cat)
-[![zero credentials](https://img.shields.io/badge/credentials-never%20read-brightgreen)](#why-claude-cat)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/thingineeer/claude-cat/graphs/commit-activity)
-
-> **🆕 Claude Code 2.1.327 대응** (2026-11-19) — 실제 statusLine 페이로드로
-> 검증했습니다. 주간 한도만 있는 **Ultra** 플랜(구 Max), 한 줄에 `week` +
-> `fable`, 새 `spend_limit` 창, `Opus 5.5` / `Fable 5.2` 모델 chip 을
-> 지원합니다. [stdin 필드](#stdin-필드-claude-code-21327) 참조.
+[![zero network](https://img.shields.io/badge/network-0%20calls-brightgreen)](#개인정보와-보안)
+[![zero credentials](https://img.shields.io/badge/credentials-never%20read-brightgreen)](#개인정보와-보안)
 
 <p align="center">
-  <img src="assets/screenshots/kawaii-chill.png" alt="3줄 kawaii 카드" width="780" />
+  <img src="assets/screenshots/kawaii-full.png" alt="주간·Fable 사용량 바와 kawaii 고양이" width="780" />
   <br />
-  <em>3줄 kawaii 카드 — <code>--full --kawaii</code></em>
+  <em><code>--full --kawaii</code> — Fable 행은 Claude Code 가 해당 버킷을 보내면 표시됩니다</em>
 </p>
-
-<a id="why-claude-cat"></a>
-## 🛡️ 왜 claude-cat
-
-claude-cat 은 Claude Code 가 statusLine 스크립트에 **이미 stdin 으로 넘겨주는
-JSON** 만 읽어 렌더링합니다. 그 이상은 아무것도 안 합니다 — 이게 전체 설계
-이자 전체 안전 서사입니다:
-
-- **🚫 네트워크 호출 0회.** `api.anthropic.com` 안 부름.
-  `claude.ai` 안 부름. `/api/oauth/usage` 안 부름. 방화벽 뒤에서도
-  그대로 작동. `tcpdump` 찍어도 아무것도 안 나옴. (유일한 예외는
-  직접 실행하는 `claude-cat update` — npm registry 에 최신 버전만 물어봄.)
-- **🚫 크레덴셜 읽기 0회.** `~/.claude/.credentials.json`, macOS
-  Keychain, OAuth 토큰 **절대** 안 건드림. npm 계정이 털려도
-  최악의 시나리오가 "상태 표시줄이 이상하게 나옴" — Anthropic
-  계정 탈취는 불가.
-- **🚫 외부로 쓰기 0회.** `~/.claude/claude-cat/` (로컬 sync 캐시 +
-  디버그 덤프)만 씀. 컴퓨터 밖으로 나가는 바이트 없음.
-- **✅ stdin-only 정책.** [`SECURITY.md`](./SECURITY.md) 에 명시되어
-  있고 프로젝트의 threat model 로 못박힘. 부수 효과가 아닌 설계
-  의도.
-
-### 다른 Claude Code statusLine / 사용량 도구들과 비교
-
-| 항목 | **claude-cat** | ccstatusline | claude-dashboard | ccusage |
-| --- | :---: | :---: | :---: | :---: |
-| statusLine 실시간 렌더링 | ✅ | ✅ | ✅ | ❌ (CLI) |
-| **네트워크 호출 없음** | **✅** | ❌ (Anthropic API) | ❌ (Anthropic API) | 🟡 (pricing fetch, `--offline` 가능) |
-| **OAuth / 크레덴셜 읽기 없음** | **✅** | ❌ | ❌ | ✅ |
-| kawaii 고양이 mood 😺 | ✅ | ❌ | ❌ | ❌ |
-| 여러 터미널 간 sync | ✅ | ❌ | ❌ | n/a |
-| 과거 / 비용 리포트 | ❌ | 🟡 | ✅ | ✅ |
-
-**언제 claude-cat 을 고르나**: 친근한 항상-켜진 상태줄 원하고,
-툴체인이 뒤에서 Anthropic 과 몰래 통신하지 않길 바라는 경우.
-**[`ccusage`](https://github.com/ryoppippi/ccusage) 와 병행 추천**
-— 두 툴은 겹치지 않음 (claude-cat = 실시간 렌더, ccusage = 비용
-분석).
-
-> "그냥 고양이" 는 귀여운 태그라인이 아니라 threat model 입니다.
-
-## 설치
-
-### 빠른 설정 (추천)
-
-인터랙티브 wizard 를 실행하세요 — 레이아웃, 고양이 테마, 리프레시 주기,
-플랜을 30초 안에 설정합니다:
-
-```bash
-npx -y claude-cat@latest configure
-```
-
-`~/.claude/settings.json` 을 자동으로 수정해주며 (diff 미리보기 후 확인),
-다른 키는 건드리지 않습니다. Claude Code 재시작하면 다음 턴부터 보입니다.
-
-### 업데이트
-
-```bash
-npx -y claude-cat@latest update            # 적용
-npx -y claude-cat@latest update --dry-run  # 바뀔 내용만 미리보기
-```
-
-명령 하나로 로컬의 모든 사본을 최신 릴리즈로 맞춥니다 — 오래된 `npx` 캐시
-삭제, 전역 설치(`npm i -g`) 업그레이드, `~/.claude/settings.json` 에 고정된
-`claude-cat@x.y.z` 버전 올리기, 새 버전 미리 설치(다음 statusLine 렌더가 바로
-뜨도록). `claude-cat --version` 은 지금 실행 중인 버전을 출력합니다. 오래된
-캐시 사본은 `update` 를 모를 수 있으니 위처럼 `@latest` 로 실행하세요.
-
-### 수동 설정 (프롬프트 붙여넣기)
-
-모드 골라서 아래 프롬프트를 Claude Code 에 붙여넣으면 됩니다.
-
-### A) ⭐ 기본 — compact, 한 줄 *(추천)*
-
-깔리는 것: 한 줄에 모델 · effort + 사용량 바 + `$` 비용 + `ctx %`. 고양이 없음. 좁은 터미널에선 자동 줄바꿈.
 
 ```text
 opus 5.5 · xhigh | week ▓▓▓▓▓▓▓░░░ 66% (Sun 10pm) | $12.34 | ctx 18%
 ```
 
-Ultra(구 Max)는 주간 한도만 있어서 지금은 이게 전부입니다. Claude Code 가
-Fable 주간 버킷도 보내주면 플래그 없이 같은 줄에 붙습니다:
+**Claude Code 2.1.327** 로 검증했습니다 — 주간 한도만 있는 **Ultra** 플랜(구 Max),
+한 줄에 `week` + `fable`, `Opus 5.5` / `Fable 5.2` 모델 chip.
 
-```text
-fable 5.2 · high | week ▓▓▓▓▓▓▓░░░ 66% (Sun 10pm) | fable ▓▓▓░░░░░░░ 34% (Sun 10pm) | $12.34 | ctx 18%
+## 빠른 시작
+
+```bash
+npx -y claude-cat@latest configure
 ```
 
-5시간 세션 창이 있는 플랜이면 `week` 앞에 `5h ▓▓▓▓░░░░░░ 47% (1h 19m)` 바가 붙습니다.
+wizard 가 레이아웃·고양이 테마·chip·모델별 바·리프레시 주기·플랜을 묻고, diff 를
+보여준 뒤 `~/.claude/settings.json` 의 `statusLine` 만 씁니다(다른 키는 그대로).
+다음 Claude Code 턴부터 보입니다.
 
-```text
-Install claude-cat (https://github.com/thingineeer/claude-cat) into my
-~/.claude/settings.json as the statusLine.
-
-- type: "command"
-- command: "npx -y claude-cat@latest"
-- padding: 0
-- refreshInterval: 300
-
-Don't touch any other key. Show me the diff first.
-```
-
-### B) 3줄 kawaii 고양이
-
-깔리는 것: 3줄 카드 — 왼쪽엔 ASCII 고양이, 오른쪽엔 데이터 행. 사용량에 따라 얼굴과 소품이 바뀝니다.
-header 줄에 모델 · effort · 비용 · ctx 가 들어가며, effort 는 header 의 빈 폭에
-들어가므로 카드는 그대로 3줄입니다.
-
-```text
- /\_/\    Fable 5.2 · high  ·  $12.34  ·  ctx 18% used (82% left)
-( -ㅅ-)   Current week (all models) ▓▓▓▓▓▓▓▓▓░░░░░  66% · Resets Nov 22, 10pm
- / づ☕    Current week (Fable)      ▓▓▓▓▓░░░░░░░░░  34% · Resets Nov 22, 10pm
-```
-
-```text
-Install claude-cat (https://github.com/thingineeer/claude-cat) into my
-~/.claude/settings.json as the statusLine.
-
-- type: "command"
-- command: "npx -y claude-cat@latest --full --kawaii"
-- padding: 0
-- refreshInterval: 300
-
-Don't touch any other key. Show me the diff first.
-```
+<p align="center">
+  <img src="assets/screenshots/configure-wizard.gif" alt="configure wizard 데모" width="720" />
+</p>
 
 <details>
-<summary>전체 모드 한눈에 보기</summary>
+<summary>수동 설정</summary>
 
-설치 방식은 같고 `command` 값만 바꾸면 됩니다.
+`~/.claude/settings.json` 에 추가:
 
-<table>
-<thead>
-<tr><th>플래그</th><th>명령어</th><th>미리보기</th></tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>⭐ (기본값)</strong></td>
-<td><code>npx -y claude-cat@latest</code></td>
-<td><pre>opus 5.5 · xhigh | week ▓▓░░░░░░░░ 18% (Fri 1pm) | $0.123</pre></td>
-</tr>
-<tr>
-<td><code>--full --kawaii</code></td>
-<td><code>npx -y claude-cat@latest --full --kawaii</code></td>
-<td><pre> /\_/\   Opus 5.5 · xhigh · $0.123
-( ^ω^ )  week     ▓▓▓░░░░░░░░░░░ 18% · Resets Nov 20, 1pm
- / >🍣</pre></td>
-</tr>
-<tr>
-<td><code>--full</code></td>
-<td><code>npx -y claude-cat@latest --full</code></td>
-<td><pre>/ᐠ ^ᴥ^ ᐟ\  Opus 5.5 · xhigh · $0.123
-week     ▓▓▓░░░░░░░░░░░ 18% · Resets Nov 20, 1pm</pre></td>
-</tr>
-<tr>
-<td><code>--wide</code></td>
-<td><code>npx -y claude-cat@latest --wide</code></td>
-<td><pre>week ▓░░░░░░░ 18% (Fri 1pm) | $0.123</pre></td>
-</tr>
-<tr>
-<td><code>--full --no-cat</code></td>
-<td><code>npx -y claude-cat@latest --full --no-cat</code></td>
-<td><pre>Opus 5.5 · xhigh · $0.123
-week     ▓▓▓░░░░░░░░░░░ 18% · Resets Nov 20, 1pm</pre></td>
-</tr>
-</tbody>
-</table>
+```json
+"statusLine": {
+  "type": "command",
+  "command": "npx -y claude-cat@latest",
+  "padding": 0,
+  "refreshInterval": 300
+}
+```
 
-`--no-model` (compact 의 모델 chip 숨김 — effort 도 같이 빠짐), `--no-effort`
-(모델은 두고 `· high` effort 만 숨김 — compact 와 `--full` 공통).
-전체 플래그/환경변수: 영문 README 참조.
-`--hide=opus,sonnet` — `week · fable` 만 남김 (5h 있는 플랜은 `5h` 포함).
-`CLAUDE_CAT_PLAN=pro|ultra|auto` — Pro 사용자는 `pro` 설정하면 주간 bar
-자동 숨김 (wizard가 자동 설정). 예전 값 `max` 도 그대로 동작하며 `ultra` 와 같습니다.
+다른 레이아웃은 `command` 뒤에 플래그를 붙입니다. 예:
+`npx -y claude-cat@latest --full --kawaii`.
 
 </details>
 
-## 출력 읽는 법
+### 업데이트
+
+```bash
+npx -y claude-cat@latest update            # 적용
+npx -y claude-cat@latest update --dry-run  # 미리보기만
+```
+
+오래된 `npx` 캐시 삭제, 전역 설치 업그레이드, `settings.json` 에 고정된
+`claude-cat@x.y.z` 버전 올리기, 새 버전 미리 설치(다음 렌더가 바로 뜨도록)를 한 번에
+합니다. `claude-cat --version` 은 실행 중인 버전을 출력합니다.
+
+## 레이아웃
+
+<p align="center"><img src="assets/screenshots/compact.png" alt="기본 한 줄 레이아웃" width="780" /></p>
+
+| 플래그 | 출력 |
+| ------ | ---- |
+| *(기본)* | 한 줄 — 모델 · 바 · `$` · `ctx` |
+| `--wide` | 한 줄, 모델 chip 없이 짧은 바 |
+| `--full` | 1줄 고양이 얼굴 + 창마다 한 행 |
+| `--full --kawaii` | 소품을 든 3줄 ASCII 고양이 카드 |
+| `--full --no-cat` | 고양이 없는 `--full` |
+
+```text
+# 기본
+opus 5.5 · xhigh | week ▓▓▓▓▓▓▓░░░ 66% (Sun 10pm) | $12.34 | ctx 18%
+
+# --wide
+week ▓▓▓▓▓░░░ 66% (Sun 10pm) | $12.34 | ctx 18%
+
+# --full --kawaii
+ /\_/\    Fable 5.2 · high  ·  $12.34  ·  ctx 18% used (82% left)
+( -ㅅ-)   Current week (all models) ▓▓▓▓▓▓▓▓▓░░░░░  66% · Resets Nov 22, 10pm
+ / づ☕   Current week (Fable)      ▓▓▓▓▓░░░░░░░░░  34% · Resets Nov 22, 10pm
+```
+
+기본 한 줄은 좁은 터미널에서 줄바꿈되고, `--full` 은 3줄 카드를 유지합니다.
+Claude Code 가 Fable 주간 버킷을 보내면 같은 줄에 붙고, 5시간 세션 창이 있는
+플랜은 `5h` 바가 앞에 붙습니다:
 
 ```text
 fable 5.2 · high | week ▓▓▓▓▓▓▓░░░ 66% (Sun 10pm) | fable ▓▓▓░░░░░░░ 34% (Sun 10pm) | $12.34 | ctx 18%
+sonnet 5.5 · medium | 5h ▓▓▓▓▓░░░░░ 47% (1h 18m) | week ▓▓▓░░░░░░░ 31% (Sun 10pm) | $3.21 | ctx 18%
 ```
 
-| 칩 | 의미 |
-| --- | --- |
-| `opus 5.5` / `fable 5.2` / `sonnet 5.5` | 이 세션이 대화 중인 모델 — compact 전용 (`--full` 은 header 에 전체 이름 표시). `--no-model` 로 숨김 |
-| `· high` / `· max` | 세션의 effort level (`effort.level` — `low` / `medium` / `high` / `xhigh` / `max`). compact 와 `--full` 모두 모델 chip 뒤에 붙음. `--no-effort` 로 숨김 |
-| `week` / `fable` / `5h` / `spend` | rate-limit 창 — 주간(전체 모델) / Fable 주간 / 5시간 세션(있는 플랜만) / Claude apps gateway 지출 한도. 그 밖의 `rate_limits.seven_day_<model>` 은 `<model>` 로 자동 표시 |
-| `▓▓▓▓░░░░░░` | 10칸 진행 바 — 초록 → 노랑 → 빨강 |
-| `66%` | 정확한 퍼센트 |
-| `(Sun 10pm)` / `(1h 19m)` | 리셋 시점 — 주간은 절대, 5시간 세션은 상대 |
-| `$12.34` | **이 세션의 누적 비용 (USD)** — 아래 설명 |
-| `ctx 18%` | 현재 대화의 컨텍스트 사용률 |
+## 출력 읽는 법
 
-### `$12.34` 이 무엇이고 — 무엇이 아닌지
+| chip | 의미 |
+| ---- | ---- |
+| `opus 5.5 · xhigh` | 이 세션에서 선택한 모델과 effort level (`low` … `max`) |
+| `week` | 주간 한도 (전체 모델) |
+| `fable` / `opus` / `sonnet` | 모델별 주간 버킷 — `rate_limits.seven_day_<model>` 은 자동 표시 |
+| `5h` | 5시간 세션 창 (있는 플랜만) |
+| `spend` | Claude apps gateway 지출 한도 |
+| `▓▓▓▓▓▓▓░░░ 66%` | 사용률 — 초록 → 노랑 → 빨강 |
+| `(Sun 10pm)` / `(1h 18m)` | 리셋 시점 — 주간은 절대 시각, 5시간 창은 남은 시간 |
+| `$12.34` | Claude Code 가 계산한 이 세션 비용 ([설명](#의-의미)) |
+| `ctx 18%` | 컨텍스트 창 사용률 |
 
-**이 Claude Code 세션의 누적 비용** 입니다 (`cost.total_cost_usd`).
+## 옵션
 
-- ❌ 플랜 초과 "Extra usage" 요금 **아님** (다른 개념, statusLine 에 안 옴)
-- ❌ 월 구독료 **아님**
-- ❌ Pro/Ultra 면 지금 빠져나가는 돈 **아님** (정액제 — 참고용 숫자)
-- ✅ **API key** 모드면 실제 비용. **Bedrock / Vertex** 에선 `$0.00` 고정
+| 플래그 | 효과 |
+| ------ | ---- |
+| `--full` · `--wide` | 레이아웃 (기본: 한 줄) |
+| `--kawaii` · `--no-cat` · `--cat=compact\|kawaii\|none` | `--full` 의 고양이 테마 |
+| `--hide=<이름>` | chip 이름으로 바 숨김 — `--hide=opus,sonnet` 이면 `week` + `fable` 만 |
+| `--no-model` · `--no-effort` | 모델 chip / effort 만 숨김 |
+| `--no-cost` · `--no-ctx` | `$` / `ctx` chip 숨김 |
+| `--stack=auto\|always\|never` · `--max-cols=<n>` | 한 줄 레이아웃 줄바꿈 제어 |
+| `--icons=none\|emoji\|nerd` | 창 라벨 앞 아이콘 |
+| `--no-debug-chip` | `CLAUDE_CAT_DEBUG` 켠 상태에서 `[Debug]` 숨김 |
 
-이 값은 Claude Code 가 정가(또는
-[`modelPricing`](https://code.claude.com/docs/en/settings-reference#modelpricing) 표)로
-직접 계산한 것이고, claude-cat 은 다시 계산하지 않습니다 — stdin 에 모델별
-누적 토큰이 없어서 재계산하면 오히려 부정확해집니다. 참고용 현행 정가 (MTok 당,
-[모델 개요](https://platform.claude.com/docs/ko/models/overview)):
+| 환경변수 | 효과 |
+| -------- | ---- |
+| `CLAUDE_CAT_PLAN=pro\|ultra\|auto` | `pro` 는 주간 바 숨김, `ultra` / `auto` 는 전부 표시 (`max` 도 그대로 동작) |
+| `CLAUDE_CAT_COLUMNS=<n>` | 감지한 터미널 폭 덮어쓰기 |
+| `CLAUDE_CAT_DEBUG=1` | 받은 stdin 을 `~/.claude/claude-cat/last-stdin.json` 에 저장 |
 
-| 모델 | 입력 / MTok | 출력 / MTok |
-| ---- | ----------: | ----------: |
-| Claude Fable 5.2 *(최신)* | $8 | $40 |
-| Claude Fable 5.1 *(레거시)* | $10 | $50 |
-| Claude Opus 5.5 | $4 | $20 |
-| Claude Sonnet 5.5 | $2 | $10 |
-| Claude Haiku 5.5 | $0.10부터 | $0.50부터 |
+## 플랜
 
-## 고양이 mood
+| 플랜 | 표시 |
+| ---- | ---- |
+| **Ultra** *(구 Max)* | `week` (+ 들어오면 `fable`) — 주간 한도만, 5시간 창 없음 |
+| **Pro** | `5h` + `week` |
+| Claude apps gateway | `spend` + `$` |
+| API 키 | `$` (실제 비용) + 쉬는 고양이 |
+| Bedrock / Vertex | `$0.00` — Claude Code 가 가격을 계산 못 함 |
 
-고양이는 `--full` 모드에서만 나옵니다. 6가지 — 5개는 사용률, 1개(resting)는 상태 기반.
+`rate_limits` 는 세션의 첫 응답 이후에 옵니다. 대기 중인 터미널은 마지막 활성
+세션의 값을 빌려 쓰고(10분이 지나면 `stale · 14m ago` 로 흐리게), 모델 chip 은
+항상 그 터미널 자신의 모델을 보여줍니다.
 
-| 상태 | `--full` (1줄 face) | `--full --kawaii` 소품 |
-| ---- | ------------------- | ---------------------- |
-| 대기 중 *(resting)* | `/ᐠ -ᴥ- ᐟ\` | 🚬 담배 |
-| 0–30 % *(chill)* | `/ᐠ ^ᴥ^ ᐟ\` | 🍣 초밥 |
-| 30–60 % *(curious)* | `/ᐠ •ᴥ• ᐟ\` | ⌨️ 키보드 |
-| 60–85 % *(alert)* | `/ᐠ ◉ᴥ◉ ᐟ\` | ☕ 커피 |
-| 85–95 % *(nervous)* | `/ᐠ ⊙ᴥ⊙ ᐟ\` | 💤 휴식 |
-| 95 %+ *(critical)* | `/ᐠ ✖ᴥ✖ ᐟ\` | 🛌 기절 |
-
-mood 정책: `주간 ≥ 60 %` 또는 `세션 ≥ 75 %` → alert, 어느 창이든 ≥ 85 → nervous,
-≥ 95 → critical. 주간 한도만 있는 플랜(Ultra)은 주간 값만으로 결정됩니다.
-
-## 플랜별 호환
-
-| 플랜 | 표시 | 비고 |
-| ---- | ---- | ---- |
-| Claude **Ultra** *(구 Max)* | `week` 바 (+ 들어오면 `fable`), 주간 리셋, 고양이, 세션 비용 | 주간 한도만 — Claude Code 2.1.327 은 `rate_limits.seven_day` 만 보냄 |
-| Claude Pro | `5h` + `week` 바 (`CLAUDE_CAT_PLAN=pro` 면 주간 숨김) | `rate_limits` 는 첫 응답 이후 등장 |
-| Claude apps gateway | `spend` 바 (지출 한도 %) + 비용 | `rate_limits.spend_limit`, Claude Code ≥ 2.1.251 |
-| Anthropic API 키 | 세션 비용 + 고양이 | rate_limits 없음 |
-| Bedrock / Vertex | 비용 `$0.00` 고정 | 상위 제약 |
-
-<a id="stdin-필드-claude-code-21327"></a>
-## stdin 필드 (Claude Code 2.1.327)
-
-2026-11-19 실제 페이로드 덤프(`CLAUDE_CAT_DEBUG=1` →
-`~/.claude/claude-cat/last-stdin.json`)와
-[statusLine 문서](https://code.claude.com/docs/en/statusline)로 확인했습니다.
+### stdin 필드 (Claude Code 2.1.327)
 
 | 필드 | 용도 |
 | ---- | ---- |
-| `rate_limits.seven_day` | `week` 바 — 모든 구독 플랜 |
-| `rate_limits.five_hour` | `5h` 바 — **Ultra 에는 없음**, `resets_at` 이 지나도 빠짐 |
-| `rate_limits.seven_day_<model>` | 모델별 주간 바 (`fable`, `opus`, `sonnet` …) — 들어오면 자동 표시 |
-| `rate_limits.spend_limit` | Claude apps gateway 의 `spend` 바 |
-| `model.display_name` | 모델 chip (`Opus 5.5` → `opus 5.5`) |
-| `effort.level` | `· xhigh` effort chip |
-| `cost.total_cost_usd` | `$` chip |
-| `context_window.used_percentage` | `ctx` chip |
+| `rate_limits.seven_day` | `week` |
+| `rate_limits.five_hour` | `5h` — Ultra 에는 없음 |
+| `rate_limits.seven_day_<model>` | 모델별 주간 바 |
+| `rate_limits.spend_limit` | `spend` |
+| `model.display_name` · `effort.level` | 모델 · effort chip |
+| `cost.total_cost_usd` | `$` |
+| `context_window.used_percentage` | `ctx` |
 
-새로 생겼지만 아직 표시하지 않는 필드: `prompt_cache`, `workspace.repo`, `pr`,
-`session_name`, `prompt_id`.
+아직 stdin 에 없어서 표시하지 못하는 것: Ultra 의 **Fable 주간 한도**(`/usage` 에는
+있지만 Claude Code 2.1.327 은 `seven_day` 만 보냄 — 보내기 시작하면 `fable` 바가
+바로 뜸)와 **Extra usage**. 둘 다 `/api/oauth/usage` 에만 있고, claude-cat 은
+의도적으로 그 엔드포인트를 부르지 않습니다.
 
-## stdin 에 (아직) 없는 것
+<a id="의-의미"></a>
+### `$` 의 의미
 
-- **Fable 주간 한도** — Ultra 의 `/usage` 에는 Fable 행이 있지만(주간 한도의 최대
-  절반까지 사용 가능), Claude Code 2.1.327 의 statusLine stdin 에는 `seven_day` 만
-  옵니다. Claude Code 가 `rate_limits.seven_day_fable`(또는 예전
-  `seven_day_overage_included`)을 보내는 순간 `fable` 바로 자동 표시되고, 그전까진
-  `week` 만 나옵니다.
-- **Extra usage** (`$14 / $20 spent` 등) — `/api/oauth/usage`(비공개 엔드포인트)에만 있음.
+`cost.total_cost_usd` — Claude Code 가 정가(또는
+[`modelPricing`](https://code.claude.com/docs/en/settings-reference#modelpricing))로 계산한
+이 세션 비용입니다. Pro/Ultra 에선 참고용 숫자일 뿐 청구액이 아니고, Extra usage
+도 아닙니다. stdin 에 모델별 누적 토큰이 없어서 claude-cat 은 다시 계산하지
+않습니다. 참고용 정가 (MTok 당,
+[모델 개요](https://platform.claude.com/docs/ko/models/overview)):
 
-claude-cat 은 의도적으로 stdin 만 읽습니다 ([왜 claude-cat](#why-claude-cat) 참조).
+| 모델 | 입력 | 출력 |
+| ---- | ---: | ---: |
+| Fable 5.2 | $8 | $40 |
+| Fable 5.1 *(레거시)* | $10 | $50 |
+| Opus 5.5 | $4 | $20 |
+| Sonnet 5.5 | $2 | $10 |
+| Haiku 5.5 | $0.10부터 | $0.50부터 |
 
-## 보안
+## 고양이 mood
 
-claude-cat 은 의도적으로 작고 네트워크를 타지 않습니다 — Claude Code 가
-매 메시지마다 실행하는 경로니까 가볍고 안전해야 하기 때문입니다.
+| mood | 조건 | `--full` | `--kawaii` 소품 |
+| ---- | ---- | -------- | --------------- |
+| resting | rate limit 아직 없음 | `/ᐠ -ᴥ- ᐟ\` | 🚬 |
+| chill | 30 % 미만 | `/ᐠ ^ᴥ^ ᐟ\` | 🍣 |
+| curious | 30 % 이상 | `/ᐠ •ᴥ• ᐟ\` | ⌨️ |
+| alert | 주간 ≥ 60 % 또는 5h ≥ 75 % | `/ᐠ ◉ᴥ◉ ᐟ\` | ☕ |
+| nervous | 어느 창이든 ≥ 85 % | `/ᐠ ⊙ᴥ⊙ ᐟ\` | 💤 |
+| critical | 어느 창이든 ≥ 95 % | `/ᐠ ✖ᴥ✖ ᐟ\` | 🛌 |
 
-**하는 것** — Claude Code 가 statusLine 스크립트에 이미 흘려보내는 stdin JSON
-을 읽어서 컬러 한 줄을 출력.
+mood 는 주간 한도가 결정합니다 — 실제로 한 주를 막는 한도이고, Ultra 에선 유일한
+한도입니다. 리셋 시각이 지난 창은 무시합니다.
 
-**안 하는 것** — 네트워크 요청 없음, 크레덴셜 읽기 없음, Keychain 접근 없음,
-`~/.claude/claude-cat/` 밖으로 쓰기 없음. 불변 규칙은 [SECURITY.md](./SECURITY.md) 에.
+<details>
+<summary>3줄 kawaii 갤러리</summary>
 
-### npm 공급망(supply chain) 관련
+```text
+resting     chill       curious     alert       nervous     critical
+ /\_/\       /\_/\       /\_/\       /\_/\       /\_/\       /\_/|
+( -.-)      ( ^ω^ )     ( •ㅅ•)     ( -ㅅ-)     ( xㅅx)     ( -.-)zzZ
+ / >🚬~      / >🍣       / >⌨️       / づ☕      / づ💤       /   \
+```
 
-`npx -y claude-cat@latest` 는 최신 버전을 매번 다운받아 실행합니다. npm 에선
-표준이지만 알아두면 좋은 점:
+</details>
 
-- **재현성이 필요하면 버전 고정** — `@latest` 대신 `npx -y claude-cat@1.6.0`.
-  보안 어드바이저리 뜨면 업그레이드.
-- **패키지 감사** — 배포된 tarball 엔 `bin/`, `src/`, `examples/`, README/LICENSE
-  만 들어갑니다 (`package.json` 의 `files` 필드). 설치 전 검증 가능:
-  `npm pack claude-cat && tar -tf claude-cat-*.tgz`.
-- **로컬 설치 대안** — repo 를 clone 해서 statusLine 을
-  `node /path/to/claude-cat/bin/cli.js` 로 연결. npm 경유 없음.
+<a id="개인정보와-보안"></a>
+## 개인정보와 보안
 
-### 취약점 리포트
+claude-cat 은 Claude Code 가 statusLine 스크립트에 이미 stdin 으로 넘겨주는
+JSON 만 렌더링합니다.
 
-Private advisory 로만:
-**https://github.com/thingineeer/claude-cat/security/advisories/new**
+- **네트워크 없음** — 렌더링 중엔 `api.anthropic.com`, `claude.ai`,
+  `/api/oauth/usage` 모두 안 부릅니다. 유일한 예외는 직접 실행하는
+  `claude-cat update` 로, npm registry 에 최신 버전만 물어봅니다.
+- **크레덴셜 없음** — `~/.claude/.credentials.json`, Keychain, OAuth 토큰을
+  절대 읽지 않습니다.
+- **쓰기 제한** — `~/.claude/claude-cat/`(터미널 간 캐시, opt-in 디버그 덤프)
+  밖에는 쓰지 않습니다.
 
-public issue 열지 말아주세요. [SECURITY.md](./SECURITY.md) 참조.
+| | **claude-cat** | ccstatusline | claude-dashboard | ccusage |
+| --- | :---: | :---: | :---: | :---: |
+| 실시간 statusLine | ✅ | ✅ | ✅ | ❌ (CLI) |
+| 네트워크 호출 없음 | ✅ | ❌ | ❌ | 🟡 |
+| 크레덴셜 읽기 없음 | ✅ | ❌ | ❌ | ✅ |
+| 고양이 mood 😺 | ✅ | ❌ | ❌ | ❌ |
+| 비용 리포트 | ❌ | 🟡 | ✅ | ✅ |
 
-## 개발·기여
+과거 비용 분석은 [`ccusage`](https://github.com/ryoppippi/ccusage) 와 같이 쓰세요.
+
+**공급망** — `npx -y claude-cat@latest` 는 매번 최신 릴리즈를 실행합니다. 재현성이
+필요하면 버전을 고정(`claude-cat@1.7.0`)하거나, tarball 을 확인하거나
+(`npm pack claude-cat && tar -tf claude-cat-*.tgz` — `bin/`, `src/`, `examples/`,
+README, LICENSE 만 포함), statusLine 을 로컬 clone 으로 연결하세요:
+`node /path/to/claude-cat/bin/cli.js`.
+
+**취약점** — public issue 가 아닌
+[security advisory](https://github.com/thingineeer/claude-cat/security/advisories/new)
+로 비공개 제보해 주세요. [SECURITY.md](./SECURITY.md) 참조.
+
+## 개발
 
 ```bash
 git clone https://github.com/thingineeer/claude-cat.git
 cd claude-cat
 git config core.hooksPath .githooks
-npm run test:sample
+npm install
+npm run test:ultra          # fixture 하나
+./scripts/capture-all.sh    # 모든 fixture × 레이아웃 × 테마
 ```
 
-기여 가이드: [CONTRIBUTING.md](./CONTRIBUTING.md).
+Node.js 22 이상. 기여 가이드: [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## 라이선스
 
