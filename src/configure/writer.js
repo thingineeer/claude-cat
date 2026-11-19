@@ -25,6 +25,9 @@ export function buildCommand(answers) {
   if (answers.modelBars === "fable-only") flags.push("--hide=opus,sonnet");
   else if (answers.modelBars === "none") flags.push("--hide=fable,opus,sonnet");
 
+  // Opt-in network + credential read for the Fable weekly bar.
+  if (answers.fableUsage === "on" && answers.modelBars !== "none") flags.push("--fable-usage");
+
   return `npx -y claude-cat@latest${flags.length ? " " + flags.join(" ") : ""}`;
 }
 

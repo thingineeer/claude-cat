@@ -24,6 +24,8 @@ import { bar, fmtCountdown, fmtAgo, absoluteResetParts, fmtCost, colorByPct, col
 import { parseIconMode, iconFor } from "./icons.js";
 import { maybeDumpStdin, debugEnabled } from "./debug.js";
 import { writeCacheIfActive, readCacheForIdle } from "./cache.js";
+import { applyFableUsage } from "./fable.js";
+import { fileURLToPath } from "node:url";
 import { t } from "./i18n.js";
 import { padEndDisplay, displayWidth } from "./width.js";
 import { sanitizeText, isSafeWindowKey, clampPct } from "./sanitize.js";
@@ -211,8 +213,16 @@ function orderKey(k) {
 }
 
 function collectWindows(d, { variant = "long", hide } = {}) {
-  const rl = d.rate_limits || {};
+  const rl = { ...(d.rate_limits || {}) };
   const plan = process.env.CLAUDE_CAT_PLAN;
+  const now = getRenderNowSec();
+  // Claude Code drops a window from stdin once its reset time passes. If
+  // other subscription windows are still there but the weekly one is
+  // gone, the week has just reset — show it as 0% rather than hiding it.
+  // (Gateway-only payloads carry just `spend_limit`; leave those alone.)
+  const hasSubWindow = Object.keys(rl)
+    .some((k) => k === "five_hour" || k.startsWith("seven_day_"));
+  if (hasSubWindow && !rl.seven_day) rl.seven_day = { used_percentage: 0, resets_at: 0 };
   return Object.entries(rl)
     .filter(([k, v]) => {
       // Reject keys that don't match the expected `five_hour` /
@@ -239,14 +249,20 @@ function collectWindows(d, { variant = "long", hide } = {}) {
       const [ob, kb] = orderKey(b);
       return oa - ob || ka.localeCompare(kb);
     })
-    .map(([k, v]) => ({
-      key: k,
-      label: labelFor(k, { variant }),
-      // Clamp server-provided percentages into [0, 100] so a runaway
-      // 999999999% can't explode the line or shift later columns.
-      pct: clampPct(v.used_percentage ?? 0),
-      resets_at: v.resets_at,
-    }));
+    .map(([k, v]) => {
+      // A window whose reset time has passed has been reset: nothing is
+      // used in the new window yet, so it reads 0% (no reset phrase)
+      // instead of the old number with "ready now".
+      const expired = v.resets_at > 0 && v.resets_at <= now;
+      return {
+        key: k,
+        label: labelFor(k, { variant }),
+        // Clamp server-provided percentages into [0, 100] so a runaway
+        // 999999999% can't explode the line or shift later columns.
+        pct: expired ? 0 : clampPct(v.used_percentage ?? 0),
+        resets_at: expired || !v.resets_at ? null : v.resets_at,
+      };
+    });
 }
 
 // Label width / padding — delegated to src/width.js which understands
@@ -262,8 +278,8 @@ function collectWindows(d, { variant = "long", hide } = {}) {
 //     (subscription session before the first reply, most common)
 //   - nothing at all                           → 'warming_up' (conservative)
 //
-// Windows whose resets_at has already passed are ignored — they're stale
-// bookkeeping, not live state. Matches the CLAUDE.md mood invariant.
+// Windows whose resets_at has already passed arrive here already zeroed
+// by collectWindows (resets_at null), so they count as live 0% bars.
 function inferState(d, windows) {
   const now = getRenderNowSec();
   const live = (windows || []).filter(
@@ -543,7 +559,9 @@ function buildDataBlock(d, { iconMode, state, showDebugChip = true, showCost = t
     return lines;
   }
 
-  const labelCols = 26;
+  // At least one space between the longest label and its bar
+  // ('Current week (Sonnet only)' is exactly 26 columns).
+  const labelCols = Math.max(26, ...windows.map((w) => displayWidth(iconFor(iconMode, w.key) + w.label) + 1));
   for (const w of windows) {
     const pct = Math.round(w.pct);
     const phrase = fmtResetPhrase(w.key, w.resets_at);
@@ -731,6 +749,9 @@ async function main() {
   // and --full). Effort rides on the model chip, so --no-model hides
   // both.
   const showEffort = !args.includes("--no-effort");
+  // --fable-usage (opt-in): overlay the Fable weekly bar from the private
+  // usage endpoint via a background refresher. See src/fable.js.
+  const fableUsage = args.includes("--fable-usage");
   const raw = await readStdin();
   let d = safeParse(raw);
 
@@ -758,6 +779,16 @@ async function main() {
       const ownModel = d?.model?.display_name ? d.model : null;
       d = { ...d, ...usage, model: ownModel ?? cachedModel ?? d.model };
     }
+  }
+
+  // After the shared-cache step on purpose: injecting earlier would make
+  // an idle session look "active" and overwrite rate-limits-cache.json
+  // with a Fable-only payload.
+  if (fableUsage) {
+    d = applyFableUsage(d, {
+      cliPath: fileURLToPath(new URL("../bin/cli.js", import.meta.url)),
+      ccVersion: typeof d?.version === "string" ? d.version : undefined,
+    });
   }
 
   const opts = { iconMode, catTheme, showDebugChip, showCost, showCtx, showModel, showEffort, stack, cols, hide };

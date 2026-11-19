@@ -133,10 +133,12 @@ statusLine scripts. Don't:
 - add runtime dependencies unless essential — the script runs on every
   assistant message, cold start matters
 
-If a future feature (Extra usage, Sonnet-only bar) really does need
-the `/api/oauth/usage` endpoint, it goes behind an explicit opt-in
-flag AND the README calls out the tradeoff (undocumented endpoint,
-ToS gray area).
+The one sanctioned exception is `--fable-usage` (src/fable.js): an
+explicit opt-in flag whose detached background refresher reads the
+access token and calls `/api/oauth/usage`, with the tradeoff spelled
+out in README + SECURITY.md. It must **never refresh** the token,
+never persist it, and never run on the render path. Any further use of
+that endpoint follows the same rule: opt-in flag AND README tradeoff.
 
 ## Testing
 
@@ -161,8 +163,8 @@ CI runs every `test:*` script on every PR into `dev` or `main`.
 - window keys are auto-collected from `rate_limits.*` — don't
   hard-code a list of bucket names.
 - mood policy is **weekly-first**: weekly ≥ 60 or session ≥ 75 → alert;
-  any ≥ 85 → nervous; any ≥ 95 → critical; ignore windows whose
-  `resets_at` has passed. When no rate_limits are present, the cat is
+  any ≥ 85 → nervous; any ≥ 95 → critical; a window whose
+  `resets_at` has passed renders as 0% (it has been reset). When no rate_limits are present, the cat is
   **resting** regardless of percentage.
 - side-by-side kawaii stays as a 3-row card in `--full`. Additional
   data rows extend the right side; the cat column stays 3 rows and
