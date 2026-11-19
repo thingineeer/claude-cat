@@ -295,11 +295,12 @@ async function fetchUsage(ccVersion, trace = []) {
       const ra = Number(res.headers.get("retry-after"));
       return { ok: false, reason: "rate_limited", retryAfter: Number.isFinite(ra) && ra > 0 ? ra : null };
     }
-    if (!res.ok) return { ok: false, reason: "network" };
+    if (!res.ok) return { ok: false, reason: "network", detail: `http_${res.status}` };
     return { ok: true, json: await res.json() };
   } catch (e) {
-    trace.push(`usage API: ${e?.name === "AbortError" ? "timeout" : "network error"}`);
-    return { ok: false, reason: "network" };
+    const detail = e?.name === "AbortError" ? "timeout" : (e?.cause?.code || e?.name || "error");
+    trace.push(`usage API: ${detail}`);
+    return { ok: false, reason: "network", detail: String(detail).slice(0, 40) };
   } finally {
     clearTimeout(timer);
   }
@@ -324,6 +325,7 @@ export async function runRefresh(argv = []) {
         fetched_at: now,
         next_try_at: 0,
         status: "ok",
+        detail: null,
         weekly_resets_at: parsed.weekly_resets_at,
         fable: parsed.fable,
       });
@@ -334,7 +336,9 @@ export async function runRefresh(argv = []) {
       const reason = r.ok ? "bad_response" : r.reason;
       const wait = Math.max(r.retryAfter || 0, BACKOFF[reason] || BACKOFF.network);
       // Keep the last good numbers; only push the next attempt out.
-      writeJsonAtomic(CACHE(), { ...prev, next_try_at: now + wait, status: reason });
+      writeJsonAtomic(CACHE(), {
+        ...prev, next_try_at: now + wait, status: reason, detail: r.detail ?? null, failed_at: now,
+      });
       say(`✖ ${reason} — next automatic try in ${Math.round(wait / 60)} min`);
     }
   } finally {
