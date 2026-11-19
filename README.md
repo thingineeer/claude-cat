@@ -30,7 +30,9 @@ design — and the whole safety story:
 
 - **🚫 Zero network calls.** No `api.anthropic.com`. No
   `claude.ai`. No `/api/oauth/usage`. Run it behind a firewall; it
-  works the same. `tcpdump` stays empty.
+  works the same. `tcpdump` stays empty. (The one exception is
+  `claude-cat update`, which asks the npm registry for the latest
+  version — and only when you type it.)
 - **🚫 Zero credential reads.** Never touches
   `~/.claude/.credentials.json`, the macOS Keychain, or any OAuth
   token. If your npm account is ever compromised, the worst case
@@ -79,6 +81,21 @@ npx -y claude-cat@latest configure
 It writes `~/.claude/settings.json` for you (with a diff preview
 first, leaving every other setting untouched). Restart Claude Code
 and the line shows up on the next turn.
+
+### Updating
+
+```bash
+npx -y claude-cat@latest update            # apply
+npx -y claude-cat@latest update --dry-run  # just show what would change
+```
+
+One command brings every local copy up to the latest release: it
+clears stale `npx` cache entries, upgrades a global install
+(`npm i -g`), bumps a pinned `claude-cat@x.y.z` in
+`~/.claude/settings.json`, and pre-installs the new version so the
+next status-line render is instant. `claude-cat --version` prints the
+version you're running. Use `@latest` in the command above — an old
+cached copy may not know the `update` subcommand yet.
 
 ### Manual setup (paste a prompt)
 

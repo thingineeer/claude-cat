@@ -28,7 +28,8 @@ JSON** 만 읽어 렌더링합니다. 그 이상은 아무것도 안 합니다 �
 
 - **🚫 네트워크 호출 0회.** `api.anthropic.com` 안 부름.
   `claude.ai` 안 부름. `/api/oauth/usage` 안 부름. 방화벽 뒤에서도
-  그대로 작동. `tcpdump` 찍어도 아무것도 안 나옴.
+  그대로 작동. `tcpdump` 찍어도 아무것도 안 나옴. (유일한 예외는
+  직접 실행하는 `claude-cat update` — npm registry 에 최신 버전만 물어봄.)
 - **🚫 크레덴셜 읽기 0회.** `~/.claude/.credentials.json`, macOS
   Keychain, OAuth 토큰 **절대** 안 건드림. npm 계정이 털려도
   최악의 시나리오가 "상태 표시줄이 이상하게 나옴" — Anthropic
@@ -71,6 +72,19 @@ npx -y claude-cat@latest configure
 
 `~/.claude/settings.json` 을 자동으로 수정해주며 (diff 미리보기 후 확인),
 다른 키는 건드리지 않습니다. Claude Code 재시작하면 다음 턴부터 보입니다.
+
+### 업데이트
+
+```bash
+npx -y claude-cat@latest update            # 적용
+npx -y claude-cat@latest update --dry-run  # 바뀔 내용만 미리보기
+```
+
+명령 하나로 로컬의 모든 사본을 최신 릴리즈로 맞춥니다 — 오래된 `npx` 캐시
+삭제, 전역 설치(`npm i -g`) 업그레이드, `~/.claude/settings.json` 에 고정된
+`claude-cat@x.y.z` 버전 올리기, 새 버전 미리 설치(다음 statusLine 렌더가 바로
+뜨도록). `claude-cat --version` 은 지금 실행 중인 버전을 출력합니다. 오래된
+캐시 사본은 `update` 를 모를 수 있으니 위처럼 `@latest` 로 실행하세요.
 
 ### 수동 설정 (프롬프트 붙여넣기)
 
