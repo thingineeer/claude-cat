@@ -62,6 +62,7 @@
     "test:stale": "bash scripts/test-stale.sh",
     "test:update": "bash scripts/test-update.sh",
     "test:cache-tmp": "bash scripts/test-cache-tmp.sh",
+    "test:fable-usage": "bash scripts/test-fable.sh",
     "prepublishOnly": "npm run test:sample && npm run test:full && npm pack --dry-run"
   },
   "dependencies": {
