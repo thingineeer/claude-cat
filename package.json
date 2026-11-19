@@ -1,6 +1,6 @@
 {
   "name": "claude-cat",
-  "version": "1.2.6",
+  "version": "1.6.0",
   "description": "A cute cat on your Claude Code status line that shows remaining credits at a glance.",
   "keywords": [
     "claude",
@@ -45,6 +45,9 @@
     "test:fable": "cat examples/sample-with-fable.json | node bin/cli.js --full",
     "test:fable:compact": "cat examples/sample-with-fable.json | node bin/cli.js",
     "test:hide": "cat examples/sample-with-fable.json | node bin/cli.js --hide=opus,sonnet",
+    "test:ultra": "cat examples/sample-ultra.json | node bin/cli.js",
+    "test:ultra:full": "cat examples/sample-ultra.json | node bin/cli.js --full --kawaii",
+    "test:ultra:fable": "cat examples/sample-ultra-fable.json | node bin/cli.js",
     "test:warming": "cat examples/sample-warming-up.json | node bin/cli.js --full --kawaii",
     "test:saturated": "cat examples/sample-weekly-saturated.json | node bin/cli.js --full --kawaii",
     "test:apicost": "cat examples/sample-api-cost-only.json | node bin/cli.js --full --kawaii",
@@ -55,7 +58,9 @@
     "test:no-ctx": "cat examples/sample-with-sonnet.json | node bin/cli.js --full --no-ctx",
     "test:no-ctx:compact": "cat examples/sample-with-sonnet.json | node bin/cli.js --no-ctx",
     "test:no-ctx:wide": "cat examples/sample-with-sonnet.json | node bin/cli.js --wide --no-ctx",
+    "test:no-model": "bash scripts/test-model-chip.sh",
     "test:stale": "bash scripts/test-stale.sh",
+    "test:update": "bash scripts/test-update.sh",
     "prepublishOnly": "npm run test:sample && npm run test:full && npm pack --dry-run"
   },
   "dependencies": {

@@ -28,6 +28,12 @@ jobs:
         run: npm run test:fable:compact
       - name: Run sample (--hide window filter)
         run: npm run test:hide
+      - name: Run ultra (weekly only, compact)
+        run: npm run test:ultra
+      - name: Run ultra (weekly only, full kawaii)
+        run: npm run test:ultra:full
+      - name: Run ultra (week + fable, compact)
+        run: npm run test:ultra:fable
       - name: Run sample (warming up)
         run: npm run test:warming
       - name: Run sample (weekly saturated)
@@ -48,5 +54,9 @@ jobs:
         run: npm run test:no-ctx:compact
       - name: Run sample (--no-ctx chip toggle, wide)
         run: npm run test:no-ctx:wide
+      - name: Run sample (--no-model chip toggle, compact)
+        run: npm run test:no-model
       - name: Run sample (stale cache bars)
         run: npm run test:stale
+      - name: Update command (offline)
+        run: npm run test:update

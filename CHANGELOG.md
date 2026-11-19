@@ -2,6 +2,104 @@
 
 ## Unreleased
 
+### Still planned
+- Extra usage bar (needs a live source — the stdin JSON doesn't expose
+  it; daemon proxying `/api/oauth/usage` is the leading candidate)
+- Light-theme aware palette (currently tuned for dark terminals)
+
+## [1.6.0] - 2026-11-19
+
+### Added
+- **`claude-cat update`** — one command (`npx -y claude-cat@latest
+  update`) brings every local copy to the latest release: removes
+  stale claude-cat entries from the npm `_npx` cache (never another
+  tool's), upgrades an older global install, bumps a pinned
+  `claude-cat@x.y.z` in `~/.claude/settings.json`, and pre-warms the
+  exact npx spec the status line runs so the next render is instant.
+  `--dry-run` previews every change; `claude-cat --version` prints the
+  running version. This user-invoked command is the only code path that
+  touches the network (npm registry only) — the render path stays
+  network-free; README and SECURITY.md spell out the exception.
+- **Claude Code 2.1.327 support** — re-verified the statusLine stdin
+  against a live payload dump (2026-11-19). Ultra plans (formerly Max)
+  now send `rate_limits.seven_day` alone; the line renders cleanly as
+  `opus 5.5 · xhigh | week ▓▓▓▓▓▓▓░░░ 66% (Sun 10pm) | $12.34 | ctx 18%`
+  and the cat's mood is driven by the weekly bar alone.
+- **`week` + `fable` on one line** — `rate_limits.seven_day_fable` is
+  recognized as the Fable weekly bucket (alongside the older
+  `seven_day_overage_included`), pinned right after `week`, labeled
+  `fable` / `Current week (Fable)`. It appears automatically whenever
+  Claude Code sends it; `--hide=fable` drops it.
+- **`spend` bar** — `rate_limits.spend_limit` (Claude apps gateway spend
+  cap) renders as `spend` / `Spend limit` and weighs like a weekly bar
+  in the mood policy.
+- `examples/sample-ultra.json` (weekly-only) and
+  `examples/sample-ultra-fable.json` (week + fable) with far-future
+  `resets_at`, wired into CI as `test:ultra`, `test:ultra:full`,
+  `test:ultra:fable`.
+
+### Changed
+- **Max → Ultra** — the configure wizard's plan step offers `ultra
+  (formerly Max)`; `CLAUDE_CAT_PLAN=ultra` is documented and the old
+  `max` value keeps working.
+- Fable label drops the model version (`Current week (Fable 5)` →
+  `Current week (Fable)`) so it survives point releases (Fable 5.2 …).
+- README (en/ko): weekly-first examples, Ultra plan row, a
+  "stdin fields (Claude Code 2.1.327)" table, rewritten "not in stdin"
+  section, and a list-price reference table (Fable 5.2 $8 / $40 per
+  MTok, Opus 5.5, Sonnet 5.5, Haiku 5.5) next to the `$` explanation.
+
+### Fixed
+- **Model chip always shows this session's model** — an idle session
+  (no `rate_limits` in its stdin) borrows usage from the shared cache,
+  but the overlay also replaced its `model` with whatever session wrote
+  the cache last, so long-running sessions could show `opus 5` /
+  `4.8` instead of the model actually selected. Only usage is borrowed
+  now; the cached model is a fallback when stdin carries none.
+
+## [1.5.0] - 2026-08-21
+
+### Added
+- **Effort level on the model chip** — Claude Code pipes the session's
+  effort level as `effort.level` (`low` / `medium` / `high` / `xhigh` /
+  `max`). It now rides on the model chip in both one-line and 3-row
+  layouts, so "which model, how hard is it thinking" reads as one unit:
+  compact `fable 5 · high | 5h …`, `--full` header `Fable 5 · high  ·
+  $1.87  ·  ctx …`. In `--full` the header row is shorter than the
+  window rows, so the extra token lands in otherwise-blank width — the
+  card stays 3 rows. `--wide` has no model chip and is unchanged.
+  Hide with `--no-effort` (keeps the model); `--no-model` drops both,
+  since effort alone is meaningless without the model it qualifies.
+  `effort.level` goes through the same trust boundary as the model
+  chip: `sanitizeText`, then a strict `[a-z]{1,12}` whitelist — an
+  unrecognizable value drops the effort and keeps the model chip.
+  `scripts/test-model-chip.sh` (`test:no-model`) covers every toggle
+  direction plus the bogus-value path.
+
+## [1.4.0] - 2026-07-27
+
+### Added
+- **Model chip in the compact layout** — the one-line layout now leads
+  with the model the session is talking to, shortened from
+  `model.display_name` (`Opus 5 (1M context)` → `opus 5`, `Fable 5` →
+  `fable 5`, `Sonnet 4.6` → `sonnet 4.6`). The space is kept — that's
+  how the model is actually spelled.
+  Parenthetical variants are dropped: compact is the width-constrained
+  layout and the `ctx N%` chip already reports the context window. The
+  chip is pinned to line 1, so it survives narrow-pane wrapping. Hide
+  it with `--no-model`; `scripts/test-model-chip.sh` (`test:no-model`)
+  asserts both directions of the toggle and is wired into CI.
+  The `--full` and `--wide` layouts are unchanged — `--full` already
+  carried the untouched `display_name` in its header.
+
+  `display_name` is server-supplied, so the chip goes through the same
+  trust boundary as every other rendered field: `sanitizeText` first,
+  then a `[a-z0-9. ]` whitelist, space runs collapsed and ends trimmed
+  so a padded name can't shove the bars rightward. An unrecognizable
+  name yields no chip rather than attacker-chosen text.
+
+## [1.3.0] - 2026-07-03
+
 ### Added
 - **Fable 5 weekly bar** — Claude Code sends the Fable 5 weekly window
   as `rate_limits.seven_day_overage_included` (Fable usage is
@@ -18,10 +116,12 @@
   emits the flag, so it's an install-time checkbox too. `test:hide`
   smoke script wired into CI.
 
-### Still planned
-- Extra usage bar (needs a live source — the stdin JSON doesn't expose
-  it; daemon proxying `/api/oauth/usage` is the leading candidate)
-- Light-theme aware palette (currently tuned for dark terminals)
+### Known limitation
+- As of Claude Code 2.1.199 the statusLine stdin still carries only
+  `five_hour` + `seven_day` even mid-Fable-5-session, so the fable bar
+  stays hidden until Claude Code starts piping the window through — it
+  then appears automatically, no update needed. Renderer is defensive:
+  malformed or missing entries never break the status line.
 
 ## [1.2.6] - 2026-05-26
 

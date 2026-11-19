@@ -10,6 +10,8 @@
 //   separator         subtle but visible gray (not quite dim)
 //   reset phrase      dim gray — secondary info
 //   ctx chip          soft cyan — system info, pairs visually with cat
+//   model chip        dim — leads the compact line without competing
+//                     with the usage bars behind it
 //   debug chip        magenta — intentionally loud, so "debug mode on"
 //                     is impossible to miss
 //   hint              dim gray
@@ -44,6 +46,10 @@ const C = {
 
   // debug chip — magenta so "debug on" is impossible to miss
   debug:     "\x1b[35m",
+
+  // model chip — dim, same weight as cost/ctx. It leads the compact
+  // line, so it must not out-shout the usage bars it sits in front of.
+  model:     "\x1b[2m",
 
   // Claude Peach (#DE7356) — short window labels '5h' / 'week'
   brand:     "\x1b[38;2;222;115;86m",

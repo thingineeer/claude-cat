@@ -1,0 +1,36 @@
+{
+  "session_id": "00000000-0000-0000-0000-000000000000",
+  "cwd": "/tmp/project",
+  "model": { "id": "claude-opus-5-5", "display_name": "Opus 5.5" },
+  "workspace": { "current_dir": "/tmp/project", "project_dir": "/tmp/project", "added_dirs": [] },
+  "version": "2.1.327",
+  "output_style": { "name": "default" },
+  "cost": {
+    "total_cost_usd": 12.34,
+    "total_duration_ms": 3600000,
+    "total_api_duration_ms": 900000,
+    "total_lines_added": 420,
+    "total_lines_removed": 37
+  },
+  "context_window": {
+    "total_input_tokens": 182000,
+    "total_output_tokens": 1200,
+    "context_window_size": 1000000,
+    "used_percentage": 18,
+    "remaining_percentage": 82,
+    "current_usage": {
+      "input_tokens": 2,
+      "output_tokens": 1200,
+      "cache_creation_input_tokens": 1500,
+      "cache_read_input_tokens": 180498
+    }
+  },
+  "exceeds_200k_tokens": false,
+  "prompt_cache": { "warm": true, "caching_observed": true, "ttl": "1h", "hit_ratio": 0.97 },
+  "fast_mode": false,
+  "effort": { "level": "xhigh" },
+  "thinking": { "enabled": true },
+  "rate_limits": {
+    "seven_day": { "used_percentage": 66, "resets_at": 4102444800 }
+  }
+}
