@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Changed
+- **Dependencies on latest stable** — `ink` 5 → 8, `react` 18 → 19.3,
+  `ink-select-input` 6.2. They power only the `configure` wizard
+  (lazy-imported), and the wizard was driven end-to-end on the new
+  versions. Ink 7+ needs Node.js 22, so `engines.node` is now `>=22`
+  and CI runs on Node 22. The status-line render path itself is
+  unchanged.
+
 ### Still planned
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
   it; daemon proxying `/api/oauth/usage` is the leading candidate)
