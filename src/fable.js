@@ -140,7 +140,8 @@ export function applyFableUsage(d, { cliPath, ccVersion } = {}) {
 
     const f = cache?.fable;
     if (native || !sameAccount || !f) return d;
-    if (!(f.resets_at > now)) return d;
+    // A Fable window whose reset already passed is still injected — the
+    // renderer shows it as 0% until the next refresh brings new numbers.
     return {
       ...d,
       rate_limits: {
