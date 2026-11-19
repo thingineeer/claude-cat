@@ -6,7 +6,7 @@
 // (2026-11-19, live payload dump):
 //   cost.total_cost_usd: number
 //   rate_limits.five_hour?:   { used_percentage, resets_at } — absent on
-//     weekly-only plans (Ultra sends seven_day alone)
+//     weekly-only plans (Ultra — formerly Max — sends seven_day alone)
 //   rate_limits.seven_day:    { used_percentage, resets_at }
 //   rate_limits.spend_limit?: { used_percentage, resets_at, used_usd?,
 //     limit_usd?, period? } — Claude apps gateway spend cap
@@ -16,7 +16,7 @@
 //   model.display_name: string
 //   effort.level: string — 'low' | 'medium' | 'high' | 'xhigh' | 'max'
 // Missing fields are treated as optional — Claude Code only populates
-// rate_limits for Pro/Max/Ultra subscribers after the first assistant
+// rate_limits for Pro/Ultra (formerly Max) subscribers after the first assistant
 // response, and drops each window once its resets_at passes.
 
 import { pickCat, catArt, THEME_NAMES } from "./cats.js";
@@ -220,9 +220,9 @@ function collectWindows(d, { variant = "long", hide } = {}) {
       // like "$(rm -rf /)" or "../../../etc/passwd".
       if (!isSafeWindowKey(k)) return false;
       if (!isWindowEntry(v)) return false;
-      // CLAUDE_CAT_PLAN: 'pro' hides weekly bars. 'max' / 'ultra' /
-      // 'auto' render everything the server sends — Ultra simply has
-      // no five_hour window to show.
+      // CLAUDE_CAT_PLAN: 'pro' hides weekly bars. 'ultra' (the plan
+      // formerly called Max — 'max' is still accepted) and 'auto'
+      // render everything the server sends.
       if (plan === "pro" && k.startsWith("seven_day")) return false;
       // --hide=<names>: match the raw key or the short chip label
       // ('fable', 'opus', …) so users can type the name they actually

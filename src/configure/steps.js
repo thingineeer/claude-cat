@@ -71,8 +71,7 @@ export const STEPS = [
     items: [
       { label: "auto — show whatever the server sends (recommended)", value: "auto" },
       { label: "pro — hide weekly bars (Pro has generous limits)", value: "pro" },
-      { label: "max — show all bars", value: "max" },
-      { label: "ultra — weekly limits only (no 5h session window)", value: "ultra" },
+      { label: "ultra (formerly Max) — show all bars", value: "ultra" },
     ],
     defaultValue: "auto",
   },
