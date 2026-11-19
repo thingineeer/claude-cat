@@ -24,6 +24,8 @@ import { bar, fmtCountdown, fmtAgo, absoluteResetParts, fmtCost, colorByPct, col
 import { parseIconMode, iconFor } from "./icons.js";
 import { maybeDumpStdin, debugEnabled } from "./debug.js";
 import { writeCacheIfActive, readCacheForIdle } from "./cache.js";
+import { applyFableUsage } from "./fable.js";
+import { fileURLToPath } from "node:url";
 import { t } from "./i18n.js";
 import { padEndDisplay, displayWidth } from "./width.js";
 import { sanitizeText, isSafeWindowKey, clampPct } from "./sanitize.js";
@@ -731,6 +733,9 @@ async function main() {
   // and --full). Effort rides on the model chip, so --no-model hides
   // both.
   const showEffort = !args.includes("--no-effort");
+  // --fable-usage (opt-in): overlay the Fable weekly bar from the private
+  // usage endpoint via a background refresher. See src/fable.js.
+  const fableUsage = args.includes("--fable-usage");
   const raw = await readStdin();
   let d = safeParse(raw);
 
@@ -758,6 +763,16 @@ async function main() {
       const ownModel = d?.model?.display_name ? d.model : null;
       d = { ...d, ...usage, model: ownModel ?? cachedModel ?? d.model };
     }
+  }
+
+  // After the shared-cache step on purpose: injecting earlier would make
+  // an idle session look "active" and overwrite rate-limits-cache.json
+  // with a Fable-only payload.
+  if (fableUsage) {
+    d = applyFableUsage(d, {
+      cliPath: fileURLToPath(new URL("../bin/cli.js", import.meta.url)),
+      ccVersion: typeof d?.version === "string" ? d.version : undefined,
+    });
   }
 
   const opts = { iconMode, catTheme, showDebugChip, showCost, showCtx, showModel, showEffort, stack, cols, hide };
