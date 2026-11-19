@@ -16,16 +16,9 @@ mkdir -p "$out/raw" "$out/plain"
 
 layouts=(compact full wide)
 themes=(compact kawaii none)
-fixtures=(
-  examples/sample-stdin.json
-  examples/sample-with-sonnet.json
-  examples/sample-with-fable.json
-  examples/sample-critical.json
-  examples/sample-api-only.json
-  examples/sample-warming-up.json
-  examples/sample-weekly-saturated.json
-  examples/sample-api-cost-only.json
-)
+# Every fixture in examples/ — globbed so a new fixture is picked up
+# automatically and a removed one can't break the run.
+fixtures=(examples/*.json)
 
 strip_ansi() { sed -E $'s/\x1b\\[[0-9;]*m//g'; }
 
@@ -47,6 +40,9 @@ echo "  wrote $(find "$out" -type f | wc -l | tr -d ' ') files under $out/"
 echo
 echo "quick peek:"
 for tag in \
+  sample-ultra__compact__compact \
+  sample-ultra-fable__compact__compact \
+  sample-ultra__full__kawaii \
   sample-stdin__full__kawaii \
   sample-warming-up__full__kawaii \
   sample-api-cost-only__full__kawaii \

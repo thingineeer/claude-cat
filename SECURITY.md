@@ -50,7 +50,7 @@ change without applying it.
 ## Supported versions
 
 Only the latest published `claude-cat@latest` on npm gets security
-fixes. Pin to a specific version (`claude-cat@1.2.4`) if you want
+fixes. Pin to a specific version (`claude-cat@1.7.0`) if you want
 reproducibility — and upgrade when an advisory is published.
 
 ## Maintainer operational security
