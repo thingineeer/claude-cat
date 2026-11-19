@@ -70,6 +70,9 @@ export function moodFor(percent) {
 //   - curious   if any remaining window ≥ 30
 //   - chill     otherwise (incl. no windows at all)
 //
+// Weekly-only plans (Ultra) send no five_hour window at all — session
+// reads as 0 and the weekly thresholds alone drive the mood.
+//
 // The rationale: the 5-hour bar resets fast and is forgiving; the 7-day
 // bar is the one that actually constrains your week. So weekly
 // saturation is weighted earlier (60%) than session saturation (75%).
@@ -83,7 +86,11 @@ export function moodFromWindows(windows, { now = getRenderNowSec() } = {}) {
   };
   const session = pct("five_hour");
   const weekly = Math.max(
-    ...live.filter((w) => w.key.startsWith("seven_day")).map((w) => w.pct ?? 0),
+    // spend_limit (gateway cap) is a long-period budget too, so it
+    // weighs like a weekly bar.
+    ...live
+      .filter((w) => w.key.startsWith("seven_day") || w.key === "spend_limit")
+      .map((w) => w.pct ?? 0),
     0,
   );
   const anyMax = Math.max(...live.map((w) => w.pct ?? 0), 0);

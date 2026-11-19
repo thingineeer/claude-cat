@@ -7,9 +7,12 @@ const LABELS = {
   current_session:     "Current session",
   current_week_all:    "Current week (all models)",
   current_week_scope:  (model) => `Current week (${model} only)`,
-  // Fable 5's weekly window — arrives as `seven_day_overage_included`
-  // (credit-based billing term); label it by the model name instead.
-  current_week_fable:  "Current week (Fable 5)",
+  // Fable's weekly window — `seven_day_fable` or the older
+  // `seven_day_overage_included` (billing-term key); label it by the
+  // model family so it survives point releases (Fable 5 → 5.2 …).
+  current_week_fable:  "Current week (Fable)",
+  // Claude apps gateway spend cap (`rate_limits.spend_limit`).
+  spend_limit:         "Spend limit",
   extra_usage:         "Extra usage",
   // Reset phrase — concise, no timezone (always local time).
   //   'Resets 7pm'          — same-day windows
