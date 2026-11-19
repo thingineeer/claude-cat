@@ -48,8 +48,8 @@ export const STEPS = [
     description: "Per-model weekly bars (fable / opus / sonnet)?",
     items: [
       { label: "all — every bar the server sends (recommended)", value: "all" },
-      { label: "fable only — hide opus / sonnet", value: "fable-only" },
-      { label: "none — just 5h + week", value: "none" },
+      { label: "fable only — week + fable, hide opus / sonnet", value: "fable-only" },
+      { label: "none — just week (+ 5h on plans that have it)", value: "none" },
     ],
     defaultValue: "all",
   },
@@ -71,7 +71,7 @@ export const STEPS = [
     items: [
       { label: "auto — show whatever the server sends (recommended)", value: "auto" },
       { label: "pro — hide weekly bars (Pro has generous limits)", value: "pro" },
-      { label: "max — show all bars", value: "max" },
+      { label: "ultra (formerly Max) — show all bars", value: "ultra" },
     ],
     defaultValue: "auto",
   },

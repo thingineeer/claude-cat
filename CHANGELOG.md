@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+### Added
+- **Claude Code 2.1.327 support** — re-verified the statusLine stdin
+  against a live payload dump (2026-11-19). Ultra plans (formerly Max)
+  now send `rate_limits.seven_day` alone; the line renders cleanly as
+  `opus 5.5 · xhigh | week ▓▓▓▓▓▓▓░░░ 66% (Sun 10pm) | $12.34 | ctx 18%`
+  and the cat's mood is driven by the weekly bar alone.
+- **`week` + `fable` on one line** — `rate_limits.seven_day_fable` is
+  recognized as the Fable weekly bucket (alongside the older
+  `seven_day_overage_included`), pinned right after `week`, labeled
+  `fable` / `Current week (Fable)`. It appears automatically whenever
+  Claude Code sends it; `--hide=fable` drops it.
+- **`spend` bar** — `rate_limits.spend_limit` (Claude apps gateway spend
+  cap) renders as `spend` / `Spend limit` and weighs like a weekly bar
+  in the mood policy.
+- `examples/sample-ultra.json` (weekly-only) and
+  `examples/sample-ultra-fable.json` (week + fable) with far-future
+  `resets_at`, wired into CI as `test:ultra`, `test:ultra:full`,
+  `test:ultra:fable`.
+
+### Changed
+- **Max → Ultra** — the configure wizard's plan step offers `ultra
+  (formerly Max)`; `CLAUDE_CAT_PLAN=ultra` is documented and the old
+  `max` value keeps working.
+- Fable label drops the model version (`Current week (Fable 5)` →
+  `Current week (Fable)`) so it survives point releases (Fable 5.2 …).
+- README (en/ko): weekly-first examples, Ultra plan row, a
+  "stdin fields (Claude Code 2.1.327)" table, rewritten "not in stdin"
+  section, and a list-price reference table (Fable 5.2 $8 / $40 per
+  MTok, Opus 5.5, Sonnet 5.5, Haiku 5.5) next to the `$` explanation.
+
 ### Still planned
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
   it; daemon proxying `/api/oauth/usage` is the leading candidate)
