@@ -205,8 +205,9 @@ Adds the `fable` bar next to `week`. What it does, and the tradeoff:
   waits on the network.
 - Only the Fable percentage and reset time are cached
   (`~/.claude/claude-cat/fable-cache.json`) — never the token.
-- After switching accounts the bar hides until the new account's
-  numbers arrive (matched by the weekly reset time). Only the account
+- After switching accounts (`cswap` / `/login`) the first render waits
+  up to 1.5 s for the new account's numbers, so the bar switches right
+  away (matched by the weekly reset time). Only the account
   you're logged in with is in the Keychain, so terminals still running
   an older account (started before `cswap` / `/login`) show `week`
   without `fable` until restarted.

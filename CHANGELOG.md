@@ -18,6 +18,11 @@
 
 ### Changed
 - `--fable-usage` refreshes every 2 minutes (was 5).
+- `--fable-usage` follows an account switch (`cswap` / `/login`) in the
+  same render: when the session's weekly reset changes, that render
+  waits up to 1.5 s for the new account's numbers instead of blanking
+  the Fable bar until the next render. Once per switch; normal renders
+  never wait.
 
 ### Still planned
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose

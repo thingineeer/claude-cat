@@ -787,7 +787,7 @@ async function main() {
   // an idle session look "active" and overwrite rate-limits-cache.json
   // with a Fable-only payload.
   if (fableUsage) {
-    d = applyFableUsage(d, {
+    d = await applyFableUsage(d, {
       cliPath: fileURLToPath(new URL("../bin/cli.js", import.meta.url)),
       ccVersion: typeof d?.version === "string" ? d.version : undefined,
     });

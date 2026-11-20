@@ -26,12 +26,13 @@ echo "$OUT" | grep -q "fable" && fail "fable shown without --fable-usage"
 sleep 1
 [ ! -e "$DIR/fable-cache.json" ] || fail "refresher ran without --fable-usage"
 
-# 2. First render with the flag: no cache yet → returns fast, spawns the
-#    background refresher, shows no Fable bar yet.
+# 2. First render with the flag (no cache yet = an account we haven't
+#    seen): spawns the background refresher and waits briefly for it, so
+#    the Fable bar shows in this very render — never blocking > ~1.5 s.
 start=$(node -e 'console.log(Date.now())')
 OUT="$(stdin_week $WEEK | node "$CLI" --fable-usage | strip)"
 elapsed=$(( $(node -e 'console.log(Date.now())') - start ))
-echo "$OUT" | grep -q "fable" && fail "fable shown before any fetch"
+echo "$OUT" | grep -q "fable ▓▓▓░░░░░░░ 34%" || fail "first render after enabling didn't show fable: $OUT"
 [ "$elapsed" -lt 3000 ] || fail "render blocked for ${elapsed}ms"
 for _ in $(seq 1 30); do [ -s "$DIR/fable-cache.json" ] && break; sleep 0.2; done
 [ -s "$DIR/fable-cache.json" ] || fail "background refresher didn't write the cache"
@@ -86,13 +87,25 @@ echo "$OUT" | grep -q "fable" || fail "idle session lost the fable overlay"
 [ "$(cat "$DIR/rate-limits-cache.json")" = "$before" ] || fail "idle render rewrote the shared cache"
 grep -q "seven_day_fable" "$DIR/rate-limits-cache.json" && fail "fable leaked into shared cache"
 
+# 6b. Account switch (cswap): the session's weekly reset changes and the
+#     refresher now returns the new account → the SAME render shows it.
+NEWWEEK=$((WEEK + 3600))
+sed "s/2099-01-05T1[23]:[0-9:.]*+00:00/2099-01-05T14:00:00+00:00/g; s/\"percent\": 34/\"percent\": 55/" \
+  "$CLAUDE_CAT_FABLE_FIXTURE" > "$TMP/switched.json"
+node -e '
+  const f = process.argv[1], c = JSON.parse(require("fs").readFileSync(f, "utf8"));
+  c.fetched_at -= 30; require("fs").writeFileSync(f, JSON.stringify(c));    // fetched 30 s ago
+' "$DIR/fable-cache.json"
+OUT="$(stdin_week $NEWWEEK | CLAUDE_CAT_FABLE_FIXTURE="$TMP/switched.json" node "$CLI" --fable-usage | strip)"
+echo "$OUT" | grep -q "fable ▓▓▓▓▓▓░░░░ 55%" || fail "fable didn't switch account in the first render: $OUT"
+
 # 7. Failure keeps the last good numbers and backs off.
 CLAUDE_CAT_FABLE_FIXTURE="$TMP/missing.json" node "$CLI" __fable-refresh
 node -e '
   const c = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
   if (c.status !== "bad_response") throw new Error("status " + c.status);
   if (!(c.next_try_at > Date.now() / 1000)) throw new Error("no backoff");
-  if (c.fable?.used_percentage !== 34) throw new Error("lost last good value");
+  if (c.fable?.used_percentage !== 55) throw new Error("lost last good value");
 ' "$DIR/fable-cache.json" || fail "backoff"
 
 # 8. `security -w` hex output (non-ASCII value) decodes to the JSON.
