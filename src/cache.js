@@ -4,21 +4,25 @@
 // An idle terminal never gets updated stdin, so it shows stale usage numbers
 // while an active terminal has the real current values.
 //
-// Solution: every session with rate_limits merges them into a shared
-// cache file (~/.claude/claude-cat/rate-limits-cache.json), and reads the
-// merged view back. Sessions that have no rate_limits yet borrow the
+// Solution: every session with rate_limits records them in a shared
+// cache file (~/.claude/claude-cat/rate-limits-cache.json) and still
+// renders its OWN stdin. Sessions that have no rate_limits yet borrow the
 // account that changed most recently.
 //
 // Several accounts can be live at once — a terminal keeps the account it
 // was started with after `cswap` / `/login` switches the Keychain. So the
 // cache is bucketed per account, keyed by the weekly window's resets_at
 // (one account's weekly windows never overlap; two different future
-// resets mean two accounts). Inside a bucket, usage only grows within a
-// window, so the merge is monotonic: a later resets_at is a newer window,
-// and for the same window the higher percentage is the newer reading.
-// That lets an idle terminal (whose stdin still carries the numbers from
-// its last reply) show what an active terminal on the same account just
-// saw, without stale sessions overwriting fresh ones.
+// resets mean two accounts).
+//
+// Inside a bucket the most recent *reply* wins, not the highest number:
+// usage can drop inside a window (a mid-week reset ticket), and a stale
+// or confused session can keep repeating an old number for hours. Each
+// bucket remembers what every session last reported (session_id →
+// signature of its rate_limits + API activity). A write only replaces
+// same-window values when that session's signature changed — i.e. it got
+// a new reply or its numbers moved. A terminal re-rendering the same old
+// payload can fill in missing or newer windows but never overrides.
 //
 // File schema:
 //   {
@@ -26,13 +30,15 @@
 //     "rate_limits": { ... },         //   changed most recently (kept for
 //     "model": { ... },               //   older readers, e.g. UsageMaster)
 //     "accounts": {
-//       "<weekly resets_at>": { "updated_at" (s), "changed_at" (ms), "rate_limits" }
+//       "<weekly resets_at>": { "updated_at" (s), "changed_at" (ms), "rate_limits",
+//                               "seen": { "<session_id>": { "s": signature, "t": (s) } } }
 //     }
 //   }
 //
 // Design constraints:
 //   - Never throw in a way that breaks the status line.
-//   - Sessions WITH rate_limits use only their own account's bucket.
+//   - Sessions WITH rate_limits render their own stdin and write only
+//     their own account's bucket.
 //   - Sessions WITHOUT rate_limits use the top-level (latest account).
 //   - Freshness has two tiers:
 //       age ≤ MAX_AGE_SEC      → fresh; drives the cat's mood like live
@@ -130,6 +136,38 @@ function sweepStaleTmp() {
 
 const RESET_TOL_SEC = 180;            // same window if resets differ by ≤ this
 const ACCOUNT_MAX_IDLE_SEC = 8 * 86400;
+const SEEN_MAX_AGE_SEC = 2 * 86400;   // forget sessions silent this long
+const SEEN_MAX = 64;
+const SID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+
+function sessionKey(d) {
+  const s = d?.session_id;
+  return typeof s === "string" && SID_RE.test(s) ? s : "_";
+}
+
+// What this session is reporting right now. API activity (cost / API
+// time only grow when a reply arrives) makes a fresh reply count as new
+// even when the percentages didn't move.
+function signature(rl, d) {
+  const parts = Object.keys(rl).sort()
+    .map((k) => `${k}:${rl[k].used_percentage}:${rl[k].resets_at}`);
+  const c = d?.cost;
+  const act = [c?.total_api_duration_ms, c?.total_cost_usd]
+    .map((v) => (Number.isFinite(v) ? v : "")).join(":");
+  return `${parts.join("|")}#${act}`.slice(0, 512);
+}
+
+function cleanSeen(seen, now) {
+  if (!seen || typeof seen !== "object") return {};
+  const rows = Object.entries(seen)
+    .filter(([k, v]) => SID_RE.test(k) && v && typeof v.s === "string"
+      && v.s.length <= 512 && now - (Number(v.t) || 0) <= SEEN_MAX_AGE_SEC)
+    .sort((a, b) => Number(b[1].t) - Number(a[1].t))
+    .slice(0, SEEN_MAX);
+  const out = {};
+  for (const [k, v] of rows) out[k] = { s: v.s, t: Number(v.t) };
+  return out;
+}
 
 function accountKey(rl) {
   const r = Number(rl?.seven_day?.resets_at);
@@ -145,10 +183,10 @@ function findAccount(accounts, key) {
   return null;
 }
 
-// Monotonic per-window merge: newer window (later resets_at) wins; for
-// the same window the higher percentage wins. Windows that already reset
-// are dropped from the stored side.
-function mergeWindows(stored, mine, now) {
+// Per-window merge: a newer window (later resets_at) always wins; the
+// same window is replaced only by a session with a new reply (`fresh`).
+// Windows that already reset are dropped from the stored side.
+function mergeWindows(stored, mine, now, fresh) {
   const out = {};
   for (const [k, v] of Object.entries(stored || {})) {
     if (v && Number(v.resets_at) > now) out[k] = v;
@@ -157,9 +195,7 @@ function mergeWindows(stored, mine, now) {
     const e = out[k];
     const vr = Number(v?.resets_at) || 0;
     const er = Number(e?.resets_at) || 0;
-    if (!e
-      || vr > er + RESET_TOL_SEC
-      || (Math.abs(vr - er) <= RESET_TOL_SEC && v.used_percentage > e.used_percentage)) {
+    if (!e || vr > er + RESET_TOL_SEC || (fresh && Math.abs(vr - er) <= RESET_TOL_SEC)) {
       out[k] = v;
     }
   }
@@ -186,14 +222,19 @@ function cleanAccounts(obj, now) {
     if (k !== "none" && Number(k) <= now) continue;            // that week is over
     const rl = cleanForCache({ rate_limits: b.rate_limits }).rate_limits;
     if (!Object.keys(rl).length) continue;
-    out[k] = { updated_at: updated, changed_at: Number(b.changed_at) || updated * 1000, rate_limits: rl };
+    out[k] = {
+      updated_at: updated,
+      changed_at: Number(b.changed_at) || updated * 1000,
+      rate_limits: rl,
+      seen: cleanSeen(b.seen, now),
+    };
   }
   return out;
 }
 
-// Merge this session's rate_limits into its account bucket and return the
-// merged rate_limits to render (never less fresh than the session's own).
-// Returns null when stdin has no rate_limits or on any failure.
+// Record this session's rate_limits in its account bucket. Returns the
+// bucket's merged rate_limits (the session itself still renders its own
+// stdin), or null when stdin has no rate_limits.
 export function writeCacheIfActive(d) {
   if (!hasRateLimits(d)) return null;
   const now = Math.floor(Date.now() / 1000);
@@ -208,14 +249,18 @@ export function writeCacheIfActive(d) {
     const accounts = cleanAccounts(prev, now);
     const key = accountKey(mine.rate_limits);
     const slot = findAccount(accounts, key) ?? (key == null ? "none" : String(key));
-    const bucket = accounts[slot] || { updated_at: 0, changed_at: 0, rate_limits: {} };
-    merged = mergeWindows(bucket.rate_limits, mine.rate_limits, now);
+    const bucket = accounts[slot] || { updated_at: 0, changed_at: 0, rate_limits: {}, seen: {} };
+    const sid = sessionKey(d);
+    const sig = signature(mine.rate_limits, d);
+    const fresh = bucket.seen?.[sid]?.s !== sig;
+    merged = mergeWindows(bucket.rate_limits, mine.rate_limits, now, fresh);
     const changed = JSON.stringify(merged) !== JSON.stringify(bucket.rate_limits);
     accounts[slot] = {
       updated_at: now,
       // ms, so two accounts moving within the same second still order.
       changed_at: changed || !bucket.changed_at ? Date.now() : bucket.changed_at,
       rate_limits: merged,
+      seen: cleanSeen({ ...bucket.seen, [sid]: { s: sig, t: now } }, now),
     };
 
     // Top level mirrors the account whose usage moved most recently.

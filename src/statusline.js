@@ -761,14 +761,13 @@ async function main() {
   maybeDumpStdin(raw, d);
 
   // Cross-terminal sync (see src/cache.js):
-  //   stdin has rate_limits → merge into this account's bucket, render merged.
+  //   stdin has rate_limits → record them in this account's bucket and
+  //                           render our OWN numbers (same rule as the
+  //                           model chip: this session's data wins).
   //   stdin has none yet    → borrow the most recently active account.
   const hasLimits = d.rate_limits && Object.keys(d.rate_limits).length > 0;
   if (hasLimits) {
-    // Render the account-merged view: an idle terminal shows what an
-    // active terminal on the same account saw most recently.
-    const merged = writeCacheIfActive(d);
-    if (merged && Object.keys(merged).length) d = { ...d, rate_limits: merged };
+    writeCacheIfActive(d);
   } else {
     const cached = readCacheForIdle();
     if (cached) {
