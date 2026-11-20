@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Still planned
+- Extra usage bar (needs a live source — the stdin JSON doesn't expose
+  it; the `--fable-usage` refresher could carry it behind the same flag)
+- Light-theme aware palette (currently tuned for dark terminals)
+
+## [1.8.2] - 2026-11-20
+
 ### Fixed
 - **Usage numbers flipping between accounts.** A terminal keeps the
   account it was started with after `cswap` / `/login`, so several
@@ -23,11 +30,6 @@
   waits up to 1.5 s for the new account's numbers instead of blanking
   the Fable bar until the next render. Once per switch; normal renders
   never wait.
-
-### Still planned
-- Extra usage bar (needs a live source — the stdin JSON doesn't expose
-  it; the `--fable-usage` refresher could carry it behind the same flag)
-- Light-theme aware palette (currently tuned for dark terminals)
 
 ## [1.8.1] - 2026-11-19
 

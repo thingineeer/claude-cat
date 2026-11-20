@@ -1,6 +1,6 @@
 {
   "name": "claude-cat",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Claude Code status line for usage limits — weekly limit, Fable usage, 5-hour session, cost and context % at a glance, with a cute cat. Offline-first.",
   "keywords": [
     "claude",
