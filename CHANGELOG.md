@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Still planned
+- Extra usage bar (needs a live source — the stdin JSON doesn't expose
+  it; the `--fable-usage` refresher could carry it behind the same flag)
+- Light-theme aware palette (currently tuned for dark terminals)
+
+## [1.8.3] - 2026-11-20
+
 ### Fixed
 - **A terminal could show another session's (wrong) weekly number.**
   1.8.2 kept the *highest* percentage per window and rendered that merged
@@ -14,11 +21,6 @@
   and a re-render of the same old payload never overrides. Usage that
   drops inside a window (a mid-week reset) is now followed too. Buckets
   written by 1.8.2 heal on the next reply.
-
-### Still planned
-- Extra usage bar (needs a live source — the stdin JSON doesn't expose
-  it; the `--fable-usage` refresher could carry it behind the same flag)
-- Light-theme aware palette (currently tuned for dark terminals)
 
 ## [1.8.2] - 2026-11-20
 
