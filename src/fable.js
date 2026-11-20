@@ -23,7 +23,9 @@
 //     the bar is only shown when it matches the session's own
 //     `rate_limits.seven_day.resets_at`.
 //   • One refresh at a time across terminals (lock file), at most every
-//     5 minutes, with backoff on 401 / 429 / Keychain failures.
+//     2 minutes, with backoff on 401 / 429 / Keychain failures.
+//   • The Keychain holds only the account you logged in with last, so the
+//     bar only appears in terminals running that account.
 //
 // Test hook: CLAUDE_CAT_FABLE_FIXTURE=<path> makes the refresher read an
 // API response from that file instead of reading credentials or calling
@@ -40,8 +42,17 @@ const DIR = () => join(homedir(), ".claude", "claude-cat");
 const CACHE = () => join(DIR(), "fable-cache.json");
 const LOCK = () => join(DIR(), "fable-refresh.lock");
 
-const TTL_SEC = 300;              // refresh at most every 5 minutes
-const MIN_GAP_SEC = 60;           // floor between fetches, even on account change
+const TTL_SEC = 120;              // refresh at most every 2 minutes
+const MIN_GAP_SEC = 10;           // floor between fetches, even on account change
+// Right after a cswap / /login the first render waits this long for the
+// new account's numbers, so the Fable bar switches in the same render
+// instead of blanking until the next one. Once per account switch only.
+const SWITCH_WAIT_MS = 1500;
+// A terminal on another account than the Keychain (started before a
+// cswap / /login) can never match the fetched numbers. Ask once for its
+// weekly reset, then leave it to the normal TTL instead of re-fetching
+// every minute.
+const MISMATCH_RETRY_SEC = 30 * 60;
 const LOCK_STALE_MS = 60 * 1000;  // a refresher never runs this long
 const RESET_MATCH_TOL_SEC = 180;  // server ISO vs stdin epoch rounding
 const BACKOFF = {
@@ -123,34 +134,53 @@ export function parseUsage(json) {
 // Return `d` with `rate_limits.seven_day_fable` added from the cache when
 // it belongs to the same account, and kick a background refresh when the
 // cache is due. Never throws.
-export function applyFableUsage(d, { cliPath, ccVersion } = {}) {
+function overlay(d, f) {
+  return {
+    ...d,
+    rate_limits: {
+      ...d.rate_limits,
+      seven_day_fable: { used_percentage: clampPct(f.used_percentage), resets_at: f.resets_at },
+    },
+  };
+}
+
+const sameWeekly = (a, b) => Boolean(a) && Number.isFinite(b)
+  && Math.abs(a - b) <= RESET_MATCH_TOL_SEC;
+
+// Return `d` with `rate_limits.seven_day_fable` added from the cache when
+// it belongs to the same account, and kick a background refresh when the
+// cache is due. Never throws.
+export async function applyFableUsage(d, { cliPath, ccVersion } = {}) {
   try {
     const rl = d?.rate_limits;
-    const cache = readJson(CACHE());
-    const now = nowSec();
-
     // Already provided by Claude Code itself → nothing to add.
-    const native = rl && (rl.seven_day_fable || rl.seven_day_overage_included);
+    if (rl && (rl.seven_day_fable || rl.seven_day_overage_included)) return d;
 
+    let cache = readJson(CACHE());
+    const now = nowSec();
     const sessionWeekly = Number(rl?.seven_day?.resets_at);
-    const sameAccount = Boolean(
-      cache?.weekly_resets_at && Number.isFinite(sessionWeekly)
-      && Math.abs(cache.weekly_resets_at - sessionWeekly) <= RESET_MATCH_TOL_SEC,
-    );
+    const sameAccount = sameWeekly(cache?.weekly_resets_at, sessionWeekly);
 
-    if (!native) maybeRefresh({ cache, sameAccount, sessionWeekly, now, cliPath, ccVersion });
+    const spawned = maybeRefresh({ cache, sameAccount, sessionWeekly, now, cliPath, ccVersion });
+
+    // Account just switched: give the refresher a moment so this very
+    // render already shows the new account's Fable usage.
+    if (spawned && !sameAccount && Number.isFinite(sessionWeekly)) {
+      const before = cache?.fetched_at ?? 0;
+      const deadline = Date.now() + SWITCH_WAIT_MS;
+      while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 100));
+        const next = readJson(CACHE());
+        if (next && (next.fetched_at ?? 0) > before) { cache = next; break; }
+        if (next && next.status && next.status !== "ok" && (next.failed_at ?? 0) >= now) break;
+      }
+    }
 
     const f = cache?.fable;
-    if (native || !sameAccount || !f) return d;
+    if (!f || !sameWeekly(cache?.weekly_resets_at, sessionWeekly)) return d;
     // A Fable window whose reset already passed is still injected — the
     // renderer shows it as 0% until the next refresh brings new numbers.
-    return {
-      ...d,
-      rate_limits: {
-        ...rl,
-        seven_day_fable: { used_percentage: clampPct(f.used_percentage), resets_at: f.resets_at },
-      },
-    };
+    return overlay(d, f);
   } catch {
     return d;
   }
@@ -160,24 +190,32 @@ function lockHeld() {
   try { return Date.now() - statSync(LOCK()).mtimeMs < LOCK_STALE_MS; } catch { return false; }
 }
 
+// Spawn the background refresher when the cache is due. Returns true
+// when a refresh was started.
 function maybeRefresh({ cache, sameAccount, sessionWeekly, now, cliPath, ccVersion }) {
-  if (!cliPath) return;
-  if (cache?.next_try_at && now < cache.next_try_at) return;     // error backoff
+  if (!cliPath) return false;
+  if (cache?.next_try_at && now < cache.next_try_at) return false;     // error backoff
   const fetchedAt = cache?.fetched_at ?? 0;
+  const askedAt = cache?.asked_for?.[String(sessionWeekly)] ?? 0;
   const due = !cache
     || now - fetchedAt >= TTL_SEC
     // Account changed (cswap) or the weekly window rolled over — refresh
-    // early, but never more than once a minute.
-    || (Number.isFinite(sessionWeekly) && !sameAccount && now - fetchedAt >= MIN_GAP_SEC);
-  if (!due || lockHeld()) return;
+    // early once for this weekly reset (at most every MIN_GAP_SEC).
+    || (Number.isFinite(sessionWeekly) && !sameAccount
+      && now - fetchedAt >= MIN_GAP_SEC && now - askedAt >= MISMATCH_RETRY_SEC);
+  if (!due || lockHeld()) return false;
 
   const args = [cliPath, "__fable-refresh"];
+  if (Number.isFinite(sessionWeekly)) args.push(`--for=${Math.floor(sessionWeekly)}`);
   if (typeof ccVersion === "string" && /^[0-9][0-9a-z.+-]{0,31}$/i.test(ccVersion)) {
     args.push(`--cc-version=${ccVersion}`);
   }
   try {
     spawn(process.execPath, args, { detached: true, stdio: "ignore" }).unref();
-  } catch {}
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ── refresher (background process) ─────────────────────────────────
@@ -315,8 +353,16 @@ export async function runRefresh(argv = []) {
   const say = (m) => { if (verbose) process.stdout.write(m + "\n"); };
   if (!acquireLock()) { say("another refresh is running — try again in a minute"); return; }
   const ccVersion = argv.find((a) => a.startsWith("--cc-version="))?.slice("--cc-version=".length);
+  const forWeekly = Number(argv.find((a) => a.startsWith("--for="))?.slice("--for=".length));
   const prev = readJson(CACHE()) || {};
   const now = nowSec();
+  // Remember which session weekly resets asked recently (see
+  // MISMATCH_RETRY_SEC); keep the map small.
+  const askedFor = {};
+  for (const [k, t] of Object.entries(prev.asked_for || {})) {
+    if (/^[0-9]{1,12}$/.test(k) && now - Number(t) < MISMATCH_RETRY_SEC) askedFor[k] = Number(t);
+  }
+  if (Number.isFinite(forWeekly) && forWeekly > 0) askedFor[String(forWeekly)] = now;
   const trace = [];
   try {
     const r = await fetchUsage(ccVersion, trace);
@@ -330,6 +376,7 @@ export async function runRefresh(argv = []) {
         detail: null,
         weekly_resets_at: parsed.weekly_resets_at,
         fable: parsed.fable,
+        asked_for: askedFor,
       });
       say(parsed.fable
         ? `✔ fable ${parsed.fable.used_percentage}% · resets ${new Date(parsed.fable.resets_at * 1000).toLocaleString()}`
@@ -340,6 +387,7 @@ export async function runRefresh(argv = []) {
       // Keep the last good numbers; only push the next attempt out.
       writeJsonAtomic(CACHE(), {
         ...prev, next_try_at: now + wait, status: reason, detail: r.detail ?? null, failed_at: now,
+        asked_for: askedFor,
       });
       say(`✖ ${reason} — next automatic try in ${Math.round(wait / 60)} min`);
     }

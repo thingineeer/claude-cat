@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+### Fixed
+- **Usage numbers flipping between accounts.** A terminal keeps the
+  account it was started with after `cswap` / `/login`, so several
+  accounts can be live at once — and each terminal used to overwrite
+  the shared cache with its own (often stale) numbers. The cache is now
+  bucketed per account (by weekly reset time) and merged monotonically:
+  an idle terminal shows the freshest numbers any terminal on the same
+  account has seen, stale terminals can't roll them back, and a new
+  session borrows the account whose usage moved most recently. The
+  top-level `rate_limits` field stays for older readers.
+- **`--fable-usage` re-fetching every minute** when a terminal runs a
+  different account than the Keychain. It now asks once per account
+  and then waits for the normal interval.
+
+### Changed
+- `--fable-usage` refreshes every 2 minutes (was 5).
+- `--fable-usage` follows an account switch (`cswap` / `/login`) in the
+  same render: when the session's weekly reset changes, that render
+  waits up to 1.5 s for the new account's numbers instead of blanking
+  the Fable bar until the next render. Once per switch; normal renders
+  never wait.
+
 ### Still planned
 - Extra usage bar (needs a live source — the stdin JSON doesn't expose
   it; the `--fable-usage` refresher could carry it behind the same flag)

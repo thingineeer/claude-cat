@@ -4,20 +4,36 @@
 // An idle terminal never gets updated stdin, so it shows stale usage numbers
 // while an active terminal has the real current values.
 //
-// Solution: the active session writes rate_limits + model to a shared cache
-// file (~/.claude/claude-cat/rate-limits-cache.json). Idle sessions read
-// that file when their own stdin has no rate_limits.
+// Solution: every session with rate_limits merges them into a shared
+// cache file (~/.claude/claude-cat/rate-limits-cache.json), and reads the
+// merged view back. Sessions that have no rate_limits yet borrow the
+// account that changed most recently.
+//
+// Several accounts can be live at once — a terminal keeps the account it
+// was started with after `cswap` / `/login` switches the Keychain. So the
+// cache is bucketed per account, keyed by the weekly window's resets_at
+// (one account's weekly windows never overlap; two different future
+// resets mean two accounts). Inside a bucket, usage only grows within a
+// window, so the merge is monotonic: a later resets_at is a newer window,
+// and for the same window the higher percentage is the newer reading.
+// That lets an idle terminal (whose stdin still carries the numbers from
+// its last reply) show what an active terminal on the same account just
+// saw, without stale sessions overwriting fresh ones.
 //
 // File schema:
 //   {
-//     "written_at": <unix seconds>,
-//     "rate_limits": { ... },   // verbatim from stdin
-//     "model": { ... }          // verbatim from stdin (optional)
+//     "written_at": <unix seconds>,   // top level = the account that
+//     "rate_limits": { ... },         //   changed most recently (kept for
+//     "model": { ... },               //   older readers, e.g. UsageMaster)
+//     "accounts": {
+//       "<weekly resets_at>": { "updated_at" (s), "changed_at" (ms), "rate_limits" }
+//     }
 //   }
 //
 // Design constraints:
 //   - Never throw in a way that breaks the status line.
-//   - Cache is ONLY used when stdin has no rate_limits (idle session).
+//   - Sessions WITH rate_limits use only their own account's bucket.
+//   - Sessions WITHOUT rate_limits use the top-level (latest account).
 //   - Freshness has two tiers:
 //       age ≤ MAX_AGE_SEC      → fresh; drives the cat's mood like live
 //                                stdin (no _stale flag).
@@ -112,20 +128,113 @@ function sweepStaleTmp() {
   } catch {}
 }
 
+const RESET_TOL_SEC = 180;            // same window if resets differ by ≤ this
+const ACCOUNT_MAX_IDLE_SEC = 8 * 86400;
+
+function accountKey(rl) {
+  const r = Number(rl?.seven_day?.resets_at);
+  return Number.isFinite(r) && r > 0 ? r : null;
+}
+
+function findAccount(accounts, key) {
+  if (key == null) return accounts.none ? "none" : null;
+  for (const k of Object.keys(accounts)) {
+    const n = Number(k);
+    if (Number.isFinite(n) && Math.abs(n - key) <= RESET_TOL_SEC) return k;
+  }
+  return null;
+}
+
+// Monotonic per-window merge: newer window (later resets_at) wins; for
+// the same window the higher percentage wins. Windows that already reset
+// are dropped from the stored side.
+function mergeWindows(stored, mine, now) {
+  const out = {};
+  for (const [k, v] of Object.entries(stored || {})) {
+    if (v && Number(v.resets_at) > now) out[k] = v;
+  }
+  for (const [k, v] of Object.entries(mine || {})) {
+    const e = out[k];
+    const vr = Number(v?.resets_at) || 0;
+    const er = Number(e?.resets_at) || 0;
+    if (!e
+      || vr > er + RESET_TOL_SEC
+      || (Math.abs(vr - er) <= RESET_TOL_SEC && v.used_percentage > e.used_percentage)) {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+function readRaw() {
+  try {
+    const obj = JSON.parse(readFileSync(CACHE_FILE, "utf8"));
+    return obj && typeof obj === "object" ? obj : null;
+  } catch {
+    return null;
+  }
+}
+
+function cleanAccounts(obj, now) {
+  const out = {};
+  const src = obj?.accounts && typeof obj.accounts === "object" ? obj.accounts : {};
+  for (const [k, b] of Object.entries(src)) {
+    if (!(k === "none" || /^[0-9]{1,12}$/.test(k))) continue;
+    if (!b || typeof b !== "object") continue;
+    const updated = Number(b.updated_at) || 0;
+    if (now - updated > ACCOUNT_MAX_IDLE_SEC) continue;
+    if (k !== "none" && Number(k) <= now) continue;            // that week is over
+    const rl = cleanForCache({ rate_limits: b.rate_limits }).rate_limits;
+    if (!Object.keys(rl).length) continue;
+    out[k] = { updated_at: updated, changed_at: Number(b.changed_at) || updated * 1000, rate_limits: rl };
+  }
+  return out;
+}
+
+// Merge this session's rate_limits into its account bucket and return the
+// merged rate_limits to render (never less fresh than the session's own).
+// Returns null when stdin has no rate_limits or on any failure.
 export function writeCacheIfActive(d) {
-  if (!hasRateLimits(d)) return;
+  if (!hasRateLimits(d)) return null;
+  const now = Math.floor(Date.now() / 1000);
+  const mine = cleanForCache(d);
+  let merged = mine.rate_limits;
   let tmp = null;
   try {
     mkdirSync(CACHE_DIR, { recursive: true });
     sweepStaleTmp();
-    const clean = cleanForCache(d);
-    const payload = JSON.stringify({
-      written_at: Math.floor(Date.now() / 1000),
-      ...clean,
-    });
+
+    const prev = readRaw();
+    const accounts = cleanAccounts(prev, now);
+    const key = accountKey(mine.rate_limits);
+    const slot = findAccount(accounts, key) ?? (key == null ? "none" : String(key));
+    const bucket = accounts[slot] || { updated_at: 0, changed_at: 0, rate_limits: {} };
+    merged = mergeWindows(bucket.rate_limits, mine.rate_limits, now);
+    const changed = JSON.stringify(merged) !== JSON.stringify(bucket.rate_limits);
+    accounts[slot] = {
+      updated_at: now,
+      // ms, so two accounts moving within the same second still order.
+      changed_at: changed || !bucket.changed_at ? Date.now() : bucket.changed_at,
+      rate_limits: merged,
+    };
+
+    // Top level mirrors the account whose usage moved most recently.
+    let latest = slot;
+    for (const [k, b] of Object.entries(accounts)) {
+      if (b.changed_at > accounts[latest].changed_at) latest = k;
+    }
+    const top = accounts[latest];
+    const out = { written_at: top.updated_at, rate_limits: top.rate_limits };
+    if (latest === slot && mine.model) out.model = mine.model;
+    else if (prev?.model) {
+      const pm = cleanForCache({ model: prev.model }).model;
+      if (pm) out.model = pm;
+    }
+    out.accounts = accounts;
+
     // Atomic write: tmp → rename so concurrent readers never see partial data.
     tmp = join(CACHE_DIR, `${TMP_PREFIX}${randomBytes(4).toString("hex")}.json`);
-    writeFileSync(tmp, payload, { encoding: "utf8" });
+    writeFileSync(tmp, JSON.stringify(out), { encoding: "utf8" });
     renameSync(tmp, CACHE_FILE);
     tmp = null;
   } catch {
@@ -133,6 +242,7 @@ export function writeCacheIfActive(d) {
     // leave the half-written tmp file behind either.
     if (tmp) { try { unlinkSync(tmp); } catch {} }
   }
+  return merged;
 }
 
 // Read cached rate_limits for an idle session.

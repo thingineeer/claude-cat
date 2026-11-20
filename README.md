@@ -158,10 +158,12 @@ sonnet 5.5 · medium | 5h ▓▓▓▓▓░░░░░ 47% (1h 18m) | week ▓
 | API key | `$` (real cost) + resting cat |
 | Bedrock / Vertex | `$0.00` — Claude Code can't price these |
 
-`rate_limits` appears after a session's first reply. Idle terminals
-reuse the last active session's numbers (dimmed as `stale · 14m ago`
-after 10 minutes); the model chip always shows the terminal's own
-model.
+`rate_limits` appears after a session's first reply. Every terminal
+shows the freshest numbers seen by any terminal on the **same account**
+(several accounts can be live at once after `cswap` / `/login`); a new
+session borrows the account used most recently (dimmed as
+`stale · 14m ago` after 10 minutes). The model chip always shows the
+terminal's own model.
 
 ### stdin fields (Claude Code 2.1.328)
 
@@ -198,13 +200,17 @@ Adds the `fable` bar next to `week`. What it does, and the tradeoff:
 - It **never refreshes** the token. An expired token or a 401 just
   skips until Claude Code renews it.
 - The request runs in a **detached background process**, at most every
-  5 minutes and once at a time across terminals, with backoff on
+  2 minutes and once at a time across terminals, with backoff on
   errors. The status line itself only reads a local cache, so it never
   waits on the network.
 - Only the Fable percentage and reset time are cached
   (`~/.claude/claude-cat/fable-cache.json`) — never the token.
-- After switching accounts the bar hides until the new account's
-  numbers arrive (matched by the weekly reset time).
+- After switching accounts (`cswap` / `/login`) the first render waits
+  up to 1.5 s for the new account's numbers, so the bar switches right
+  away (matched by the weekly reset time). Only the account
+  you're logged in with is in the Keychain, so terminals still running
+  an older account (started before `cswap` / `/login`) show `week`
+  without `fable` until restarted.
 
 A Fable bar near 100 % counts toward the cat's mood like any weekly
 bar; add `--hide=fable` back if you only want it informational.
@@ -277,7 +283,7 @@ show real cost, Bedrock/Vertex show the cat and context %.
 **Will it slow Claude Code down?**
 No. Rendering reads stdin and a small local cache — no network, no
 dependencies loaded. The opt-in Fable fetch runs in a detached
-background process at most every 5 minutes.
+background process at most every 2 minutes.
 
 **How is this different from ccusage?**
 [ccusage](https://github.com/ryoppippi/ccusage) analyzes token cost
