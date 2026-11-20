@@ -760,13 +760,15 @@ async function main() {
   // sends on this machine/plan. No-op unless CLAUDE_CAT_DEBUG=1.
   maybeDumpStdin(raw, d);
 
-  // Cross-terminal sync:
-  //   Active session  → write rate_limits to shared cache file.
-  //   Idle session    → stdin has no rate_limits; read from cache instead
-  //                     so all terminals show the same current usage.
+  // Cross-terminal sync (see src/cache.js):
+  //   stdin has rate_limits → merge into this account's bucket, render merged.
+  //   stdin has none yet    → borrow the most recently active account.
   const hasLimits = d.rate_limits && Object.keys(d.rate_limits).length > 0;
   if (hasLimits) {
-    writeCacheIfActive(d);
+    // Render the account-merged view: an idle terminal shows what an
+    // active terminal on the same account saw most recently.
+    const merged = writeCacheIfActive(d);
+    if (merged && Object.keys(merged).length) d = { ...d, rate_limits: merged };
   } else {
     const cached = readCacheForIdle();
     if (cached) {
