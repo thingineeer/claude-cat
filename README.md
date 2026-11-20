@@ -158,12 +158,11 @@ sonnet 5.5 · medium | 5h ▓▓▓▓▓░░░░░ 47% (1h 18m) | week ▓
 | API key | `$` (real cost) + resting cat |
 | Bedrock / Vertex | `$0.00` — Claude Code can't price these |
 
-`rate_limits` appears after a session's first reply. Every terminal
-shows the freshest numbers seen by any terminal on the **same account**
-(several accounts can be live at once after `cswap` / `/login`); a new
-session borrows the account used most recently (dimmed as
-`stale · 14m ago` after 10 minutes). The model chip always shows the
-terminal's own model.
+`rate_limits` appears after a session's first reply. A terminal always
+shows its **own** numbers once it has them; until then it borrows the
+latest reply from any terminal, per account (several accounts can be
+live at once after `cswap` / `/login`), dimmed as `stale · 14m ago`
+after 10 minutes. The model chip always shows the terminal's own model.
 
 ### stdin fields (Claude Code 2.1.328)
 
