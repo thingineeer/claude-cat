@@ -7,6 +7,30 @@
   it; the `--fable-usage` refresher could carry it behind the same flag)
 - Light-theme aware palette (currently tuned for dark terminals)
 
+## [1.8.2] - 2026-11-20
+
+### Fixed
+- **Usage numbers flipping between accounts.** A terminal keeps the
+  account it was started with after `cswap` / `/login`, so several
+  accounts can be live at once — and each terminal used to overwrite
+  the shared cache with its own (often stale) numbers. The cache is now
+  bucketed per account (by weekly reset time) and merged monotonically:
+  an idle terminal shows the freshest numbers any terminal on the same
+  account has seen, stale terminals can't roll them back, and a new
+  session borrows the account whose usage moved most recently. The
+  top-level `rate_limits` field stays for older readers.
+- **`--fable-usage` re-fetching every minute** when a terminal runs a
+  different account than the Keychain. It now asks once per account
+  and then waits for the normal interval.
+
+### Changed
+- `--fable-usage` refreshes every 2 minutes (was 5).
+- `--fable-usage` follows an account switch (`cswap` / `/login`) in the
+  same render: when the session's weekly reset changes, that render
+  waits up to 1.5 s for the new account's numbers instead of blanking
+  the Fable bar until the next render. Once per switch; normal renders
+  never wait.
+
 ## [1.8.1] - 2026-11-19
 
 ### Fixed

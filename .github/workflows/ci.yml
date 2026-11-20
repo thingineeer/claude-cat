@@ -66,3 +66,5 @@ jobs:
         run: npm run test:fable-usage
       - name: Unused / reset windows read 0%
         run: npm run test:zero
+      - name: Per-account shared cache
+        run: npm run test:accounts
