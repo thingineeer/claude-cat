@@ -49,9 +49,26 @@ OUT="$(stdin_week $WEEK | node "$CLI" --fable-usage | strip)"
 printf '%s\n' "$OUT"
 echo "$OUT" | grep -q "fable ▓▓▓░░░░░░░ 34%" || fail "fable bar missing"
 
-# 4. Different account (weekly reset differs) → no Fable bar.
-OUT="$(stdin_week $((WEEK - 86400)) | node "$CLI" --fable-usage | strip)"
+# 4. Different account (weekly reset differs) → no Fable bar, and only
+#    one early re-fetch for that account — not one every minute.
+OTHER=$((WEEK - 86400))
+node -e '
+  const f = process.argv[1], c = JSON.parse(require("fs").readFileSync(f, "utf8"));
+  c.fetched_at -= 90; require("fs").writeFileSync(f, JSON.stringify(c));   // past MIN_GAP, inside TTL
+' "$DIR/fable-cache.json"
+OUT="$(stdin_week $OTHER | node "$CLI" --fable-usage | strip)"
 echo "$OUT" | grep -q "fable" && fail "fable from another account shown"
+for _ in $(seq 1 30); do grep -q "\"$OTHER\"" "$DIR/fable-cache.json" 2>/dev/null && break; sleep 0.2; done
+grep -q "\"$OTHER\"" "$DIR/fable-cache.json" || fail "mismatch didn't trigger one early refresh"
+first="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).fetched_at)' "$DIR/fable-cache.json")"
+node -e '
+  const f = process.argv[1], c = JSON.parse(require("fs").readFileSync(f, "utf8"));
+  c.fetched_at -= 90; require("fs").writeFileSync(f, JSON.stringify(c));
+' "$DIR/fable-cache.json"
+stdin_week $OTHER | node "$CLI" --fable-usage >/dev/null
+sleep 1.5
+again="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).fetched_at)' "$DIR/fable-cache.json")"
+[ "$again" = "$((first - 90))" ] || fail "re-fetched again for the same other account"
 
 # 5. Claude Code already sends a Fable bucket → exactly one fable bar.
 OUT="$(stdin_week $WEEK ',"seven_day_fable":{"used_percentage":40,"resets_at":4071301200}' \
@@ -61,6 +78,7 @@ echo "$OUT" | grep -q "40%" || fail "native fable value not preferred"
 
 # 6. Idle session (no rate_limits on stdin) reuses the shared cache, gets
 #    the Fable overlay, and does NOT overwrite rate-limits-cache.json.
+rm -f "$DIR/rate-limits-cache.json"                 # step 5's native fable is legit; start clean
 stdin_week $WEEK | node "$CLI" >/dev/null           # active session writes the shared cache
 before="$(cat "$DIR/rate-limits-cache.json")"
 OUT="$(printf '{"model":{"display_name":"Opus 5.5"}}' | node "$CLI" --fable-usage | strip)"

@@ -23,7 +23,9 @@
 //     the bar is only shown when it matches the session's own
 //     `rate_limits.seven_day.resets_at`.
 //   • One refresh at a time across terminals (lock file), at most every
-//     5 minutes, with backoff on 401 / 429 / Keychain failures.
+//     2 minutes, with backoff on 401 / 429 / Keychain failures.
+//   • The Keychain holds only the account you logged in with last, so the
+//     bar only appears in terminals running that account.
 //
 // Test hook: CLAUDE_CAT_FABLE_FIXTURE=<path> makes the refresher read an
 // API response from that file instead of reading credentials or calling
@@ -40,8 +42,13 @@ const DIR = () => join(homedir(), ".claude", "claude-cat");
 const CACHE = () => join(DIR(), "fable-cache.json");
 const LOCK = () => join(DIR(), "fable-refresh.lock");
 
-const TTL_SEC = 300;              // refresh at most every 5 minutes
+const TTL_SEC = 120;              // refresh at most every 2 minutes
 const MIN_GAP_SEC = 60;           // floor between fetches, even on account change
+// A terminal on another account than the Keychain (started before a
+// cswap / /login) can never match the fetched numbers. Ask once for its
+// weekly reset, then leave it to the normal TTL instead of re-fetching
+// every minute.
+const MISMATCH_RETRY_SEC = 30 * 60;
 const LOCK_STALE_MS = 60 * 1000;  // a refresher never runs this long
 const RESET_MATCH_TOL_SEC = 180;  // server ISO vs stdin epoch rounding
 const BACKOFF = {
@@ -164,14 +171,17 @@ function maybeRefresh({ cache, sameAccount, sessionWeekly, now, cliPath, ccVersi
   if (!cliPath) return;
   if (cache?.next_try_at && now < cache.next_try_at) return;     // error backoff
   const fetchedAt = cache?.fetched_at ?? 0;
+  const askedAt = cache?.asked_for?.[String(sessionWeekly)] ?? 0;
   const due = !cache
     || now - fetchedAt >= TTL_SEC
     // Account changed (cswap) or the weekly window rolled over — refresh
-    // early, but never more than once a minute.
-    || (Number.isFinite(sessionWeekly) && !sameAccount && now - fetchedAt >= MIN_GAP_SEC);
+    // early once for this weekly reset, never more than once a minute.
+    || (Number.isFinite(sessionWeekly) && !sameAccount
+      && now - fetchedAt >= MIN_GAP_SEC && now - askedAt >= MISMATCH_RETRY_SEC);
   if (!due || lockHeld()) return;
 
   const args = [cliPath, "__fable-refresh"];
+  if (Number.isFinite(sessionWeekly)) args.push(`--for=${Math.floor(sessionWeekly)}`);
   if (typeof ccVersion === "string" && /^[0-9][0-9a-z.+-]{0,31}$/i.test(ccVersion)) {
     args.push(`--cc-version=${ccVersion}`);
   }
@@ -315,8 +325,16 @@ export async function runRefresh(argv = []) {
   const say = (m) => { if (verbose) process.stdout.write(m + "\n"); };
   if (!acquireLock()) { say("another refresh is running — try again in a minute"); return; }
   const ccVersion = argv.find((a) => a.startsWith("--cc-version="))?.slice("--cc-version=".length);
+  const forWeekly = Number(argv.find((a) => a.startsWith("--for="))?.slice("--for=".length));
   const prev = readJson(CACHE()) || {};
   const now = nowSec();
+  // Remember which session weekly resets asked recently (see
+  // MISMATCH_RETRY_SEC); keep the map small.
+  const askedFor = {};
+  for (const [k, t] of Object.entries(prev.asked_for || {})) {
+    if (/^[0-9]{1,12}$/.test(k) && now - Number(t) < MISMATCH_RETRY_SEC) askedFor[k] = Number(t);
+  }
+  if (Number.isFinite(forWeekly) && forWeekly > 0) askedFor[String(forWeekly)] = now;
   const trace = [];
   try {
     const r = await fetchUsage(ccVersion, trace);
@@ -330,6 +348,7 @@ export async function runRefresh(argv = []) {
         detail: null,
         weekly_resets_at: parsed.weekly_resets_at,
         fable: parsed.fable,
+        asked_for: askedFor,
       });
       say(parsed.fable
         ? `✔ fable ${parsed.fable.used_percentage}% · resets ${new Date(parsed.fable.resets_at * 1000).toLocaleString()}`
@@ -340,6 +359,7 @@ export async function runRefresh(argv = []) {
       // Keep the last good numbers; only push the next attempt out.
       writeJsonAtomic(CACHE(), {
         ...prev, next_try_at: now + wait, status: reason, detail: r.detail ?? null, failed_at: now,
+        asked_for: askedFor,
       });
       say(`✖ ${reason} — next automatic try in ${Math.round(wait / 60)} min`);
     }
